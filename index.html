@@ -48,6 +48,7 @@ button { padding:5px; cursor:pointer; margin-top:5px; }
 
 <div class="action-buttons">
   <button onclick="showOrderModal()" style="background-color:purple; color:white;">주문서 확인</button>
+  <button onclick="submitOrderDirect()" style="background-color:blue; color:white; margin-left:10px;">주문 완료</button>
   <button onclick="newOrder()" style="background-color:orange; color:white; margin-left:10px;">새 주문</button>
 </div>
 
@@ -129,9 +130,20 @@ function showOrderModal(){
 function closeModal(){ document.getElementById("orderModal").style.display="none"; }
 function editOrder(){ closeModal(); }
 
-// 주문 완료 → 구글 시트 기록
+// 주문 완료 → 구글 시트 기록 (모달에서도 사용)
 function submitOrder(){
   if(!confirm("주문을 완료하시겠습니까?")) return;
+  sendOrderData();
+  closeModal();
+}
+
+// 바로 주문 완료 버튼
+function submitOrderDirect(){
+  if(!confirm("주문을 완료하시겠습니까?")) return;
+  sendOrderData();
+}
+
+function sendOrderData(){
   const data={
     nickname:document.getElementById("nickname").value,
     name:document.getElementById("name").value,
@@ -157,8 +169,6 @@ function submitOrder(){
     body: JSON.stringify(data)
   }).then(res=>res.json()).then(r=>{
     alert("주문이 완료되었습니다!");
-    closeModal();
-    data.products.forEach(()=>{}); // 상품 초기화 가능
   }).catch(e=>alert("주문 전송 실패"));
 }
 
