@@ -39,7 +39,7 @@
     margin-bottom: 10px;
   }
   button { padding: 5px; cursor: pointer; margin-top:5px; }
-  .action-buttons { margin-top: 20px; }
+  .product-buttons { margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -67,18 +67,21 @@
 <hr>
 
 <h2>상품 목록</h2>
+
+<div class="product-buttons">
+  <button onclick="addProduct()">+ 상품 추가</button>
+  <button onclick="removeAllProducts()" style="margin-left:10px; background-color:red; color:white;">상품목록 모두 삭제</button>
+</div>
+
 <div id="productList"></div>
-<button onclick="addProduct()">+ 상품 추가</button>
-<button onclick="copyToClipboard()">복사하기</button>
 
 <hr>
 <p>상품 합계: <strong id="productSum">0</strong> KRW</p>
 <p>배송비: <strong id="shippingFee">4000</strong> KRW</p>
 <h2 style="color: blue;">총 결제금액: <span id="finalTotal">0</span> KRW</h2>
 
-<div class="action-buttons">
+<div style="margin-top: 20px;">
   <button onclick="submitOrder()" style="background-color:blue; color:white; padding:8px 15px;">주문 완료</button>
-  <button onclick="newOrder()" style="background-color:orange; color:white; padding:8px 15px; margin-left:10px;">새 주문</button>
 </div>
 
 <div id="orderMessage" style="display:none; color:green; font-weight:bold; margin-top:20px;">
@@ -172,6 +175,15 @@ function removeProduct(btn) {
   saveData();
 }
 
+// 상품목록 모두 삭제
+function removeAllProducts() {
+  if(!confirm("상품목록을 모두 삭제하시겠습니까?")) return;
+  productList.innerHTML = "";
+  addProduct(); // 최소 한 개 상품 입력란 유지
+  calculate();
+  saveData();
+}
+
 // 계산
 function calculate() {
   let sum = 0;
@@ -191,12 +203,10 @@ function calculate() {
 
 // 주문 완료
 function submitOrder() {
-  if(!confirm("주문을 완료하시겠습니까?")) return; // 안전 확인
+  if(!confirm("주문을 완료하시겠습니까?")) return;
   const data = JSON.parse(localStorage.getItem("orderData")) || {};
 
-  // fetch("여기에_AppsScript_URL_붙여넣기") // 실제 연동 시 여기에 Apps Script URL 넣기
-  // .then(res => res.json())
-  // .then(res => { ... })
+  // fetch("여기에_AppsScript_URL_붙여넣기") // 실제 연동 시 Apps Script URL 넣기
 
   // 테스트용: 바로 alert + 상품 초기화
   alert("주문이 완료되었습니다!");
@@ -204,27 +214,6 @@ function submitOrder() {
   localStorage.setItem("orderData", JSON.stringify(data));
   calculate();
   document.getElementById("orderMessage").style.display = "block";
-}
-
-// 새 주문
-function newOrder() {
-  if(!confirm("새 주문을 시작하면 기존 입력 내용이 모두 초기화됩니다. 진행하시겠습니까?")) return;
-  localStorage.removeItem("orderData");
-  localStorage.removeItem("lastOrderDate");
-  location.reload();
-}
-
-// 클립보드 복사
-function copyToClipboard() {
-  const data = JSON.parse(localStorage.getItem("orderData")) || {};
-  let text = `닉네임: ${data.nickname || ''}\n이름: ${data.name || ''}\n연락처: ${data.phone || ''}\n주소: ${data.address || ''}\n\n`;
-  data.products.forEach(p => {
-    text += `상품명: ${p.name}, 색상: ${p.color}, 사이즈: ${p.size}, 수량: ${p.qty}, 가격: ${p.price}\n`;
-  });
-  text += `총결제금액: ${document.getElementById("finalTotal").textContent} KRW`;
-  navigator.clipboard.writeText(text)
-    .then(() => alert("주문 내용이 복사되었습니다!"))
-    .catch(() => alert("복사 실패"));
 }
 
 // 초기화
