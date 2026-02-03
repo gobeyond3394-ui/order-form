@@ -1,42 +1,55 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>셀프 정산 주문서</title>
-  <style>
-    body { font-family: sans-serif; margin: 20px; }
-    h2 { margin-top: 30px; }
-    input { padding: 5px; margin: 3px; }
-    .product { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; gap: 5px; align-items: center; }
-    .product input { width: 100px; }
-    .product .name { width: 140px; }
-    .price { width: 100px; font-weight: bold; }
-    button { padding: 5px; cursor: pointer; }
-  </style>
+<meta charset="UTF-8">
+<title>셀프 정산 주문서</title>
+<style>
+  body { font-family: sans-serif; margin: 20px; }
+  h1, h2 { margin-top: 20px; }
+  .form-group { display: flex; flex-direction: column; margin-bottom: 5px; }
+  label { font-size: 12px; font-weight: bold; margin-bottom: 2px; }
+  input { padding: 5px; font-size: 14px; margin-bottom: 5px; }
+  .product { border-bottom: 1px solid #ddd; padding: 10px 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .product .form-group { flex: 1 1 100px; }
+  .price { width: 100px; font-weight: bold; }
+  button { padding: 5px; cursor: pointer; }
+</style>
 </head>
 <body>
 
 <h1>셀프 정산 주문서</h1>
 
-<!-- 고객 정보 -->
 <h2>고객 정보</h2>
-<input id="nickname" placeholder="닉네임"><br>
-<input id="name" placeholder="이름"><br>
-<input id="phone" placeholder="연락처"><br>
-<input id="address" placeholder="주소"><br>
+<div class="form-group">
+  <label for="nickname">닉네임</label>
+  <input id="nickname" type="text" placeholder="닉네임">
+</div>
+<div class="form-group">
+  <label for="name">이름</label>
+  <input id="name" type="text" placeholder="이름">
+</div>
+<div class="form-group">
+  <label for="phone">연락처</label>
+  <input id="phone" type="text" placeholder="010-1234-5678">
+</div>
+<div class="form-group">
+  <label for="address">주소</label>
+  <input id="address" type="text" placeholder="주소">
+</div>
 
 <hr>
 
 <h2>상품 목록</h2>
 <div id="productList"></div>
 <button onclick="addProduct()">+ 상품 추가</button>
+<button onclick="copyToClipboard()">복사하기</button>
 
 <hr>
-
 <p>상품 합계: <strong id="productSum">0</strong> KRW</p>
-<p>배송비: <strong id="shippingFee">4,000</strong> KRW</p>
+<p>배송비: <strong id="shippingFee">4000</strong> KRW</p>
+<h2 style="color: blue;">총 결제금액: <span id="finalTotal">0</span> KRW</h2>
 
-<h2 style="color: blue;">현금 결제금액: <span id="finalTotal">0</span> KRW</h2>
+<button onclick="submitOrder()">주문 완료</button>
 
 <script>
 const productList = document.getElementById("productList");
@@ -44,6 +57,7 @@ const productSumEl = document.getElementById("productSum");
 const shippingFeeEl = document.getElementById("shippingFee");
 const finalTotalEl = document.getElementById("finalTotal");
 
+// 데이터 저장
 function saveData() {
   const data = {
     nickname: document.getElementById("nickname").value,
@@ -56,6 +70,7 @@ function saveData() {
     data.products.push({
       name: p.querySelector(".name").value,
       color: p.querySelector(".color").value,
+      size: p.querySelector(".size").value,
       price: p.querySelector(".priceInput").value,
       qty: p.querySelector(".qtyInput").value
     });
@@ -63,15 +78,14 @@ function saveData() {
   localStorage.setItem("orderData", JSON.stringify(data));
 }
 
+// 데이터 불러오기
 function loadData() {
   const data = JSON.parse(localStorage.getItem("orderData"));
   if (!data) return;
-
   document.getElementById("nickname").value = data.nickname || "";
   document.getElementById("name").value = data.name || "";
   document.getElementById("phone").value = data.phone || "";
   document.getElementById("address").value = data.address || "";
-
   if (data.products && data.products.length > 0) {
     productList.innerHTML = "";
     data.products.forEach(p => addProduct(p));
@@ -80,37 +94,52 @@ function loadData() {
   }
 }
 
+// 상품 추가
 function addProduct(data = {}) {
   const div = document.createElement("div");
   div.className = "product";
-
   div.innerHTML = `
-    <input class="name" placeholder="상품명" value="${data.name || ''}">
-    <input class="color" placeholder="색상" value="${data.color || ''}">
-    <input type="number" class="priceInput" placeholder="가격" value="${data.price || ''}">
-    <input type="number" class="qtyInput" value="${data.qty || 1}" min="1">
-    <span class="price">0 KRW</span>
+    <div class="form-group">
+      <label>상품명</label>
+      <input class="name" placeholder="상품명" value="${data.name || ''}">
+    </div>
+    <div class="form-group">
+      <label>색상</label>
+      <input class="color" placeholder="색상" value="${data.color || ''}">
+    </div>
+    <div class="form-group">
+      <label>사이즈</label>
+      <input class="size" placeholder="사이즈" value="${data.size || ''}">
+    </div>
+    <div class="form-group">
+      <label>수량</label>
+      <input type="number" class="qtyInput" value="${data.qty || 1}" min="1">
+    </div>
+    <div class="form-group">
+      <label>가격</label>
+      <input type="number" class="priceInput" placeholder="가격" value="${data.price || ''}">
+    </div>
     <button onclick="removeProduct(this)">삭제</button>
+    <span class="price">0 KRW</span>
   `;
-
   productList.appendChild(div);
-
   div.querySelectorAll("input").forEach(input => {
     input.addEventListener("input", () => {
       calculate();
       saveData();
     });
   });
-
   calculate();
 }
 
+// 상품 삭제
 function removeProduct(btn) {
   btn.parentElement.remove();
   calculate();
   saveData();
 }
 
+// 계산
 function calculate() {
   let sum = 0;
   document.querySelectorAll(".product").forEach(product => {
@@ -120,23 +149,51 @@ function calculate() {
     product.querySelector(".price").textContent = total.toLocaleString() + " KRW";
     sum += total;
   });
-
   const shipping = sum >= 100000 ? 0 : 4000;
   const finalTotal = sum + shipping;
-
   productSumEl.textContent = sum.toLocaleString();
   shippingFeeEl.textContent = shipping.toLocaleString();
   finalTotalEl.textContent = finalTotal.toLocaleString();
 }
 
-// 페이지 로드 시 저장된 데이터 불러오기
-window.onload = () => {
-  loadData();
-  document.querySelectorAll("input").forEach(i => {
-    i.addEventListener("input", saveData);
+// 주문 완료
+function submitOrder() {
+  const data = JSON.parse(localStorage.getItem("orderData")) || {};
+  fetch("여기에_AppsScript_URL_붙여넣기", {
+    method: "POST",
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(res => {
+    if(res.status === "success") {
+      alert("주문 완료! 구글 시트에 저장되었습니다.");
+      data.products = []; // 상품만 초기화
+      localStorage.setItem("orderData", JSON.stringify(data));
+      location.reload(); // 페이지 새로고침
+    } else {
+      alert("오류 발생, 다시 시도해주세요.");
+    }
   });
 }
-</script>
 
+// 클립보드 복사
+function copyToClipboard() {
+  const data = JSON.parse(localStorage.getItem("orderData")) || {};
+  let text = `닉네임: ${data.nickname || ''}\n이름: ${data.name || ''}\n연락처: ${data.phone || ''}\n주소: ${data.address || ''}\n\n`;
+  data.products.forEach(p => {
+    text += `상품명: ${p.name}, 색상: ${p.color}, 사이즈: ${p.size}, 수량: ${p.qty}, 가격: ${p.price}\n`;
+  });
+  text += `총결제금액: ${document.getElementById("finalTotal").textContent} KRW`;
+  navigator.clipboard.writeText(text)
+    .then(() => alert("주문 내용이 복사되었습니다!"))
+    .catch(() => alert("복사 실패"));
+}
+
+// 초기화
+window.onload = () => {
+  loadData();
+  document.querySelectorAll("input").forEach(i => i.addEventListener("input", saveData));
+}
+</script>
 </body>
 </html>
