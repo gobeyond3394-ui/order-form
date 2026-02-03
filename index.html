@@ -5,23 +5,33 @@
 <title>싸U 주문서</title>
 <style>
 body { font-family: Arial, sans-serif; margin: 20px; }
-h1 { text-align:center; }
+h1 { text-align:center; margin-bottom:20px; }
 h2 { margin-top: 30px; }
 .form-group { margin-bottom: 10px; }
 label { display: block; font-weight: bold; margin-bottom: 3px; }
 input { padding: 6px; width: 100%; box-sizing: border-box; margin-bottom: 5px; }
+
 #products { display: flex; flex-direction: column; gap: 5px; }
 
-/* 상품 한 줄, 모바일에서 스크롤 가능 */
-.product { border: 1px solid #ccc; padding: 8px; display: flex; gap: 5px; overflow-x: auto; align-items: center; }
-.product input { flex: 1 1 100px; min-width: 80px; }
-.product button { flex: 0 0 auto; }
+/* 상품 한 줄, 모바일에서 스크롤 없이 보이도록 flex 조정 */
+.product { border: 1px solid #ccc; padding: 8px; display: flex; gap: 5px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.product div { display:flex; flex-direction:column; flex:1 1 100px; min-width:80px; }
+.product input { flex:1; min-width: 60px; }
+.product button { flex:0 0 auto; margin-top:18px; padding:4px 8px; }
 
-.buttons { margin-top: 20px; }
+/* 버튼 스타일 */
 button { margin-right: 10px; padding: 8px 12px; cursor: pointer; }
 
+/* 주문서 확인 모달 */
 #orderModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
-#orderModalContent { background:white; padding:20px; max-width:600px; width:90%; max-height:80%; overflow:auto; border-radius:5px; }
+#orderModalContent { background:white; padding:20px; max-width:600px; width:95%; max-height:80%; overflow:auto; border-radius:5px; }
+
+/* 반응형: 화면 좁으면 입력란 최소 80px 유지, flex-wrap 적용 */
+@media (max-width:600px){
+  .product { flex-direction: column; align-items: stretch; }
+  .product div { min-width: auto; width: 100%; }
+  .product button { margin-top: 5px; }
+}
 </style>
 </head>
 <body>
@@ -41,7 +51,8 @@ button { margin-right: 10px; padding: 8px 12px; cursor: pointer; }
 </div>
 <div id="products"></div>
 
-<p>배송비: <span id="shippingFee">0</span>원</p>
+<p>상품 합계: <span id="productSum">0</span>원</p>
+<p>배송비: <span id="shippingFee">4000</span>원</p>
 <h3>총 결제금액: <span id="totalAmount">0</span>원</h3>
 
 <p>입금계좌: 카카오뱅크 3333-09797-1111 유혜정(유세연)
@@ -68,6 +79,7 @@ button { margin-right: 10px; padding: 8px 12px; cursor: pointer; }
 const productsDiv = document.getElementById("products");
 const totalAmountEl = document.getElementById("totalAmount");
 const shippingFeeEl = document.getElementById("shippingFee");
+const productSumEl = document.getElementById("productSum");
 const SHIPPING = 4000;
 
 // 상품 추가
@@ -75,11 +87,11 @@ function addProduct(data={}) {
   const div = document.createElement("div");
   div.className = "product";
   div.innerHTML = `
-    <input class="name" placeholder="상품명" value="${data.name||''}">
-    <input class="color" placeholder="색상" value="${data.color||''}">
-    <input class="size" placeholder="사이즈" value="${data.size||''}">
-    <input type="number" class="qty" placeholder="수량" min="1" value="${data.qty||1}">
-    <input type="number" class="price" placeholder="가격" min="0" value="${data.price||0}">
+    <div><label>상품명</label><input class="name" placeholder="상품명" value="${data.name||''}"></div>
+    <div><label>색상</label><input class="color" placeholder="색상" value="${data.color||''}"></div>
+    <div><label>사이즈</label><input class="size" placeholder="사이즈" value="${data.size||''}"></div>
+    <div><label>수량</label><input type="number" class="qty" placeholder="수량" min="1" value="${data.qty||1}"></div>
+    <div><label>가격</label><input type="number" class="price" placeholder="가격" min="0" value="${data.price||0}"></div>
     <button onclick="removeProduct(this)">삭제</button>
   `;
   div.querySelectorAll("input").forEach(i=>i.addEventListener("input", calculateTotal));
@@ -113,6 +125,7 @@ function getProductsArray(){
 function calculateTotal(){
   let sum=0;
   getProductsArray().forEach(p=>{ sum += p.qty * p.price; });
+  productSumEl.textContent = sum.toLocaleString();
   let shipping = sum>=100000 || sum===0 ? 0 : SHIPPING;
   shippingFeeEl.textContent = shipping.toLocaleString();
   totalAmountEl.textContent = (sum+shipping).toLocaleString();
@@ -146,7 +159,8 @@ function checkOrder(){
   getProductsArray().forEach((p,i)=>{
     html+=`<li>${i+1}. ${p.name} / ${p.color} / ${p.size} / ${p.qty}개 / ${p.price}원</li>`;
   });
-  html+=`</ul><p>배송비: ${shippingFeeEl.textContent}원</p>
+  html+=`</ul><p>상품 합계: ${productSumEl.textContent}원</p>
+  <p>배송비: ${shippingFeeEl.textContent}원</p>
   <p>총 결제금액: ${totalAmountEl.textContent}원</p>
   <p>입금계좌: 카카오뱅크 3333-09797-1111 유혜정(유세연)</p>`;
   document.getElementById("orderSummary").innerHTML = html;
