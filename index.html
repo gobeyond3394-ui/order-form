@@ -2,121 +2,115 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>싸U 주문서</title>
 
 <style>
 body {
-  font-family: Arial, sans-serif;
-  background:#fff;
-  margin:0;
-  padding:20px;
-  color:#000;
+  margin: 0;
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  background: #ffffff;
+  color: #111;
 }
 
-/* 제목 & 섹션 */
 h1 {
-  text-align:center;
-  color:#001f4d;
-  margin-bottom:20px;
-}
-h2 {
-  color:#001f4d;
-  margin-top:30px;
-  margin-bottom:10px;
+  font-size: 20px;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
-/* 공통 입력 */
-.form-group { margin-bottom:12px; }
+.section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
 label {
-  font-size:13px;
-  font-weight:600;
-  color:#001f4d;
-  margin-bottom:4px;
-  display:block;
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #333;
 }
+
 input {
-  width:100%;
-  padding:10px;
-  border:1px solid #ccc;
-  border-radius:6px;
-  background:#fff;
-  box-sizing:border-box;
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-sizing: border-box;
 }
 
-/* 상품 영역 */
-#products { display:flex; flex-direction:column; gap:12px; }
-
+/* 상품 */
 .product {
-  display:flex;
-  gap:8px;
-  align-items:flex-end;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+  margin-top: 12px;
 }
 
-.product .field {
-  display:flex;
-  flex-direction:column;
-  flex:1;
+.row {
+  display: flex;
+  gap: 8px;
 }
 
-.product input {
-  padding:8px;
+.row .field {
+  flex: 1;
 }
 
-/* 버튼 (완전 곡선) */
-button {
-  padding:12px 18px;
-  font-size:15px;
-  font-weight:600;
-  border-radius:22px;
-  border:none;
-  cursor:pointer;
-  transition:all 0.15s ease;
+/* 합계 */
+.summary {
+  border-top: 1px solid #eee;
+  padding-top: 12px;
 }
-button:active { transform:scale(0.97); }
 
-.add { background:#007BFF; color:#fff; }
-.delete { background:#28a745; color:#fff; }
-.check { background:#007BFF; color:#fff; }
-.complete { background:#28a745; color:#fff; }
-.new { background:#6f42c1; color:#fff; }
-
-/* 금액 카드 */
-.summary-card {
-  margin-top:20px;
-  padding:15px;
-  border-radius:12px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
-}
 .summary-line {
-  display:flex;
-  justify-content:space-between;
-  margin:6px 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin: 6px 0;
 }
+
 .summary-total {
-  color:#007BFF;
-  font-size:18px;
-  font-weight:700;
+  font-weight: 700;
+  font-size: 16px;
 }
 
 /* 계좌 */
-#accountBox {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  background:#cce6ff;
-  border:1px solid #99ccff;
-  padding:12px;
-  border-radius:10px;
-  margin-top:15px;
-}
-#accountBox span {
-  font-weight:600;
-  color:#001f4d;
+.account-box {
+  background: #f5f8ff;
+  border: 1px solid #dbe3ff;
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
 }
 
-/* 모바일 */
-@media(max-width:768px){
-  .product { flex-direction:column; }
+/* 버튼 */
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  background: #f2f2f2;
+  color: #111;
+}
+
+button.primary {
+  background: #111;
+  color: #fff;
 }
 </style>
 </head>
@@ -125,81 +119,124 @@ button:active { transform:scale(0.97); }
 
 <h1>싸U 주문서</h1>
 
-<h2>고객 정보</h2>
-<div class="form-group"><label>닉네임</label><input id="nickname"></div>
-<div class="form-group"><label>이름</label><input id="name"></div>
-<div class="form-group"><label>연락처</label><input id="phone"></div>
-<div class="form-group"><label>주소</label><input id="address"></div>
+<div class="section">
+  <div class="section-title">고객 정보</div>
+  <div class="field"><label>닉네임</label><input id="nickname"></div>
+  <div class="field"><label>이름</label><input id="name"></div>
+  <div class="field"><label>연락처</label><input id="phone"></div>
+  <div class="field"><label>주소</label><input id="address"></div>
+</div>
 
-<h2>상품 목록</h2>
-<button class="add" onclick="addProduct()">+ 상품 추가</button>
-<button class="delete" onclick="deleteAllProducts()">상품목록 모두 삭제</button>
+<div class="section">
+  <div class="section-title">상품 정보</div>
+  <div id="products"></div>
+  <button onclick="addProduct()">+ 상품 추가</button>
+</div>
 
-<div id="products"></div>
+<div class="section summary">
+  <div class="summary-line"><span>상품 합계</span><span id="sum">0원</span></div>
+  <div class="summary-line"><span>배송비</span><span id="shipping">4,000원</span></div>
+  <div class="summary-line summary-total"><span>총 결제금액</span><span id="total">4,000원</span></div>
+</div>
 
-<div class="summary-card">
-  <div class="summary-line"><span>상품 합계</span><span id="productSum">0 KRW</span></div>
-  <div class="summary-line"><span>배송비</span><span id="shipping">4,000 KRW</span></div>
-  <div class="summary-line summary-total">
-    <span>총 결제금액</span><span id="total">4,000 KRW</span>
+<div class="section">
+  <div class="section-title">입금 계좌</div>
+  <div class="account-box">
+    <span id="accountText">카카오뱅크 3333-09797-1111 유혜정(유세연)</span>
+    <button onclick="copyAccount()">복사</button>
   </div>
 </div>
 
-<div id="accountBox">
-  <span>카카오뱅크 3333-09797-1111 유혜정(유세연)</span>
-  <button class="check" onclick="copyAccount()">복사</button>
-</div>
-
-<div style="margin-top:20px;">
-  <button class="check">주문서 확인</button>
-  <button class="complete">주문 완료</button>
-  <button class="new" onclick="location.reload()">새 주문</button>
-</div>
+<button onclick="checkOrder()">주문서 확인</button>
+<button class="primary" onclick="submitOrder()">주문 완료</button>
+<button onclick="newOrder()">새 주문</button>
 
 <script>
-const products = document.getElementById("products");
 const SHIPPING = 4000;
+const productsDiv = document.getElementById("products");
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby46Q9iopmJHmsh37thoaJ1fJGlm3gWHjc2W0sVm84Ue9q0W31CyFR3KAd69qBqySXk/exec";
 
-function addProduct(){
-  const div=document.createElement("div");
-  div.className="product";
-  div.innerHTML=`
+function addProduct() {
+  const div = document.createElement("div");
+  div.className = "product";
+  div.innerHTML = `
     <div class="field"><label>상품명</label><input></div>
-    <div class="field"><label>색상</label><input></div>
-    <div class="field"><label>사이즈</label><input></div>
-    <div class="field"><label>수량</label><input type="number" value="1"></div>
-    <div class="field"><label>가격</label><input type="number"></div>
-    <button class="delete" onclick="this.parentElement.remove();calc()">삭제</button>
+    <div class="row">
+      <div class="field"><label>색상</label><input></div>
+      <div class="field"><label>사이즈</label><input></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>수량</label><input type="number" value="1"></div>
+      <div class="field"><label>가격</label><input type="number"></div>
+    </div>
   `;
-  products.appendChild(div);
-  div.querySelectorAll("input").forEach(i=>i.addEventListener("input",calc));
+  div.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
+  productsDiv.appendChild(div);
+  calc();
 }
 
-function deleteAllProducts(){
-  if(confirm("상품목록을 모두 삭제할까요?")){
-    products.innerHTML="";
-    calc();
+function calc() {
+  let sum = 0;
+  document.querySelectorAll(".product").forEach(p => {
+    const qty = Number(p.querySelectorAll("input")[3].value || 0);
+    const price = Number(p.querySelectorAll("input")[4].value || 0);
+    sum += qty * price;
+  });
+  document.getElementById("sum").textContent = sum.toLocaleString() + "원";
+  document.getElementById("shipping").textContent = SHIPPING.toLocaleString() + "원";
+  document.getElementById("total").textContent = (sum + SHIPPING).toLocaleString() + "원";
+}
+
+function copyAccount() {
+  navigator.clipboard.writeText(document.getElementById("accountText").innerText);
+  alert("계좌번호가 복사되었습니다.");
+}
+
+function checkOrder() {
+  alert("입력한 주문 내용을 확인했습니다.\n문제가 없으면 주문 완료를 눌러주세요.");
+}
+
+function submitOrder() {
+  if (!confirm("주문을 완료하시겠습니까?")) return;
+
+  const data = {
+    nickname: nickname.value,
+    name: name.value,
+    phone: phone.value,
+    address: address.value,
+    total: total.innerText,
+    products: []
+  };
+
+  document.querySelectorAll(".product").forEach(p => {
+    data.products.push({
+      name: p.querySelectorAll("input")[0].value,
+      color: p.querySelectorAll("input")[1].value,
+      size: p.querySelectorAll("input")[2].value,
+      qty: p.querySelectorAll("input")[3].value,
+      price: p.querySelectorAll("input")[4].value
+    });
+  });
+
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(data)
+  })
+  .then(() => {
+    alert("주문이 정상적으로 접수되었습니다.\n입금 확인 후 처리됩니다.");
+  })
+  .catch(() => {
+    alert("주문 전송 중 오류가 발생했습니다.");
+  });
+}
+
+function newOrder() {
+  if (confirm("새 주문을 시작할까요?\n입력한 내용은 모두 사라집니다.")) {
+    location.reload();
   }
 }
 
-function calc(){
-  let sum=0;
-  document.querySelectorAll(".product").forEach(p=>{
-    const q=p.querySelectorAll("input")[3].value||0;
-    const pr=p.querySelectorAll("input")[4].value||0;
-    sum+=q*pr;
-  });
-  document.getElementById("productSum").textContent=sum.toLocaleString()+" KRW";
-  document.getElementById("shipping").textContent=SHIPPING.toLocaleString()+" KRW";
-  document.getElementById("total").textContent=(sum+SHIPPING).toLocaleString()+" KRW";
-}
-
-function copyAccount(){
-  navigator.clipboard.writeText("카카오뱅크 3333-09797-1111 유혜정(유세연)");
-  alert("계좌번호가 복사되었습니다");
-}
-
-addProduct(); calc();
+addProduct();
 </script>
 
 </body>
