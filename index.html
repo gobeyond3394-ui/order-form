@@ -41,6 +41,12 @@
   button { padding: 5px; cursor: pointer; margin-top:5px; }
   .product-buttons { margin-bottom: 10px; }
   .action-buttons { margin-top: 20px; }
+  .account-info {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    display: inline-block;
+  }
 </style>
 </head>
 <body>
@@ -80,6 +86,11 @@
 <p>상품 합계: <strong id="productSum">0</strong> KRW</p>
 <p>배송비: <strong id="shippingFee">4000</strong> KRW</p>
 <h2 style="color: blue;">총 결제금액: <span id="finalTotal">0</span> KRW</h2>
+
+<div class="account-info">
+  <strong>입금계좌:</strong> 카카오뱅크 3333-09797-1111 유혜정(유세연)
+  <button onclick="copyAccount()" style="margin-left:10px;">계좌번호 복사</button>
+</div>
 
 <div class="action-buttons">
   <button onclick="submitOrder()" style="background-color:blue; color:white; padding:8px 15px;">주문 완료</button>
@@ -222,6 +233,14 @@ function newOrder() {
   if(!confirm("새 주문을 시작하면 고객정보와 상품목록이 모두 초기화됩니다. 진행하시겠습니까?")) return;
   localStorage.removeItem("orderData");
   location.reload();
+}
+
+// 계좌번호 복사
+function copyAccount() {
+  const account = "3333-09797-1111";
+  navigator.clipboard.writeText(account).then(() => {
+    alert("계좌번호가 복사되었습니다: " + account);
+  });
 }
 
 // 초기화
