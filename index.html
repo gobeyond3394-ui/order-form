@@ -39,6 +39,7 @@
     margin-bottom: 10px;
   }
   button { padding: 5px; cursor: pointer; margin-top:5px; }
+  .action-buttons { margin-top: 20px; }
 </style>
 </head>
 <body>
@@ -75,8 +76,10 @@
 <p>배송비: <strong id="shippingFee">4000</strong> KRW</p>
 <h2 style="color: blue;">총 결제금액: <span id="finalTotal">0</span> KRW</h2>
 
-<button onclick="submitOrder()">주문 완료</button>
-<button onclick="newOrder()" style="background-color:orange; color:white;">새 주문</button>
+<div class="action-buttons">
+  <button onclick="submitOrder()" style="background-color:blue; color:white; padding:8px 15px;">주문 완료</button>
+  <button onclick="newOrder()" style="background-color:orange; color:white; padding:8px 15px; margin-left:10px;">새 주문</button>
+</div>
 
 <div id="orderMessage" style="display:none; color:green; font-weight:bold; margin-top:20px;">
   주문이 완료되었습니다!
@@ -190,25 +193,17 @@ function calculate() {
 function submitOrder() {
   if(!confirm("주문을 완료하시겠습니까?")) return; // 안전 확인
   const data = JSON.parse(localStorage.getItem("orderData")) || {};
-  
-  fetch("여기에_AppsScript_URL_붙여넣기", {
-    method: "POST",
-    body: JSON.stringify(data)
-  })
-  .then(res => res.json())
-  .then(res => {
-    if(res.status === "success") {
-      // 상품만 초기화, 고객 정보 유지
-      data.products = [];
-      localStorage.setItem("orderData", JSON.stringify(data));
-      calculate();
-      document.getElementById("orderMessage").style.display = "block";
-      alert("주문이 완료되었습니다!");
-    } else {
-      alert("오류 발생, 다시 시도해주세요.");
-    }
-  })
-  .catch(() => alert("서버 연결 오류!"));
+
+  // fetch("여기에_AppsScript_URL_붙여넣기") // 실제 연동 시 여기에 Apps Script URL 넣기
+  // .then(res => res.json())
+  // .then(res => { ... })
+
+  // 테스트용: 바로 alert + 상품 초기화
+  alert("주문이 완료되었습니다!");
+  data.products = [];
+  localStorage.setItem("orderData", JSON.stringify(data));
+  calculate();
+  document.getElementById("orderMessage").style.display = "block";
 }
 
 // 새 주문
