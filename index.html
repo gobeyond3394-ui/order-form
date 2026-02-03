@@ -4,38 +4,51 @@
 <meta charset="UTF-8">
 <title>싸U 주문서</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-h1 { text-align:center; margin-bottom:20px; }
-h2 { margin-top: 30px; }
-.form-group { margin-bottom: 10px; }
-label { display: block; font-weight: bold; margin-bottom: 3px; }
-input { padding: 6px; width: 100%; box-sizing: border-box; margin-bottom: 5px; }
+/* 기본 스타일 */
+body { font-family: 'Arial', sans-serif; margin:0; padding:0; background:#007BFF; color:#fff; }
+.container { max-width: 700px; margin:20px auto; padding:20px; background:#007BFF; border-radius:10px; }
+h1 { text-align:center; margin-bottom:20px; font-size:28px; font-weight:bold; color:#FFD700; }
+h2 { margin-top:30px; margin-bottom:10px; color:#FFD700; }
 
-#products { display: flex; flex-direction: column; gap: 5px; }
+/* 입력 그룹 */
+.form-group { margin-bottom:12px; }
+label { display:block; font-weight:bold; margin-bottom:3px; color:#FFD700; }
+input { padding:6px; width:100%; box-sizing:border-box; border-radius:5px; border:none; font-size:14px; }
 
-/* 상품 한 줄, 모바일에서 스크롤 없이 보이도록 flex 조정 */
-.product { border: 1px solid #ccc; padding: 8px; display: flex; gap: 5px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+/* 상품 목록 */
+#products { display:flex; flex-direction:column; gap:8px; }
+.product { background:#fff; color:#000; padding:8px; display:flex; flex-wrap:wrap; gap:5px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.2); align-items:center; }
 .product div { display:flex; flex-direction:column; flex:1 1 100px; min-width:80px; }
-.product input { flex:1; min-width: 60px; }
-.product button { flex:0 0 auto; margin-top:18px; padding:4px 8px; }
+.product input { flex:1; min-width:60px; border:1px solid #ccc; border-radius:5px; padding:4px; }
+.product button { flex:0 0 auto; padding:6px 10px; background:#FFD700; color:#007BFF; border:none; font-weight:bold; border-radius:5px; cursor:pointer; margin-top:18px; }
 
-/* 버튼 스타일 */
-button { margin-right: 10px; padding: 8px 12px; cursor: pointer; }
+/* 버튼 그룹 */
+button { padding:8px 14px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; }
+button.confirm { background:#FFD700; color:#007BFF; }
+button.alert { background:#ff4d4d; color:#fff; }
+button.action { background:#28a745; color:#fff; }
+button.modal-btn { background:#FFD700; color:#007BFF; }
 
-/* 주문서 확인 모달 */
-#orderModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
-#orderModalContent { background:white; padding:20px; max-width:600px; width:95%; max-height:80%; overflow:auto; border-radius:5px; }
+/* 합계 영역 */
+.summary { margin-top:15px; font-size:16px; }
+.summary p { margin:5px 0; }
 
-/* 반응형: 화면 좁으면 입력란 최소 80px 유지, flex-wrap 적용 */
+/* 모달 */
+#orderModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; }
+#orderModalContent { background:#fff; color:#000; padding:20px; max-width:600px; width:95%; max-height:80%; overflow:auto; border-radius:10px; }
+#orderModalContent h2 { color:#007BFF; }
+
+/* 반응형 */
 @media (max-width:600px){
-  .product { flex-direction: column; align-items: stretch; }
-  .product div { min-width: auto; width: 100%; }
-  .product button { margin-top: 5px; }
+  .product { flex-direction:column; align-items:stretch; }
+  .product div { width:100%; min-width:auto; }
+  .product button { margin-top:5px; }
 }
 </style>
 </head>
 <body>
 
+<div class="container">
 <h1>싸U 주문서</h1>
 
 <h2>고객 정보</h2>
@@ -45,23 +58,26 @@ button { margin-right: 10px; padding: 8px 12px; cursor: pointer; }
 <div class="form-group"><label>주소</label><input id="address" placeholder="주소"></div>
 
 <h2>상품 목록</h2>
-<div>
-  <button onclick="addProduct()">+ 상품 추가</button>
-  <button onclick="deleteAllProducts()" style="background:red; color:white;">상품목록 모두 삭제</button>
+<div style="margin-bottom:10px;">
+  <button onclick="addProduct()" class="confirm">+ 상품 추가</button>
+  <button onclick="deleteAllProducts()" class="alert">상품목록 모두 삭제</button>
 </div>
 <div id="products"></div>
 
-<p>상품 합계: <span id="productSum">0</span>원</p>
-<p>배송비: <span id="shippingFee">4000</span>원</p>
-<h3>총 결제금액: <span id="totalAmount">0</span>원</h3>
+<div class="summary">
+  <p>상품 합계: <span id="productSum">0</span>원</p>
+  <p>배송비: <span id="shippingFee">4000</span>원</p>
+  <h3>총 결제금액: <span id="totalAmount">0</span>원</h3>
+</div>
 
 <p>입금계좌: 카카오뱅크 3333-09797-1111 유혜정(유세연)
-<button onclick="copyAccount()">복사</button></p>
+<button onclick="copyAccount()" class="confirm">복사</button></p>
 
-<div class="buttons">
-  <button onclick="checkOrder()">주문서 확인</button>
-  <button onclick="submitOrderDirect()">주문 완료</button>
-  <button onclick="newOrder()">새 주문</button>
+<div style="margin-top:20px;">
+  <button onclick="checkOrder()" class="modal-btn">주문서 확인</button>
+  <button onclick="submitOrderDirect()" class="action">주문 완료</button>
+  <button onclick="newOrder()" class="alert">새 주문</button>
+</div>
 </div>
 
 <!-- 주문서 확인 모달 -->
@@ -69,29 +85,29 @@ button { margin-right: 10px; padding: 8px 12px; cursor: pointer; }
   <div id="orderModalContent">
     <h2>주문서 확인</h2>
     <div id="orderSummary"></div>
-    <button onclick="editOrder()" style="background:gray; color:white;">수정</button>
-    <button onclick="submitOrder()" style="background:blue; color:white;">주문 완료</button>
-    <button onclick="closeModal()">닫기</button>
+    <button onclick="editOrder()" class="modal-btn">수정</button>
+    <button onclick="submitOrder()" class="action">주문 완료</button>
+    <button onclick="closeModal()" class="alert">닫기</button>
   </div>
 </div>
 
 <script>
+// 상품 관리
 const productsDiv = document.getElementById("products");
 const totalAmountEl = document.getElementById("totalAmount");
 const shippingFeeEl = document.getElementById("shippingFee");
 const productSumEl = document.getElementById("productSum");
 const SHIPPING = 4000;
 
-// 상품 추가
 function addProduct(data={}) {
   const div = document.createElement("div");
-  div.className = "product";
+  div.className="product";
   div.innerHTML = `
-    <div><label>상품명</label><input class="name" placeholder="상품명" value="${data.name||''}"></div>
-    <div><label>색상</label><input class="color" placeholder="색상" value="${data.color||''}"></div>
-    <div><label>사이즈</label><input class="size" placeholder="사이즈" value="${data.size||''}"></div>
-    <div><label>수량</label><input type="number" class="qty" placeholder="수량" min="1" value="${data.qty||1}"></div>
-    <div><label>가격</label><input type="number" class="price" placeholder="가격" min="0" value="${data.price||0}"></div>
+    <div><label>상품명</label><input class="name" value="${data.name||''}" placeholder="상품명"></div>
+    <div><label>색상</label><input class="color" value="${data.color||''}" placeholder="색상"></div>
+    <div><label>사이즈</label><input class="size" value="${data.size||''}" placeholder="사이즈"></div>
+    <div><label>수량</label><input type="number" class="qty" min="1" value="${data.qty||1}"></div>
+    <div><label>가격</label><input type="number" class="price" min="0" value="${data.price||0}"></div>
     <button onclick="removeProduct(this)">삭제</button>
   `;
   div.querySelectorAll("input").forEach(i=>i.addEventListener("input", calculateTotal));
@@ -100,52 +116,26 @@ function addProduct(data={}) {
 }
 
 function removeProduct(btn){ btn.parentElement.remove(); calculateTotal(); }
-
-function deleteAllProducts(){
-  if(confirm("상품목록을 모두 삭제하시겠습니까?")){
-    productsDiv.innerHTML = "";
-    calculateTotal();
-  }
-}
-
-function getProductsArray(){
-  const arr=[];
-  document.querySelectorAll(".product").forEach(p=>{
-    arr.push({
-      name: p.querySelector(".name").value,
-      color: p.querySelector(".color").value,
-      size: p.querySelector(".size").value,
-      qty: Number(p.querySelector(".qty").value),
-      price: Number(p.querySelector(".price").value)
-    });
-  });
-  return arr;
-}
+function deleteAllProducts(){ if(confirm("상품목록을 모두 삭제하시겠습니까?")){ productsDiv.innerHTML=""; calculateTotal(); } }
+function getProductsArray(){ const arr=[]; document.querySelectorAll(".product").forEach(p=>arr.push({name:p.querySelector(".name").value,color:p.querySelector(".color").value,size:p.querySelector(".size").value,qty:Number(p.querySelector(".qty").value),price:Number(p.querySelector(".price").value)})); return arr; }
 
 function calculateTotal(){
   let sum=0;
-  getProductsArray().forEach(p=>{ sum += p.qty * p.price; });
+  getProductsArray().forEach(p=>{ sum+=p.qty*p.price; });
   productSumEl.textContent = sum.toLocaleString();
-  let shipping = sum>=100000 || sum===0 ? 0 : SHIPPING;
+  let shipping = sum>=100000||sum===0?0:SHIPPING;
   shippingFeeEl.textContent = shipping.toLocaleString();
   totalAmountEl.textContent = (sum+shipping).toLocaleString();
   return sum+shipping;
 }
 
-function copyAccount(){
-  navigator.clipboard.writeText("카카오뱅크 3333-09797-1111 유혜정(유세연)");
-  alert("계좌번호가 복사되었습니다.");
-}
+function copyAccount(){ navigator.clipboard.writeText("카카오뱅크 3333-09797-1111 유혜정(유세연)"); alert("계좌번호가 복사되었습니다."); }
 
 function validateOrder(){
-  if(!document.getElementById("nickname").value || !document.getElementById("name").value || !document.getElementById("phone").value){
-    alert("고객 정보를 모두 입력해주세요."); return false;
-  }
-  const products = getProductsArray();
+  if(!document.getElementById("nickname").value || !document.getElementById("name").value || !document.getElementById("phone").value){ alert("고객 정보를 모두 입력해주세요."); return false; }
+  const products=getProductsArray();
   if(products.length===0){ alert("상품을 하나 이상 추가해주세요."); return false; }
-  for(let p of products){
-    if(!p.name || !p.qty || !p.price){ alert("상품명, 수량, 가격을 모두 입력해주세요."); return false; }
-  }
+  for(let p of products){ if(!p.name||!p.qty||!p.price){ alert("상품명, 수량, 가격을 모두 입력해주세요."); return false; } }
   return true;
 }
 
@@ -156,15 +146,13 @@ function checkOrder(){
   <p>연락처: ${document.getElementById("phone").value}</p>
   <p>주소: ${document.getElementById("address").value}</p>
   <h3>상품 목록</h3><ul>`;
-  getProductsArray().forEach((p,i)=>{
-    html+=`<li>${i+1}. ${p.name} / ${p.color} / ${p.size} / ${p.qty}개 / ${p.price}원</li>`;
-  });
+  getProductsArray().forEach((p,i)=>{ html+=`<li>${i+1}. ${p.name} / ${p.color} / ${p.size} / ${p.qty}개 / ${p.price}원</li>`; });
   html+=`</ul><p>상품 합계: ${productSumEl.textContent}원</p>
   <p>배송비: ${shippingFeeEl.textContent}원</p>
   <p>총 결제금액: ${totalAmountEl.textContent}원</p>
   <p>입금계좌: 카카오뱅크 3333-09797-1111 유혜정(유세연)</p>`;
-  document.getElementById("orderSummary").innerHTML = html;
-  document.getElementById("orderModal").style.display = "flex";
+  document.getElementById("orderSummary").innerHTML=html;
+  document.getElementById("orderModal").style.display="flex";
 }
 
 function closeModal(){ document.getElementById("orderModal").style.display="none"; }
@@ -172,8 +160,7 @@ function editOrder(){ closeModal(); }
 
 function submitOrder(){
   if(!confirm("주문을 완료하시겠습니까?")) return;
-  sendOrderData();
-  closeModal();
+  sendOrderData(); closeModal();
 }
 
 function submitOrderDirect(){
@@ -200,11 +187,7 @@ function sendOrderData(){
   }).catch(e=>alert("주문 전송 실패"));
 }
 
-function newOrder(){
-  if(confirm("새 주문을 시작하면 현재 입력한 내용은 모두 초기화됩니다.")){
-    location.reload();
-  }
-}
+function newOrder(){ if(confirm("새 주문을 시작하면 현재 입력한 내용은 모두 초기화됩니다.")){ location.reload(); } }
 
 window.onload=()=>{ addProduct(); calculateTotal(); }
 </script>
