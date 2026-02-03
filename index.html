@@ -20,10 +20,10 @@
 
 <!-- 고객 정보 -->
 <h2>고객 정보</h2>
-<input name="nickname" placeholder="닉네임"><br>
-<input name="name" placeholder="이름"><br>
-<input name="phone" placeholder="연락처"><br>
-<input name="address" placeholder="주소"><br>
+<input id="nickname" placeholder="닉네임"><br>
+<input id="name" placeholder="이름"><br>
+<input id="phone" placeholder="연락처"><br>
+<input id="address" placeholder="주소"><br>
 
 <hr>
 
@@ -39,62 +39,103 @@
 <h2 style="color: blue;">현금 결제금액: <span id="finalTotal">0</span> KRW</h2>
 
 <script>
-  const productList = document.getElementById("productList");
-  const productSumEl = document.getElementById("productSum");
-  const shippingFeeEl = document.getElementById("shippingFee");
-  const finalTotalEl = document.getElementById("finalTotal");
+const productList = document.getElementById("productList");
+const productSumEl = document.getElementById("productSum");
+const shippingFeeEl = document.getElementById("shippingFee");
+const finalTotalEl = document.getElementById("finalTotal");
 
-  // 제품 추가 함수
-  function addProduct(data = {}) {
-    const div = document.createElement("div");
-    div.className = "product";
-
-    div.innerHTML = `
-      <input class="name" placeholder="상품명" value="${data.name || ''}">
-      <input class="color" placeholder="색상" value="${data.color || ''}">
-      <input type="number" class="priceInput" placeholder="가격" value="${data.price || ''}">
-      <input type="number" class="qtyInput" value="${data.qty || 1}" min="1">
-      <span class="price">0 KRW</span>
-      <button onclick="removeProduct(this)">삭제</button>
-    `;
-
-    productList.appendChild(div);
-
-    div.querySelectorAll("input").forEach(input => {
-      input.addEventListener("input", () => {
-        calculate();
-      });
+function saveData() {
+  const data = {
+    nickname: document.getElementById("nickname").value,
+    name: document.getElementById("name").value,
+    phone: document.getElementById("phone").value,
+    address: document.getElementById("address").value,
+    products: []
+  };
+  document.querySelectorAll(".product").forEach(p => {
+    data.products.push({
+      name: p.querySelector(".name").value,
+      color: p.querySelector(".color").value,
+      price: p.querySelector(".priceInput").value,
+      qty: p.querySelector(".qtyInput").value
     });
+  });
+  localStorage.setItem("orderData", JSON.stringify(data));
+}
 
-    calculate();
+function loadData() {
+  const data = JSON.parse(localStorage.getItem("orderData"));
+  if (!data) return;
+
+  document.getElementById("nickname").value = data.nickname || "";
+  document.getElementById("name").value = data.name || "";
+  document.getElementById("phone").value = data.phone || "";
+  document.getElementById("address").value = data.address || "";
+
+  if (data.products && data.products.length > 0) {
+    productList.innerHTML = "";
+    data.products.forEach(p => addProduct(p));
+  } else {
+    addProduct();
   }
+}
 
-  function removeProduct(btn) {
-    btn.parentElement.remove();
-    calculate();
-  }
+function addProduct(data = {}) {
+  const div = document.createElement("div");
+  div.className = "product";
 
-  // 계산 함수
-  function calculate() {
-    let sum = 0;
-    document.querySelectorAll(".product").forEach(product => {
-      const price = Number(product.querySelector(".priceInput").value) || 0;
-      const qty = Number(product.querySelector(".qtyInput").value) || 0;
-      const total = price * qty;
-      product.querySelector(".price").textContent = total.toLocaleString() + " KRW";
-      sum += total;
+  div.innerHTML = `
+    <input class="name" placeholder="상품명" value="${data.name || ''}">
+    <input class="color" placeholder="색상" value="${data.color || ''}">
+    <input type="number" class="priceInput" placeholder="가격" value="${data.price || ''}">
+    <input type="number" class="qtyInput" value="${data.qty || 1}" min="1">
+    <span class="price">0 KRW</span>
+    <button onclick="removeProduct(this)">삭제</button>
+  `;
+
+  productList.appendChild(div);
+
+  div.querySelectorAll("input").forEach(input => {
+    input.addEventListener("input", () => {
+      calculate();
+      saveData();
     });
+  });
 
-    const shipping = sum >= 100000 ? 0 : 4000;
-    const finalTotal = sum + shipping;
+  calculate();
+}
 
-    productSumEl.textContent = sum.toLocaleString();
-    shippingFeeEl.textContent = shipping.toLocaleString();
-    finalTotalEl.textContent = finalTotal.toLocaleString();
-  }
+function removeProduct(btn) {
+  btn.parentElement.remove();
+  calculate();
+  saveData();
+}
 
-  // 페이지 로드시 기본 상품 하나 생성
-  addProduct();
+function calculate() {
+  let sum = 0;
+  document.querySelectorAll(".product").forEach(product => {
+    const price = Number(product.querySelector(".priceInput").value) || 0;
+    const qty = Number(product.querySelector(".qtyInput").value) || 0;
+    const total = price * qty;
+    product.querySelector(".price").textContent = total.toLocaleString() + " KRW";
+    sum += total;
+  });
+
+  const shipping = sum >= 100000 ? 0 : 4000;
+  const finalTotal = sum + shipping;
+
+  productSumEl.textContent = sum.toLocaleString();
+  shippingFeeEl.textContent = shipping.toLocaleString();
+  finalTotalEl.textContent = finalTotal.toLocaleString();
+}
+
+// 페이지 로드 시 저장된 데이터 불러오기
+window.onload = () => {
+  loadData();
+  document.querySelectorAll("input").forEach(i => {
+    i.addEventListener("input", saveData);
+  });
+}
 </script>
 
 </body>
