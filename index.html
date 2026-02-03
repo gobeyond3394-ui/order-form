@@ -4,49 +4,19 @@
 <meta charset="UTF-8">
 <title>셀프 정산 주문서</title>
 <style>
-  body { font-family: sans-serif; margin: 20px; }
-  h1, h2 { margin-top: 20px; }
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 10px;
-  }
-  label {
-    font-size: 12px;
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
-  input {
-    padding: 6px;
-    font-size: 14px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  .product {
-    border-bottom: 1px solid #ddd;
-    padding: 10px 0;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: flex-end;
-  }
-  .product .form-group {
-    flex: 1 1 120px;
-  }
-  .price {
-    width: 100px;
-    font-weight: bold;
-    margin-bottom: 10px;
-  }
-  button { padding: 5px; cursor: pointer; margin-top:5px; }
-  .product-buttons { margin-bottom: 10px; }
-  .action-buttons { margin-top: 20px; }
-  .account-info {
-    margin-top: 15px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    display: inline-block;
-  }
+body { font-family: sans-serif; margin: 20px; }
+h1,h2 { margin-top:20px; }
+.form-group { display:flex; flex-direction:column; margin-bottom:10px; }
+label { font-size:12px; font-weight:bold; margin-bottom:2px; }
+input { padding:6px; font-size:14px; width:100%; box-sizing:border-box; }
+.product { border-bottom:1px solid #ddd; padding:10px 0; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.product .form-group { flex:1 1 120px; }
+.price { width:100px; font-weight:bold; margin-bottom:10px; }
+button { padding:5px; cursor:pointer; margin-top:5px; }
+.product-buttons { margin-bottom:10px; }
+.action-buttons { margin-top:20px; }
+#orderModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
+#orderModalContent { background:white; padding:20px; max-width:500px; width:90%; max-height:80%; overflow:auto; border-radius:5px; }
 </style>
 </head>
 <body>
@@ -54,51 +24,42 @@
 <h1>셀프 정산 주문서</h1>
 
 <h2>고객 정보</h2>
-<div class="form-group">
-  <label for="nickname">닉네임</label>
-  <input id="nickname" type="text" placeholder="닉네임">
-</div>
-<div class="form-group">
-  <label for="name">이름</label>
-  <input id="name" type="text" placeholder="이름">
-</div>
-<div class="form-group">
-  <label for="phone">연락처</label>
-  <input id="phone" type="text" placeholder="010-1234-5678">
-</div>
-<div class="form-group">
-  <label for="address">주소</label>
-  <input id="address" type="text" placeholder="주소">
-</div>
+<div class="form-group"><label>닉네임</label><input id="nickname" placeholder="닉네임"></div>
+<div class="form-group"><label>이름</label><input id="name" placeholder="이름"></div>
+<div class="form-group"><label>연락처</label><input id="phone" placeholder="010-1234-5678"></div>
+<div class="form-group"><label>주소</label><input id="address" placeholder="주소"></div>
 
 <hr>
 
 <h2>상품 목록</h2>
-
 <div class="product-buttons">
   <button onclick="addProduct()">+ 상품 추가</button>
   <button onclick="removeAllProducts()" style="margin-left:10px; background-color:red; color:white;">상품목록 모두 삭제</button>
 </div>
-
 <div id="productList"></div>
 
 <hr>
 <p>상품 합계: <strong id="productSum">0</strong> KRW</p>
 <p>배송비: <strong id="shippingFee">4000</strong> KRW</p>
-<h2 style="color: blue;">총 결제금액: <span id="finalTotal">0</span> KRW</h2>
+<h2 style="color:blue;">총 결제금액: <span id="finalTotal">0</span> KRW</h2>
 
-<div class="account-info">
-  <strong>입금계좌:</strong> 카카오뱅크 3333-09797-1111 유혜정(유세연)
-  <button onclick="copyAccount()" style="margin-left:10px;">계좌번호 복사</button>
-</div>
+<p><strong>입금계좌:</strong> 카카오뱅크 3333-09797-1111 유혜정(유세연)
+<button onclick="copyAccount()">계좌번호 복사</button></p>
 
 <div class="action-buttons">
-  <button onclick="submitOrder()" style="background-color:blue; color:white; padding:8px 15px;">주문 완료</button>
-  <button onclick="newOrder()" style="background-color:orange; color:white; padding:8px 15px; margin-left:10px;">새 주문</button>
+  <button onclick="showOrderModal()" style="background-color:purple; color:white;">주문서 확인</button>
+  <button onclick="newOrder()" style="background-color:orange; color:white; margin-left:10px;">새 주문</button>
 </div>
 
-<div id="orderMessage" style="display:none; color:green; font-weight:bold; margin-top:20px;">
-  주문이 완료되었습니다!
+<!-- 주문서 확인 모달 -->
+<div id="orderModal">
+  <div id="orderModalContent">
+    <h2>주문서 확인</h2>
+    <div id="orderSummary"></div>
+    <button onclick="editOrder()" style="background-color:gray; color:white;">수정</button>
+    <button onclick="submitOrder()" style="background-color:blue; color:white; margin-left:10px;">주문 완료</button>
+    <button onclick="closeModal()" style="margin-left:10px;">닫기</button>
+  </div>
 </div>
 
 <script>
@@ -107,147 +68,105 @@ const productSumEl = document.getElementById("productSum");
 const shippingFeeEl = document.getElementById("shippingFee");
 const finalTotalEl = document.getElementById("finalTotal");
 
-// 데이터 저장
-function saveData() {
-  const data = {
-    nickname: document.getElementById("nickname").value,
-    name: document.getElementById("name").value,
-    phone: document.getElementById("phone").value,
-    address: document.getElementById("address").value,
-    products: []
-  };
-  document.querySelectorAll(".product").forEach(p => {
-    data.products.push({
-      name: p.querySelector(".name").value,
-      color: p.querySelector(".color").value,
-      size: p.querySelector(".size").value,
-      price: p.querySelector(".priceInput").value,
-      qty: p.querySelector(".qtyInput").value
-    });
-  });
-  localStorage.setItem("orderData", JSON.stringify(data));
-}
-
-// 데이터 불러오기
-function loadData() {
-  const data = JSON.parse(localStorage.getItem("orderData")) || {};
-  document.getElementById("nickname").value = data.nickname || "";
-  document.getElementById("name").value = data.name || "";
-  document.getElementById("phone").value = data.phone || "";
-  document.getElementById("address").value = data.address || "";
-  productList.innerHTML = "";
-  if (data.products && data.products.length > 0) {
-    data.products.forEach(p => addProduct(p));
-  } else {
-    addProduct();
-  }
-}
-
 // 상품 추가
-function addProduct(data = {}) {
+function addProduct(data={}) {
   const div = document.createElement("div");
   div.className = "product";
   div.innerHTML = `
-    <div class="form-group">
-      <label>상품명</label>
-      <input class="name" placeholder="상품명" value="${data.name || ''}">
-    </div>
-    <div class="form-group">
-      <label>색상</label>
-      <input class="color" placeholder="색상" value="${data.color || ''}">
-    </div>
-    <div class="form-group">
-      <label>사이즈</label>
-      <input class="size" placeholder="사이즈" value="${data.size || ''}">
-    </div>
-    <div class="form-group">
-      <label>수량</label>
-      <input type="number" class="qtyInput" value="${data.qty || 1}" min="1">
-    </div>
-    <div class="form-group">
-      <label>가격</label>
-      <input type="number" class="priceInput" placeholder="가격" value="${data.price || ''}">
-    </div>
+    <div class="form-group"><label>상품명</label><input class="name" placeholder="상품명" value="${data.name||''}"></div>
+    <div class="form-group"><label>색상</label><input class="color" placeholder="색상" value="${data.color||''}"></div>
+    <div class="form-group"><label>사이즈</label><input class="size" placeholder="사이즈" value="${data.size||''}"></div>
+    <div class="form-group"><label>수량</label><input type="number" class="qtyInput" value="${data.qty||1}" min="1"></div>
+    <div class="form-group"><label>가격</label><input type="number" class="priceInput" value="${data.price||''}" placeholder="가격"></div>
     <button onclick="removeProduct(this)">삭제</button>
     <span class="price">0 KRW</span>
   `;
   productList.appendChild(div);
-  div.querySelectorAll("input").forEach(input => {
-    input.addEventListener("input", () => {
-      calculate();
-      saveData();
-    });
-  });
+  div.querySelectorAll("input").forEach(input => input.addEventListener("input", calculate));
   calculate();
 }
 
 // 상품 삭제
-function removeProduct(btn) {
-  btn.parentElement.remove();
-  calculate();
-  saveData();
-}
-
-// 상품목록 모두 삭제
-function removeAllProducts() {
-  if(!confirm("상품목록을 모두 삭제하시겠습니까?")) return;
-  productList.innerHTML = "";
-  addProduct(); // 최소 한 개 상품 입력란 유지
-  calculate();
-  saveData();
-}
+function removeProduct(btn){ btn.parentElement.remove(); calculate(); }
+function removeAllProducts(){ if(confirm("상품목록을 모두 삭제하시겠습니까?")){ productList.innerHTML=""; addProduct(); calculate(); } }
 
 // 계산
-function calculate() {
-  let sum = 0;
-  document.querySelectorAll(".product").forEach(product => {
-    const price = Number(product.querySelector(".priceInput").value) || 0;
-    const qty = Number(product.querySelector(".qtyInput").value) || 0;
-    const total = price * qty;
-    product.querySelector(".price").textContent = total.toLocaleString() + " KRW";
-    sum += total;
+function calculate(){
+  let sum=0;
+  document.querySelectorAll(".product").forEach(p=>{
+    const price=Number(p.querySelector(".priceInput").value)||0;
+    const qty=Number(p.querySelector(".qtyInput").value)||0;
+    const total=price*qty;
+    p.querySelector(".price").textContent=total.toLocaleString()+" KRW";
+    sum+=total;
   });
-  const shipping = sum >= 100000 ? 0 : 4000;
-  const finalTotal = sum + shipping;
-  productSumEl.textContent = sum.toLocaleString();
-  shippingFeeEl.textContent = shipping.toLocaleString();
-  finalTotalEl.textContent = finalTotal.toLocaleString();
+  const shipping=sum>=100000?0:4000;
+  productSumEl.textContent=sum.toLocaleString();
+  shippingFeeEl.textContent=shipping.toLocaleString();
+  finalTotalEl.textContent=(sum+shipping).toLocaleString();
 }
 
-// 주문 완료
-function submitOrder() {
+// 계좌 복사
+function copyAccount(){ navigator.clipboard.writeText("3333-09797-1111").then(()=>alert("계좌번호 복사됨")); }
+
+// 주문서 확인 모달
+function showOrderModal(){
+  const summary=document.getElementById("orderSummary");
+  let html=`<p>닉네임: ${document.getElementById("nickname").value}</p>
+  <p>이름: ${document.getElementById("name").value}</p>
+  <p>연락처: ${document.getElementById("phone").value}</p>
+  <p>주소: ${document.getElementById("address").value}</p>
+  <h3>상품 목록</h3><ul>`;
+  document.querySelectorAll(".product").forEach(p=>{
+    html+=`<li>${p.querySelector(".name").value} / ${p.querySelector(".color").value} / ${p.querySelector(".size").value} / ${p.querySelector(".qtyInput").value}개 / ${p.querySelector(".priceInput").value} KRW</li>`;
+  });
+  html+=`</ul><p>총 결제금액: ${finalTotalEl.textContent} KRW</p>
+  <p>배송비: ${shippingFeeEl.textContent} KRW</p>
+  <p>입금계좌: 카카오뱅크 3333-09797-1111 유혜정(유세연)</p>`;
+  summary.innerHTML=html;
+  document.getElementById("orderModal").style.display="flex";
+}
+function closeModal(){ document.getElementById("orderModal").style.display="none"; }
+function editOrder(){ closeModal(); }
+
+// 주문 완료 → 구글 시트 기록
+function submitOrder(){
   if(!confirm("주문을 완료하시겠습니까?")) return;
-  const data = JSON.parse(localStorage.getItem("orderData")) || {};
+  const data={
+    nickname:document.getElementById("nickname").value,
+    name:document.getElementById("name").value,
+    phone:document.getElementById("phone").value,
+    address:document.getElementById("address").value,
+    products:[],
+    total:Number(finalTotalEl.textContent.replace(/,/g,'')),
+    shipping:Number(shippingFeeEl.textContent.replace(/,/g,''))
+  };
+  document.querySelectorAll(".product").forEach(p=>{
+    data.products.push({
+      name:p.querySelector(".name").value,
+      color:p.querySelector(".color").value,
+      size:p.querySelector(".size").value,
+      qty:p.querySelector(".qtyInput").value,
+      price:p.querySelector(".priceInput").value
+    });
+  });
 
-  // fetch("여기에_AppsScript_URL_붙여넣기") // 실제 연동 시 Apps Script URL 넣기
-
-  alert("주문이 완료되었습니다!");
-  data.products = [];
-  localStorage.setItem("orderData", JSON.stringify(data));
-  calculate();
-  document.getElementById("orderMessage").style.display = "block";
+  // ⚡ Apps Script 웹앱 URL 넣기
+  fetch("여기에_AppsScript_URL_붙여넣기",{
+    method:"POST",
+    body: JSON.stringify(data)
+  }).then(res=>res.json()).then(r=>{
+    alert("주문이 완료되었습니다!");
+    closeModal();
+    data.products.forEach(()=>{}); // 상품 초기화 가능
+  }).catch(e=>alert("주문 전송 실패"));
 }
 
 // 새 주문
-function newOrder() {
-  if(!confirm("새 주문을 시작하면 고객정보와 상품목록이 모두 초기화됩니다. 진행하시겠습니까?")) return;
-  localStorage.removeItem("orderData");
-  location.reload();
-}
+function newOrder(){ if(confirm("새 주문 시작? 모든 입력 초기화됩니다.")){ location.reload(); } }
 
-// 계좌번호 복사
-function copyAccount() {
-  const account = "3333-09797-1111";
-  navigator.clipboard.writeText(account).then(() => {
-    alert("계좌번호가 복사되었습니다: " + account);
-  });
-}
-
-// 초기화
-window.onload = () => {
-  loadData();
-  document.querySelectorAll("input").forEach(i => i.addEventListener("input", saveData));
-}
+window.onload=()=>{ addProduct(); calculate(); }
 </script>
+
 </body>
 </html>
