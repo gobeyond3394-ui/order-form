@@ -38,7 +38,7 @@
     font-weight: bold;
     margin-bottom: 10px;
   }
-  button { padding: 5px; cursor: pointer; }
+  button { padding: 5px; cursor: pointer; margin-top:5px; }
 </style>
 </head>
 <body>
@@ -76,6 +76,11 @@
 <h2 style="color: blue;">총 결제금액: <span id="finalTotal">0</span> KRW</h2>
 
 <button onclick="submitOrder()">주문 완료</button>
+<button onclick="newOrder()" style="background-color:orange; color:white;">새 주문</button>
+
+<div id="orderMessage" style="display:none; color:green; font-weight:bold; margin-top:20px;">
+  주문이 완료되었습니다!
+</div>
 
 <script>
 const productList = document.getElementById("productList");
@@ -106,14 +111,13 @@ function saveData() {
 
 // 데이터 불러오기
 function loadData() {
-  const data = JSON.parse(localStorage.getItem("orderData"));
-  if (!data) return;
+  const data = JSON.parse(localStorage.getItem("orderData")) || {};
   document.getElementById("nickname").value = data.nickname || "";
   document.getElementById("name").value = data.name || "";
   document.getElementById("phone").value = data.phone || "";
   document.getElementById("address").value = data.address || "";
+  productList.innerHTML = "";
   if (data.products && data.products.length > 0) {
-    productList.innerHTML = "";
     data.products.forEach(p => addProduct(p));
   } else {
     addProduct();
@@ -184,7 +188,9 @@ function calculate() {
 
 // 주문 완료
 function submitOrder() {
+  if(!confirm("주문을 완료하시겠습니까?")) return; // 안전 확인
   const data = JSON.parse(localStorage.getItem("orderData")) || {};
+  
   fetch("여기에_AppsScript_URL_붙여넣기", {
     method: "POST",
     body: JSON.stringify(data)
@@ -192,14 +198,25 @@ function submitOrder() {
   .then(res => res.json())
   .then(res => {
     if(res.status === "success") {
-      alert("주문 완료! 구글 시트에 저장되었습니다.");
-      data.products = []; // 상품만 초기화
+      // 상품만 초기화, 고객 정보 유지
+      data.products = [];
       localStorage.setItem("orderData", JSON.stringify(data));
-      location.reload(); // 페이지 새로고침
+      calculate();
+      document.getElementById("orderMessage").style.display = "block";
+      alert("주문이 완료되었습니다!");
     } else {
       alert("오류 발생, 다시 시도해주세요.");
     }
-  });
+  })
+  .catch(() => alert("서버 연결 오류!"));
+}
+
+// 새 주문
+function newOrder() {
+  if(!confirm("새 주문을 시작하면 기존 입력 내용이 모두 초기화됩니다. 진행하시겠습니까?")) return;
+  localStorage.removeItem("orderData");
+  localStorage.removeItem("lastOrderDate");
+  location.reload();
 }
 
 // 클립보드 복사
