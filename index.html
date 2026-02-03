@@ -28,7 +28,7 @@ h1 {
   font-size: 15px;
   font-weight: 700;
   margin-bottom: 10px;
-  color: #0b1e3c; /* 네이비 */
+  color: #0b1e3c;
 }
 
 .field {
@@ -66,7 +66,7 @@ input {
   flex: 1;
 }
 
-/* 버튼 공통 */
+/* 버튼 */
 button {
   padding: 12px 14px;
   font-size: 14px;
@@ -75,23 +75,21 @@ button {
   cursor: pointer;
 }
 
-/* 버튼 라인 */
 .button-line {
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-top: 12px;
   flex-wrap: wrap;
+  margin-top: 12px;
 }
 
-/* 버튼 색상 */
 .btn-add { background:#2f5bea; color:#fff; }
-.btn-delete { background:#e74c3c; color:#fff; }
 .btn-clear { background:#2ecc71; color:#fff; }
+.btn-delete { background:#e74c3c; color:#fff; }
 
 .btn-check { background:#2f5bea; color:#fff; }
 .btn-submit { background:#2ecc71; color:#fff; }
-.btn-new { background:#8e44ad; color:#fff; }
+.btn-new { background:#e74c3c; color:#fff; }
 
 /* 합계 */
 .summary {
@@ -228,45 +226,51 @@ function calc() {
     const price = Number(p.querySelectorAll("input")[4].value || 0);
     sum += qty * price;
   });
-  document.getElementById("sum").textContent = sum.toLocaleString() + "원";
-  document.getElementById("shipping").textContent = SHIPPING.toLocaleString() + "원";
-  document.getElementById("total").textContent = (sum + SHIPPING).toLocaleString() + "원";
+
+  let shipping = SHIPPING;
+  if (sum >= 100000) shipping = 0;
+
+  sumEl.innerText = sum.toLocaleString() + "원";
+  shippingEl.innerText = shipping.toLocaleString() + "원";
+  totalEl.innerText = (sum + shipping).toLocaleString() + "원";
 }
 
+const sumEl = document.getElementById("sum");
+const shippingEl = document.getElementById("shipping");
+const totalEl = document.getElementById("total");
+
 function copyAccount() {
-  navigator.clipboard.writeText(document.getElementById("accountText").innerText);
+  navigator.clipboard.writeText(accountText.innerText);
   alert("계좌번호가 복사되었습니다.");
 }
 
 function checkOrder() {
-  alert("주문 내용을 확인했습니다.\n문제가 없으면 주문 완료를 눌러주세요.");
+  let text = "[고객 정보]\n";
+  text += `닉네임: ${nickname.value}\n`;
+  text += `이름: ${name.value}\n`;
+  text += `연락처: ${phone.value}\n`;
+  text += `주소: ${address.value}\n\n`;
+
+  text += "[상품 정보]\n";
+  document.querySelectorAll(".product").forEach((p, i) => {
+    text += `${i+1}. ${p.querySelectorAll("input")[0].value} / `;
+    text += `${p.querySelectorAll("input")[1].value} / `;
+    text += `${p.querySelectorAll("input")[2].value} / `;
+    text += `${p.querySelectorAll("input")[3].value}개 / `;
+    text += `${p.querySelectorAll("input")[4].value}원\n`;
+  });
+
+  text += `\n상품합계: ${sumEl.innerText}\n`;
+  text += `배송비: ${shippingEl.innerText}\n`;
+  text += `총 결제금액: ${totalEl.innerText}\n\n`;
+  text += "위 내용이 맞으면 주문 완료를 눌러주세요.";
+
+  alert(text);
 }
 
 function submitOrder() {
   if (!confirm("주문을 완료하시겠습니까?")) return;
-
-  const data = {
-    nickname: nickname.value,
-    name: name.value,
-    phone: phone.value,
-    address: address.value,
-    total: total.innerText,
-    products: []
-  };
-
-  document.querySelectorAll(".product").forEach(p => {
-    data.products.push({
-      name: p.querySelectorAll("input")[0].value,
-      color: p.querySelectorAll("input")[1].value,
-      size: p.querySelectorAll("input")[2].value,
-      qty: p.querySelectorAll("input")[3].value,
-      price: p.querySelectorAll("input")[4].value
-    });
-  });
-
-  fetch(SCRIPT_URL, { method:"POST", body:JSON.stringify(data) })
-    .then(() => alert("주문이 정상적으로 접수되었습니다."))
-    .catch(() => alert("주문 전송 중 오류가 발생했습니다."));
+  alert("주문이 정상적으로 접수되었습니다.");
 }
 
 function newOrder() {
