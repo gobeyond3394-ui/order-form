@@ -2,9 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>셀프정산 주문서</title>
+<title>싸U 주문서</title>
 <style>
 body { font-family: Arial, sans-serif; margin: 20px; }
+h1 { text-align:center; }
 h2 { margin-top: 30px; }
 .form-group { margin-bottom: 10px; }
 label { display: block; font-weight: bold; margin-bottom: 3px; }
@@ -25,6 +26,8 @@ button { margin-right: 10px; padding: 8px 12px; cursor: pointer; }
 </head>
 <body>
 
+<h1>싸U 주문서</h1>
+
 <h2>고객 정보</h2>
 <div class="form-group"><label>닉네임</label><input id="nickname" placeholder="닉네임"></div>
 <div class="form-group"><label>이름</label><input id="name" placeholder="이름"></div>
@@ -38,7 +41,9 @@ button { margin-right: 10px; padding: 8px 12px; cursor: pointer; }
 </div>
 <div id="products"></div>
 
+<p>배송비: <span id="shippingFee">0</span>원</p>
 <h3>총 결제금액: <span id="totalAmount">0</span>원</h3>
+
 <p>입금계좌: 카카오뱅크 3333-09797-1111 유혜정(유세연)
 <button onclick="copyAccount()">복사</button></p>
 
@@ -62,6 +67,7 @@ button { margin-right: 10px; padding: 8px 12px; cursor: pointer; }
 <script>
 const productsDiv = document.getElementById("products");
 const totalAmountEl = document.getElementById("totalAmount");
+const shippingFeeEl = document.getElementById("shippingFee");
 const SHIPPING = 4000;
 
 // 상품 추가
@@ -107,7 +113,8 @@ function getProductsArray(){
 function calculateTotal(){
   let sum=0;
   getProductsArray().forEach(p=>{ sum += p.qty * p.price; });
-  const shipping = sum >= 100000 || sum===0 ? 0 : SHIPPING;
+  let shipping = sum>=100000 || sum===0 ? 0 : SHIPPING;
+  shippingFeeEl.textContent = shipping.toLocaleString();
   totalAmountEl.textContent = (sum+shipping).toLocaleString();
   return sum+shipping;
 }
@@ -139,7 +146,8 @@ function checkOrder(){
   getProductsArray().forEach((p,i)=>{
     html+=`<li>${i+1}. ${p.name} / ${p.color} / ${p.size} / ${p.qty}개 / ${p.price}원</li>`;
   });
-  html+=`</ul><p>총 결제금액: ${totalAmountEl.textContent}원</p>
+  html+=`</ul><p>배송비: ${shippingFeeEl.textContent}원</p>
+  <p>총 결제금액: ${totalAmountEl.textContent}원</p>
   <p>입금계좌: 카카오뱅크 3333-09797-1111 유혜정(유세연)</p>`;
   document.getElementById("orderSummary").innerHTML = html;
   document.getElementById("orderModal").style.display = "flex";
@@ -166,7 +174,7 @@ function sendOrderData(){
     phone: document.getElementById("phone").value,
     address: document.getElementById("address").value,
     total: Number(totalAmountEl.textContent.replace(/,/g,'')),
-    shipping: Number(totalAmountEl.textContent.replace(/,/g,'')) - getProductsArray().reduce((a,p)=>a+p.qty*p.price,0),
+    shipping: Number(shippingFeeEl.textContent.replace(/,/g,'')),
     products: getProductsArray()
   };
   fetch("https://script.google.com/macros/s/AKfycby46Q9iopmJHmsh37thoaJ1fJGlm3gWHjc2W0sVm84Ue9q0W31CyFR3KAd69qBqySXk/exec",{
