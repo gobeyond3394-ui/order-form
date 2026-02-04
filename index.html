@@ -361,11 +361,17 @@ function submitOrder() {
   alert("주문이 정상적으로 접수되었습니다.");
 }
 
+/* 🔹 수정된 부분: 상품만 초기화 */
 function newOrder() {
-  if (confirm("새 주문을 시작할까요?")) {
-    localStorage.removeItem("orderData");
-    location.reload();
-  }
+  if (!confirm("상품만 새로 주문할까요?")) return;
+
+  const data = JSON.parse(localStorage.getItem("orderData") || "{}");
+  data.products = [];
+  localStorage.setItem("orderData", JSON.stringify(data));
+
+  productsDiv.innerHTML = "";
+  addProduct();
+  calc();
 }
 
 /* 🔹 자동 저장 / 복원 (추가 코드) */
