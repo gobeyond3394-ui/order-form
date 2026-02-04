@@ -167,6 +167,81 @@ button {
   border-radius: 6px;
   border: none;
 }
+
+/* ===== ✅ 상태 배지 + 상품명 오른쪽 ===== */
+.product-title-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.product-title-row input{
+  flex:1;
+}
+
+.status-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:700;
+  padding:6px 10px;
+  border-radius:6px;
+  white-space:nowrap;
+  user-select:none;
+}
+.status-badge .sq{
+  width:10px;
+  height:10px;
+  border-radius:2px;
+  display:inline-block;
+}
+
+/* 🩶 미전송 */
+.status-draft{
+  background:#f2f2f2;
+  color:#555;
+  border:1px solid #d9d9d9;
+}
+.status-draft .sq{ background:#bdbdbd; }
+
+/* 🟦 전송완료 */
+.status-sent{
+  background:#e8f2ff;
+  color:#005FAE;
+  border:1px solid #c8ddff;
+}
+.status-sent .sq{ background:#005FAE; }
+
+/* 🔴 취소요청 */
+.status-cancel-pending{
+  background:#ffe9e9;
+  color:#c0392b;
+  border:1px solid #ffc9c9;
+}
+.status-cancel-pending .sq{ background:#e74c3c; }
+
+/* ⚫ 취소완료 */
+.status-canceled{
+  background:#ededed;
+  color:#222;
+  border:1px solid #cfcfcf;
+}
+.status-canceled .sq{ background:#111; }
+
+/* ===== ✅ 전송완료 상품용 버튼 라인 ===== */
+.product-actions{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+.product-actions button{
+  flex:1;
+  padding:10px 12px;
+  font-size:13px;
+  border-radius:8px;
+}
+.btn-change{ background:#005FAE; color:#fff; }
+.btn-cancel{ background:#e74c3c; color:#fff; }
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -249,13 +324,144 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypyL9er4QVtnZzXVrLN
 
 let IS_LOADING = false;
 
-function addProduct() {
+function _uid() {
+  return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+function _setStatusBadge(div, status) {
+  const badge = div.querySelector(".status-badge");
+  if (!badge) return;
+
+  badge.classList.remove("status-draft","status-sent","status-cancel-pending","status-canceled");
+
+  if (status === "draft") {
+    badge.classList.add("status-draft");
+    badge.innerHTML = `<span class="sq"></span>미전송`;
+  } else if (status === "sent") {
+    badge.classList.add("status-sent");
+    badge.innerHTML = `<span class="sq"></span>전송완료`;
+  } else if (status === "cancel_pending") {
+    badge.classList.add("status-cancel-pending");
+    badge.innerHTML = `<span class="sq"></span>취소요청`;
+  } else if (status === "canceled") {
+    badge.classList.add("status-canceled");
+    badge.innerHTML = `<span class="sq"></span>취소완료`;
+  } else {
+    badge.classList.add("status-draft");
+    badge.innerHTML = `<span class="sq"></span>미전송`;
+  }
+}
+
+function _lockInputs(div, lock) {
+  const inputs = div.querySelectorAll("input");
+  inputs.forEach((inp, idx) => {
+    if (lock) {
+      if (idx === 3 || idx === 4) {
+        inp.disabled = true;
+      } else {
+        inp.readOnly = true;
+      }
+    } else {
+      inp.disabled = false;
+      inp.readOnly = false;
+    }
+  });
+}
+
+function _renderActions(div) {
+  const status = div.dataset.status || "draft";
+  const actions = div.querySelector(".product-actions");
+  if (!actions) return;
+
+  if (status === "sent") {
+    actions.style.display = "flex";
+  } else {
+    actions.style.display = "none";
+  }
+}
+
+function _applyProductUI(div) {
+  const status = div.dataset.status || "draft";
+  _setStatusBadge(div, status);
+
+  if (status === "draft") {
+    _lockInputs(div, false);
+  } else {
+    _lockInputs(div, true);
+  }
+
+  _renderActions(div);
+}
+
+function _copyProductValues(fromDiv) {
+  const i = fromDiv.querySelectorAll("input");
+  return {
+    name: i[0].value || "",
+    color: i[1].value || "",
+    size: i[2].value || "",
+    qty: i[3].value || "1",
+    price: i[4].value || ""
+  };
+}
+
+function _attachActionHandlers(div) {
+  const btnChange = div.querySelector(".btn-change");
+  const btnCancel = div.querySelector(".btn-cancel");
+
+  if (btnChange) {
+    btnChange.onclick = () => {
+      const status = div.dataset.status || "draft";
+      if (status !== "sent") return;
+
+      const v = _copyProductValues(div);
+      const newDiv = addProduct({
+        id: _uid(),
+        status: "draft",
+        name: v.name,
+        color: v.color,
+        size: v.size,
+        qty: v.qty,
+        price: v.price
+      }, true);
+
+      const firstInput = newDiv.querySelectorAll("input")[0];
+      if (firstInput) firstInput.focus();
+
+      saveData();
+    };
+  }
+
+  if (btnCancel) {
+    btnCancel.onclick = () => {
+      const status = div.dataset.status || "draft";
+      if (status !== "sent") return;
+      if (!confirm("해당 상품을 취소요청으로 변경할까요?")) return;
+
+      div.dataset.status = "cancel_pending";
+      _applyProductUI(div);
+      calc();
+      saveData();
+    };
+  }
+}
+
+function addProduct(preset, insertAfterRef) {
   const div = document.createElement("div");
   div.className = "product";
+
+  const pid = (preset && preset.id) ? preset.id : _uid();
+  const pstatus = (preset && preset.status) ? preset.status : "draft";
+
+  div.dataset.id = pid;
+  div.dataset.status = pstatus;
+
   div.innerHTML = `
     <div class="field">
       <label>상품명</label>
-      <input placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
+      <div class="product-title-row">
+        <input class="product-name" placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
+        <div class="status-badge status-draft"><span class="sq"></span>미전송</div>
+      </div>
     </div>
     <div class="row">
       <div class="field">
@@ -277,34 +483,78 @@ function addProduct() {
         <input type="number" placeholder="예) 59000">
       </div>
     </div>
+    <div class="product-actions" style="display:none;">
+      <button class="btn-change" type="button">변경</button>
+      <button class="btn-cancel" type="button">취소</button>
+    </div>
   `;
-  div.querySelectorAll("input").forEach(i => {
+
+  const inputs = div.querySelectorAll("input");
+  inputs.forEach(i => {
     i.addEventListener("input", calc);
     i.addEventListener("input", saveData);
   });
-  productsDiv.appendChild(div);
+
+  if (preset) {
+    inputs[0].value = preset.name || "";
+    inputs[1].value = preset.color || "";
+    inputs[2].value = preset.size || "";
+    inputs[3].value = preset.qty != null ? preset.qty : "1";
+    inputs[4].value = preset.price != null ? preset.price : "";
+  }
+
+  if (insertAfterRef && typeof insertAfterRef === "boolean" && insertAfterRef === true) {
+    productsDiv.appendChild(div);
+  } else {
+    productsDiv.appendChild(div);
+  }
+
+  _attachActionHandlers(div);
+  _applyProductUI(div);
+
   calc();
   if (!IS_LOADING) saveData();
+  return div;
 }
 
 function removeLastProduct() {
   const items = document.querySelectorAll(".product");
   if (items.length === 0) return;
-  items[items.length - 1].remove();
+
+  for (let idx = items.length - 1; idx >= 0; idx--) {
+    const st = items[idx].dataset.status || "draft";
+    if (st === "draft") {
+      items[idx].remove();
+      break;
+    }
+  }
+
   calc();
   saveData();
 }
 
 function removeAllProducts() {
   if (!confirm("상품목록을 모두 삭제할까요?")) return;
-  productsDiv.innerHTML = "";
-  addProduct();
+
+  document.querySelectorAll(".product").forEach(p => {
+    const st = p.dataset.status || "draft";
+    if (st === "draft") p.remove();
+  });
+
+  if (!document.querySelector(".product")) {
+    addProduct();
+  }
+
   saveData();
 }
 
 function calc() {
   let sum = 0;
+
   document.querySelectorAll(".product").forEach(p => {
+    const st = p.dataset.status || "draft";
+    if (st !== "draft") return;
+
     const qty = Number(p.querySelectorAll("input")[3].value || 0);
     const price = Number(p.querySelectorAll("input")[4].value || 0);
     sum += qty * price;
@@ -346,10 +596,27 @@ function checkOrder() {
   text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
 
   text += "[상품 정보]\n";
-  document.querySelectorAll(".product").forEach((p, i) => {
-    const inputs = p.querySelectorAll("input");
-    text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
+
+  const pendingItems = [];
+  document.querySelectorAll(".product").forEach(p => {
+    const st = p.dataset.status || "draft";
+    if (st !== "draft" && st !== "cancel_pending") return;
+    pendingItems.push(p);
   });
+
+  if (pendingItems.length === 0) {
+    text += "(미전송/취소요청 상품이 없습니다.)\n";
+  } else {
+    pendingItems.forEach((p, i) => {
+      const inputs = p.querySelectorAll("input");
+      const st = p.dataset.status || "draft";
+      if (st === "draft") {
+        text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
+      } else if (st === "cancel_pending") {
+        text += `${i+1}. [취소요청] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
+      }
+    });
+  }
 
   text += `\n상품합계: ${sumEl.innerText}\n`;
   text += `배송비: ${shippingEl.innerText}\n`;
@@ -378,16 +645,39 @@ async function submitOrder() {
   };
 
   const items = [];
+  const toFinalize = [];
+
   document.querySelectorAll(".product").forEach(p => {
+    const st = p.dataset.status || "draft";
     const i = p.querySelectorAll("input");
-    items.push({
-      productName: i[0].value || "",
-      color: i[1].value || "",
-      size: i[2].value || "",
-      qty: Number(i[3].value || 0),
-      price: Number(i[4].value || 0)
-    });
+
+    if (st === "draft") {
+      items.push({
+        productName: i[0].value || "",
+        color: i[1].value || "",
+        size: i[2].value || "",
+        qty: Number(i[3].value || 0),
+        price: Number(i[4].value || 0)
+      });
+      toFinalize.push({ el: p, nextStatus: "sent" });
+    }
+
+    if (st === "cancel_pending") {
+      items.push({
+        productName: `[취소] ${i[0].value || ""}`.trim(),
+        color: i[1].value || "",
+        size: i[2].value || "",
+        qty: 0,
+        price: 0
+      });
+      toFinalize.push({ el: p, nextStatus: "canceled" });
+    }
   });
+
+  if (items.length === 0) {
+    alert("미전송/취소요청 상품이 없습니다.");
+    return;
+  }
 
   const payload = {
     orderTime: kstNowString(),
@@ -422,6 +712,14 @@ async function submitOrder() {
         keepalive: true
       });
     }
+
+    toFinalize.forEach(x => {
+      x.el.dataset.status = x.nextStatus;
+      _applyProductUI(x.el);
+    });
+
+    calc();
+    saveData();
 
     alert("주문이 정상적으로 접수되었습니다.");
   } catch (e) {
@@ -458,6 +756,8 @@ function saveData() {
   document.querySelectorAll(".product").forEach(p => {
     const i = p.querySelectorAll("input");
     data.products.push({
+      id: p.dataset.id || _uid(),
+      status: p.dataset.status || "draft",
       name: i[0].value,
       color: i[1].value,
       size: i[2].value,
@@ -482,14 +782,16 @@ function loadData() {
   document.getElementById("addressDetail").value = data.customer.addressDetail || "";
 
   productsDiv.innerHTML = "";
-  data.products.forEach(p => {
-    addProduct();
-    const last = productsDiv.lastElementChild.querySelectorAll("input");
-    last[0].value = p.name;
-    last[1].value = p.color;
-    last[2].value = p.size;
-    last[3].value = p.qty;
-    last[4].value = p.price;
+  (data.products || []).forEach(p => {
+    addProduct({
+      id: p.id || _uid(),
+      status: p.status || "draft",
+      name: p.name,
+      color: p.color,
+      size: p.size,
+      qty: p.qty,
+      price: p.price
+    }, true);
   });
 
   calc();
