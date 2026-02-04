@@ -83,19 +83,19 @@ button {
   margin-top: 12px;
 }
 
-/* 🔥 핵심 수정: gap 고려한 정확한 3등분 */
+/* gap 고려한 정확한 3등분 */
 .button-line-3 button {
   flex: 0 0 calc((100% - 16px) / 3);
   max-width: calc((100% - 16px) / 3);
 }
 
-/* 버튼 색상 */
-.btn-add { background:#2f5bea; color:#fff; }
-.btn-clear { background:#2ecc71; color:#fff; }
-.btn-delete { background:#e74c3c; color:#fff; }
+/* 🎨 버튼 색상 (싸U 로고 기준) */
+.btn-add { background:#005FAE; color:#fff; }          /* 싸U 파랑 */
+.btn-delete { background:#e74c3c; color:#fff; }      /* 진한 빨강 */
+.btn-clear { background:#F26A6A; color:#fff; }       /* 연한 빨강 */
 
-.btn-check { background:#2f5bea; color:#fff; }
-.btn-submit { background:#2ecc71; color:#fff; }
+.btn-check { background:#005FAE; color:#fff; }       /* 싸U 파랑 */
+.btn-submit { background:#4A8FD8; color:#fff; }     /* 연한 파랑 */
 .btn-new { background:#e74c3c; color:#fff; }
 
 /* 합계 */
@@ -134,7 +134,7 @@ button {
 }
 
 .copy-btn {
-  background: #2f5bea;
+  background: #005FAE;
   color: #fff;
   font-size: 12px;
   padding: 6px 10px;
@@ -160,7 +160,6 @@ button {
   <div class="section-title">상품 정보</div>
   <div id="products"></div>
 
-  <!-- 상품 버튼 3개 한 줄 -->
   <div class="button-line-3">
     <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
     <button class="btn-delete" onclick="removeLastProduct()">↑ 상품 삭제</button>
@@ -184,7 +183,6 @@ button {
   </div>
 </div>
 
-<!-- 하단 버튼 -->
 <div class="button-line-3">
   <button class="btn-check" onclick="checkOrder()">주문서 확인</button>
   <button class="btn-submit" onclick="submitOrder()">주문 완료</button>
