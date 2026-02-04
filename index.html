@@ -1,286 +1,133 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>싸U 셀프 정산 주문서</title>
 
 <style>
+:root {
+  --sau-blue: #0A5AA8;   /* 싸U 로고 파랑 */
+  --gray: #E0E0E0;
+  --gray-text: #333;
+}
+
 body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f7f7f7;
   margin: 0;
   padding: 16px;
-  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
   background: #fff;
-  color: #111;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-h1 {
-  text-align: center;
-  font-size: 20px;
-  margin-bottom: 24px;
+h2 {
+  margin-top: 0;
+  font-size: 18px;
 }
 
-.section {
-  margin-bottom: 28px;
-}
-
-.section-title {
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 10px;
-  color: #0b1e3c;
-}
-
-.field {
-  margin-bottom: 12px;
-}
-
-label {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 4px;
-}
-
-input {
-  width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-sizing: border-box;
-}
-
-/* 상품 */
-.product {
-  border-top: 1px solid #eee;
-  padding-top: 12px;
-  margin-top: 12px;
-}
-
-.row {
-  display: flex;
-  gap: 8px;
-}
-
-.row .field {
-  flex: 1;
-}
-
-/* 버튼 기본 */
+/* 공통 버튼 */
 button {
-  padding: 12px 14px;
-  font-size: 14px;
-  border-radius: 8px;
   border: none;
+  border-radius: 8px;
+  padding: 12px 6px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
 }
 
-/* 3등분 버튼 라인 */
+/* ───────── 3버튼 한 줄 ───────── */
 .button-line-3 {
   display: flex;
-  justify-content: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-bottom: 16px;
 }
 
-/* gap 고려한 정확한 3등분 */
 .button-line-3 button {
   flex: 0 0 calc((100% - 16px) / 3);
   max-width: calc((100% - 16px) / 3);
 }
 
-/* 🎨 버튼 색상 (싸U 로고 기준) */
-.btn-add { background:#005FAE; color:#fff; }          /* 싸U 파랑 */
-.btn-delete { background:#e74c3c; color:#fff; }      /* 진한 빨강 */
-.btn-clear { background:#F26A6A; color:#fff; }       /* 연한 빨강 */
-
-.btn-check { background:#005FAE; color:#fff; }       /* 싸U 파랑 */
-.btn-submit { background:#4A8FD8; color:#fff; }     /* 연한 파랑 */
-.btn-new { background:#e74c3c; color:#fff; }
-
-/* 합계 */
-.summary {
-  border-top: 1px solid #eee;
-  padding-top: 14px;
+/* 버튼 색상 */
+.btn-add {
+  background: var(--sau-blue);
+  color: #fff;
 }
 
-.summary-line {
+.btn-delete-list {
+  background: var(--gray);
+  color: var(--gray-text);
+}
+
+/* 하단 버튼 */
+.button-line-2 {
   display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  margin: 6px 0;
-}
-
-.summary-total {
-  font-weight: 700;
-  font-size: 16px;
-}
-
-/* 계좌 */
-.account-box {
-  display: flex;
-  align-items: center;
-  background: #f4f7ff;
-  border: 1px solid #d6e0ff;
-  border-radius: 8px;
-  padding: 10px;
   gap: 8px;
+  margin-top: 20px;
 }
 
-.account-text {
-  font-size: 14px;
-  white-space: nowrap;
+.button-line-2 button {
   flex: 1;
 }
 
-.copy-btn {
-  background: #005FAE;
+.btn-check {
+  background: var(--gray);
+  color: var(--gray-text);
+}
+
+.btn-submit {
+  background: var(--sau-blue);
   color: #fff;
-  font-size: 12px;
-  padding: 6px 10px;
+}
+
+/* 입력 */
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  margin-bottom: 12px;
   border-radius: 6px;
-  border: none;
+  border: 1px solid #ccc;
+  font-size: 14px;
 }
 </style>
 </head>
 
 <body>
+<div class="container">
 
-<h1>싸U 셀프 정산 주문서</h1>
+  <h2>싸U 셀프 정산 주문서</h2>
 
-<div class="section">
-  <div class="section-title">고객 정보</div>
-  <div class="field"><label>닉네임</label><input id="nickname"></div>
-  <div class="field"><label>이름</label><input id="name"></div>
-  <div class="field"><label>연락처</label><input id="phone"></div>
-  <div class="field"><label>주소</label><input id="address"></div>
-</div>
-
-<div class="section">
-  <div class="section-title">상품 정보</div>
-  <div id="products"></div>
-
+  <!-- 상품 관리 버튼 -->
   <div class="button-line-3">
-    <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
-    <button class="btn-delete" onclick="removeLastProduct()">↑ 상품 삭제</button>
-    <button class="btn-clear" onclick="removeAllProducts()">- 상품목록 삭제</button>
+    <button class="btn-add">+ 상품추가</button>
+    <button class="btn-delete-list">- 상품목록 삭제</button>
   </div>
-</div>
 
-<div class="section summary">
-  <div class="summary-line"><span>상품 합계</span><span id="sum">0원</span></div>
-  <div class="summary-line"><span>배송비</span><span id="shipping">4,000원</span></div>
-  <div class="summary-line summary-total"><span>총 결제금액</span><span id="total">4,000원</span></div>
-</div>
+  <!-- 주문 정보 -->
+  <label>닉네임</label>
+  <input type="text" placeholder="닉네임 입력" />
 
-<div class="section">
-  <div class="section-title">입금 계좌</div>
-  <div class="account-box">
-    <div class="account-text" id="accountText">
-      카카오뱅크 3333-09797-1111 유혜정(유세연)
-    </div>
-    <button class="copy-btn" onclick="copyAccount()">복사</button>
+  <label>연락처</label>
+  <input type="tel" placeholder="010-0000-0000" />
+
+  <label>주소</label>
+  <input type="text" placeholder="배송 주소 입력" />
+
+  <!-- 하단 버튼 -->
+  <div class="button-line-2">
+    <button class="btn-check">주문서 확인</button>
+    <button class="btn-submit">주문 완료</button>
   </div>
+
 </div>
-
-<div class="button-line-3">
-  <button class="btn-check" onclick="checkOrder()">주문서 확인</button>
-  <button class="btn-submit" onclick="submitOrder()">주문 완료</button>
-  <button class="btn-new" onclick="newOrder()">새 주문</button>
-</div>
-
-<script>
-const SHIPPING = 4000;
-const productsDiv = document.getElementById("products");
-
-function addProduct() {
-  const div = document.createElement("div");
-  div.className = "product";
-  div.innerHTML = `
-    <div class="field"><label>상품명</label><input></div>
-    <div class="row">
-      <div class="field"><label>색상</label><input></div>
-      <div class="field"><label>사이즈</label><input></div>
-    </div>
-    <div class="row">
-      <div class="field"><label>수량</label><input type="number" value="1"></div>
-      <div class="field"><label>가격</label><input type="number"></div>
-    </div>
-  `;
-  div.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
-  productsDiv.appendChild(div);
-  calc();
-}
-
-function removeLastProduct() {
-  const items = document.querySelectorAll(".product");
-  if (items.length === 0) return;
-  items[items.length - 1].remove();
-  calc();
-}
-
-function removeAllProducts() {
-  if (!confirm("상품목록을 모두 삭제할까요?")) return;
-  productsDiv.innerHTML = "";
-  addProduct();
-}
-
-function calc() {
-  let sum = 0;
-  document.querySelectorAll(".product").forEach(p => {
-    const qty = Number(p.querySelectorAll("input")[3].value || 0);
-    const price = Number(p.querySelectorAll("input")[4].value || 0);
-    sum += qty * price;
-  });
-
-  let shipping = sum >= 100000 ? 0 : SHIPPING;
-
-  sumEl.innerText = sum.toLocaleString() + "원";
-  shippingEl.innerText = shipping.toLocaleString() + "원";
-  totalEl.innerText = (sum + shipping).toLocaleString() + "원";
-}
-
-const sumEl = document.getElementById("sum");
-const shippingEl = document.getElementById("shipping");
-const totalEl = document.getElementById("total");
-
-function copyAccount() {
-  navigator.clipboard.writeText(accountText.innerText);
-  alert("계좌번호가 복사되었습니다.");
-}
-
-function checkOrder() {
-  let text = "[고객 정보]\n";
-  text += `닉네임: ${nickname.value}\n`;
-  text += `이름: ${name.value}\n`;
-  text += `연락처: ${phone.value}\n`;
-  text += `주소: ${address.value}\n\n`;
-
-  text += "[상품 정보]\n";
-  document.querySelectorAll(".product").forEach((p, i) => {
-    const inputs = p.querySelectorAll("input");
-    text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
-  });
-
-  text += `\n상품합계: ${sumEl.innerText}\n`;
-  text += `배송비: ${shippingEl.innerText}\n`;
-  text += `총 결제금액: ${totalEl.innerText}\n\n`;
-  text += "위 내용이 맞으면 주문 완료를 눌러주세요.";
-
-  alert(text);
-}
-
-function submitOrder() {
-  if (!confirm("주문을 완료하시겠습니까?")) return;
-  alert("주문이 정상적으로 접수되었습니다.");
-}
-
-function newOrder() {
-  if (confirm("새 주문을 시작할까요?")) location.reload();
-}
-
-addProduct();
-</script>
-
 </body>
 </html>
