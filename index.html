@@ -329,8 +329,8 @@ function copyAccount() {
 function searchAddress() {
   new daum.Postcode({
     oncomplete: function(data) {
-      address.value = data.address;
-      addressDetail.focus();
+      document.getElementById("address").value = data.address;
+      document.getElementById("addressDetail").focus();
       saveData();
     }
   }).open();
@@ -444,11 +444,11 @@ function newOrder() {
 function saveData() {
   const data = {
     customer: {
-      nickname: nickname.value,
-      name: name.value,
-      phone: phone.value,
-      address: address.value,
-      addressDetail: addressDetail.value
+      nickname: document.getElementById("nickname").value,
+      name: document.getElementById("name").value,
+      phone: document.getElementById("phone").value,
+      address: document.getElementById("address").value,
+      addressDetail: document.getElementById("addressDetail").value
     },
     products: []
   };
@@ -471,11 +471,11 @@ function loadData() {
   const data = JSON.parse(localStorage.getItem("orderData") || "null");
   if (!data) return;
 
-  nickname.value = data.customer.nickname || "";
-  name.value = data.customer.name || "";
-  phone.value = data.customer.phone || "";
-  address.value = data.customer.address || "";
-  addressDetail.value = data.customer.addressDetail || "";
+  document.getElementById("nickname").value = data.customer.nickname || "";
+  document.getElementById("name").value = data.customer.name || "";
+  document.getElementById("phone").value = data.customer.phone || "";
+  document.getElementById("address").value = data.customer.address || "";
+  document.getElementById("addressDetail").value = data.customer.addressDetail || "";
 
   productsDiv.innerHTML = "";
   data.products.forEach(p => {
