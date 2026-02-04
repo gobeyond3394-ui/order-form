@@ -60,7 +60,6 @@ input::placeholder {
   color: #999;
 }
 
-/* 주소 라인 */
 .address-row {
   display: flex;
   gap: 8px;
@@ -81,7 +80,6 @@ input::placeholder {
   white-space: nowrap;
 }
 
-/* 상품 */
 .product {
   border-top: 1px solid #eee;
   padding-top: 12px;
@@ -97,7 +95,6 @@ input::placeholder {
   flex: 1;
 }
 
-/* 버튼 */
 button {
   padding: 12px 14px;
   font-size: 14px;
@@ -127,7 +124,6 @@ button {
 .btn-submit { background:#005FAE; color:#fff; }
 .btn-new { background:#e74c3c; color:#fff; }
 
-/* 합계 */
 .summary {
   border-top: 1px solid #eee;
   padding-top: 14px;
@@ -146,7 +142,6 @@ button {
   color: #005FAE;
 }
 
-/* 계좌 */
 .account-box {
   display: flex;
   align-items: center;
@@ -280,9 +275,13 @@ function addProduct() {
       </div>
     </div>
   `;
-  div.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
+  div.querySelectorAll("input").forEach(i => {
+    i.addEventListener("input", calc);
+    i.addEventListener("input", saveData);
+  });
   productsDiv.appendChild(div);
   calc();
+  saveData();
 }
 
 function removeLastProduct() {
@@ -290,12 +289,14 @@ function removeLastProduct() {
   if (items.length === 0) return;
   items[items.length - 1].remove();
   calc();
+  saveData();
 }
 
 function removeAllProducts() {
   if (!confirm("상품목록을 모두 삭제할까요?")) return;
   productsDiv.innerHTML = "";
   addProduct();
+  saveData();
 }
 
 function calc() {
@@ -329,6 +330,7 @@ function searchAddress() {
     oncomplete: function(data) {
       address.value = data.address;
       addressDetail.focus();
+      saveData();
     }
   }).open();
 }
@@ -360,10 +362,69 @@ function submitOrder() {
 }
 
 function newOrder() {
-  if (confirm("새 주문을 시작할까요?")) location.reload();
+  if (confirm("새 주문을 시작할까요?")) {
+    localStorage.removeItem("orderData");
+    location.reload();
+  }
 }
 
-addProduct();
+/* 🔹 자동 저장 / 복원 (추가 코드) */
+function saveData() {
+  const data = {
+    customer: {
+      nickname: nickname.value,
+      name: name.value,
+      phone: phone.value,
+      address: address.value,
+      addressDetail: addressDetail.value
+    },
+    products: []
+  };
+
+  document.querySelectorAll(".product").forEach(p => {
+    const i = p.querySelectorAll("input");
+    data.products.push({
+      name: i[0].value,
+      color: i[1].value,
+      size: i[2].value,
+      qty: i[3].value,
+      price: i[4].value
+    });
+  });
+
+  localStorage.setItem("orderData", JSON.stringify(data));
+}
+
+function loadData() {
+  const data = JSON.parse(localStorage.getItem("orderData") || "null");
+  if (!data) return;
+
+  nickname.value = data.customer.nickname || "";
+  name.value = data.customer.name || "";
+  phone.value = data.customer.phone || "";
+  address.value = data.customer.address || "";
+  addressDetail.value = data.customer.addressDetail || "";
+
+  productsDiv.innerHTML = "";
+  data.products.forEach(p => {
+    addProduct();
+    const last = productsDiv.lastElementChild.querySelectorAll("input");
+    last[0].value = p.name;
+    last[1].value = p.color;
+    last[2].value = p.size;
+    last[3].value = p.qty;
+    last[4].value = p.price;
+  });
+
+  calc();
+}
+
+["nickname","name","phone","addressDetail"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", saveData);
+});
+
+loadData();
+if (!document.querySelector(".product")) addProduct();
 </script>
 
 </body>
