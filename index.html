@@ -56,6 +56,10 @@ input {
   box-sizing: border-box;
 }
 
+input::placeholder {
+  color: #999;
+}
+
 /* 주소 라인 */
 .address-row {
   display: flex;
@@ -93,7 +97,7 @@ input {
   flex: 1;
 }
 
-/* 버튼 기본 */
+/* 버튼 */
 button {
   padding: 12px 14px;
   font-size: 14px;
@@ -103,7 +107,6 @@ button {
   cursor: pointer;
 }
 
-/* 3등분 버튼 라인 */
 .button-line-3 {
   display: flex;
   justify-content: center;
@@ -116,7 +119,6 @@ button {
   max-width: calc((100% - 16px) / 3);
 }
 
-/* 버튼 색상 */
 .btn-add { background:#005FAE; color:#fff; }
 .btn-delete { background:#e74c3c; color:#fff; }
 .btn-clear { background:#E0E0E0; color:#333; }
@@ -172,7 +174,6 @@ button {
 }
 </style>
 
-<!-- 다음(카카오) 주소검색 -->
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 </head>
 
@@ -184,9 +185,20 @@ button {
   <div class="section-title">고객 정보</div>
   <div class="divider"></div>
 
-  <div class="field"><label>닉네임</label><input id="nickname"></div>
-  <div class="field"><label>이름</label><input id="name"></div>
-  <div class="field"><label>연락처</label><input id="phone"></div>
+  <div class="field">
+    <label>닉네임</label>
+    <input id="nickname" placeholder="예) GO비욘드">
+  </div>
+
+  <div class="field">
+    <label>이름</label>
+    <input id="name" placeholder="예) 홍길동">
+  </div>
+
+  <div class="field">
+    <label>연락처</label>
+    <input id="phone" placeholder="예) 010-1234-5678">
+  </div>
 
   <div class="field">
     <label>주소</label>
@@ -198,7 +210,7 @@ button {
 
   <div class="field">
     <label>상세주소</label>
-    <input id="addressDetail" placeholder="동 / 호수 / 상세주소 입력">
+    <input id="addressDetail" placeholder="예) 101동 1203호">
   </div>
 </div>
 
@@ -243,14 +255,29 @@ function addProduct() {
   const div = document.createElement("div");
   div.className = "product";
   div.innerHTML = `
-    <div class="field"><label>상품명</label><input></div>
-    <div class="row">
-      <div class="field"><label>색상</label><input></div>
-      <div class="field"><label>사이즈</label><input></div>
+    <div class="field">
+      <label>상품명</label>
+      <input placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
     </div>
     <div class="row">
-      <div class="field"><label>수량</label><input type="number" value="1"></div>
-      <div class="field"><label>가격</label><input type="number"></div>
+      <div class="field">
+        <label>색상</label>
+        <input placeholder="예) 블랙 / 검정">
+      </div>
+      <div class="field">
+        <label>사이즈</label>
+        <input placeholder="예) L / 라지 / 100">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>수량</label>
+        <input type="number" value="1" placeholder="1">
+      </div>
+      <div class="field">
+        <label>가격</label>
+        <input type="number" placeholder="예) 59000">
+      </div>
     </div>
   `;
   div.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
@@ -290,7 +317,6 @@ const sumEl = document.getElementById("sum");
 const shippingEl = document.getElementById("shipping");
 const totalEl = document.getElementById("total");
 
-/* 계좌번호만 복사 */
 function copyAccount() {
   const text = accountText.innerText;
   const accountNumberOnly = text.replace(/[^0-9]/g, "");
@@ -298,7 +324,6 @@ function copyAccount() {
   alert("계좌번호만 복사되었습니다.");
 }
 
-/* 주소검색 */
 function searchAddress() {
   new daum.Postcode({
     oncomplete: function(data) {
