@@ -60,7 +60,7 @@ input::placeholder {
   color: #999;
 }
 
-/* 주소 */
+/* 주소 라인 */
 .address-row {
   display: flex;
   gap: 8px;
@@ -116,6 +116,7 @@ button {
 
 .button-line-3 button {
   flex: 0 0 calc((100% - 16px) / 3);
+  max-width: calc((100% - 16px) / 3);
 }
 
 .btn-add { background:#005FAE; color:#fff; }
@@ -184,9 +185,20 @@ button {
   <div class="section-title">고객 정보</div>
   <div class="divider"></div>
 
-  <div class="field"><label>닉네임</label><input id="nickname" placeholder="예) 싸U현민"></div>
-  <div class="field"><label>이름</label><input id="name" placeholder="예) 홍길동"></div>
-  <div class="field"><label>연락처</label><input id="phone" placeholder="예) 010-1234-5678"></div>
+  <div class="field">
+    <label>닉네임</label>
+    <input id="nickname" placeholder="예) GO비욘드">
+  </div>
+
+  <div class="field">
+    <label>이름</label>
+    <input id="name" placeholder="예) 홍길동">
+  </div>
+
+  <div class="field">
+    <label>연락처</label>
+    <input id="phone" placeholder="예) 010-1234-5678">
+  </div>
 
   <div class="field">
     <label>주소</label>
@@ -222,7 +234,9 @@ button {
 <div class="section">
   <div class="section-title">입금 계좌</div>
   <div class="account-box">
-    <div class="account-text" id="accountText">카카오뱅크 3333-09797-1111 유혜정(유세연)</div>
+    <div class="account-text" id="accountText">
+      카카오뱅크 3333-09797-1111 유혜정(유세연)
+    </div>
     <button class="copy-btn" onclick="copyAccount()">복사</button>
   </div>
 </div>
@@ -237,30 +251,33 @@ button {
 const SHIPPING = 4000;
 const productsDiv = document.getElementById("products");
 
-const nickname = document.getElementById("nickname");
-const nameEl = document.getElementById("name");
-const phone = document.getElementById("phone");
-const address = document.getElementById("address");
-const addressDetail = document.getElementById("addressDetail");
-
-const sumEl = document.getElementById("sum");
-const shippingEl = document.getElementById("shipping");
-const totalEl = document.getElementById("total");
-
 function addProduct() {
   const div = document.createElement("div");
   div.className = "product";
   div.innerHTML = `
-    <div class="field"><label>상품명</label>
-      <input placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티">
+    <div class="field">
+      <label>상품명</label>
+      <input placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
     </div>
     <div class="row">
-      <div class="field"><label>색상</label><input placeholder="예) 블랙"></div>
-      <div class="field"><label>사이즈</label><input placeholder="예) L"></div>
+      <div class="field">
+        <label>색상</label>
+        <input placeholder="예) 블랙 / 검정">
+      </div>
+      <div class="field">
+        <label>사이즈</label>
+        <input placeholder="예) L / 라지 / 100">
+      </div>
     </div>
     <div class="row">
-      <div class="field"><label>수량</label><input type="number" value="1"></div>
-      <div class="field"><label>가격</label><input type="number" placeholder="예) 129000"></div>
+      <div class="field">
+        <label>수량</label>
+        <input type="number" value="1" placeholder="1">
+      </div>
+      <div class="field">
+        <label>가격</label>
+        <input type="number" placeholder="예) 59000">
+      </div>
     </div>
   `;
   div.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
@@ -270,7 +287,8 @@ function addProduct() {
 
 function removeLastProduct() {
   const items = document.querySelectorAll(".product");
-  if (items.length) items[items.length - 1].remove();
+  if (items.length === 0) return;
+  items[items.length - 1].remove();
   calc();
 }
 
@@ -283,51 +301,57 @@ function removeAllProducts() {
 function calc() {
   let sum = 0;
   document.querySelectorAll(".product").forEach(p => {
-    const i = p.querySelectorAll("input");
-    sum += (i[3].value || 0) * (i[4].value || 0);
+    const qty = Number(p.querySelectorAll("input")[3].value || 0);
+    const price = Number(p.querySelectorAll("input")[4].value || 0);
+    sum += qty * price;
   });
-  const shipping = sum >= 100000 ? 0 : SHIPPING;
+
+  let shipping = sum >= 100000 ? 0 : SHIPPING;
+
   sumEl.innerText = sum.toLocaleString() + "원";
   shippingEl.innerText = shipping.toLocaleString() + "원";
   totalEl.innerText = (sum + shipping).toLocaleString() + "원";
 }
 
+const sumEl = document.getElementById("sum");
+const shippingEl = document.getElementById("shipping");
+const totalEl = document.getElementById("total");
+
 function copyAccount() {
-  navigator.clipboard.writeText("3333097971111");
+  const text = accountText.innerText;
+  const accountNumberOnly = text.replace(/[^0-9]/g, "");
+  navigator.clipboard.writeText(accountNumberOnly);
   alert("계좌번호만 복사되었습니다.");
 }
 
 function searchAddress() {
   new daum.Postcode({
-    oncomplete: d => {
-      address.value = d.address;
+    oncomplete: function(data) {
+      address.value = data.address;
       addressDetail.focus();
     }
   }).open();
 }
 
 function checkOrder() {
-  let text = `[고객 정보]
-닉네임: ${nickname.value}
-이름: ${nameEl.value}
-연락처: ${phone.value}
-주소: ${address.value} ${addressDetail.value}
+  let text = "[고객 정보]\n";
+  text += `닉네임: ${document.getElementById("nickname").value}\n`;
+  text += `이름: ${document.getElementById("name").value}\n`;
+  text += `연락처: ${document.getElementById("phone").value}\n`;
+  text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
 
-[상품 정보]
-`;
-
+  text += "[상품 정보]\n";
   document.querySelectorAll(".product").forEach((p, i) => {
-    const v = p.querySelectorAll("input");
-    text += `${i+1}. ${v[0].value} / ${v[1].value} / ${v[2].value} / ${v[3].value}개 / ${v[4].value}원\n`;
+    const inputs = p.querySelectorAll("input");
+    text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
   });
 
-  text += `\n상품합계: ${sumEl.innerText}
-배송비: ${shippingEl.innerText}
-총 결제금액: ${totalEl.innerText}`;
+  text += `\n상품합계: ${sumEl.innerText}\n`;
+  text += `배송비: ${shippingEl.innerText}\n`;
+  text += `총 결제금액: ${totalEl.innerText}\n\n`;
+  text += "위 내용이 맞으면 주문 완료를 눌러주세요.";
 
-  navigator.clipboard.writeText(text).then(() => {
-    alert("📋 주문 내용이 복사되었습니다.\n카카오톡에 붙여넣기 해주세요.");
-  });
+  alert(text);
 }
 
 function submitOrder() {
@@ -336,9 +360,7 @@ function submitOrder() {
 }
 
 function newOrder() {
-  if (!confirm("상품만 초기화하고 새 주문을 시작할까요?")) return;
-  productsDiv.innerHTML = "";
-  addProduct();
+  if (confirm("새 주문을 시작할까요?")) location.reload();
 }
 
 addProduct();
