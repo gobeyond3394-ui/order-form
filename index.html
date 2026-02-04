@@ -1,91 +1,53 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>싸U 셀프 정산 주문서</title>
+
+<!-- 다음 주소 검색 -->
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
 <style>
 body {
+  font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+  background: #f5f5f5;
   margin: 0;
   padding: 16px;
-  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+
+.container {
   background: #fff;
-  color: #111;
+  border-radius: 12px;
+  padding: 16px;
+  max-width: 480px;
+  margin: auto;
 }
 
-h1 {
-  text-align: center;
-  font-size: 20px;
-  margin-bottom: 24px;
-  color: #005FAE;
-}
-
-.section {
-  margin-bottom: 28px;
+h2 {
+  color: #1e88e5;
+  margin-bottom: 8px;
 }
 
 .section-title {
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 10px;
-  color: #005FAE;
+  font-weight: bold;
+  font-size: 16px;
+  margin: 16px 0 8px;
+  color: #000;
 }
 
-.divider {
-  border-top: 1px solid #eee;
-  margin: 12px 0 16px;
-}
-
-.field {
-  margin-bottom: 12px;
-}
-
-label {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 4px;
+hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 12px 0;
 }
 
 input {
   width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-sizing: border-box;
-}
-
-input::placeholder {
-  color: #999;
-}
-
-/* 주소 라인 */
-.address-row {
-  display: flex;
-  gap: 8px;
-}
-
-.address-row input {
-  flex: 1;
-}
-
-.addr-btn {
-  background:#005FAE;
-  color:#fff;
-  font-weight:700;
-  border:none;
-  border-radius:6px;
-  padding:12px 14px;
-  cursor:pointer;
-  white-space: nowrap;
-}
-
-/* 상품 */
-.product {
-  border-top: 1px solid #eee;
-  padding-top: 12px;
-  margin-top: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
 }
 
 .row {
@@ -93,278 +55,189 @@ input::placeholder {
   gap: 8px;
 }
 
-.row .field {
-  flex: 1;
-}
-
-/* 버튼 */
 button {
-  padding: 12px 14px;
-  font-size: 14px;
-  font-weight: 700;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 10px;
   border: none;
+  font-weight: bold;
   cursor: pointer;
 }
 
-.button-line-3 {
+.btn-blue {
+  background: #1e88e5;
+  color: #fff;
+}
+
+.btn-gray {
+  background: #e0e0e0;
+  color: #000;
+}
+
+.btn-red {
+  background: #f8d7da;
+  color: #000;
+}
+
+.btn-row {
   display: flex;
-  justify-content: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
-.button-line-3 button {
-  flex: 0 0 calc((100% - 16px) / 3);
-  max-width: calc((100% - 16px) / 3);
-}
-
-.btn-add { background:#005FAE; color:#fff; }
-.btn-delete { background:#e74c3c; color:#fff; }
-.btn-clear { background:#E0E0E0; color:#333; }
-
-.btn-check { background:#E0E0E0; color:#333; }
-.btn-submit { background:#005FAE; color:#fff; }
-.btn-new { background:#e74c3c; color:#fff; }
-
-/* 합계 */
-.summary {
-  border-top: 1px solid #eee;
-  padding-top: 14px;
-}
-
-.summary-line {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  margin: 6px 0;
-}
-
-.summary-total {
-  font-weight: 700;
-  font-size: 16px;
-  color: #005FAE;
-}
-
-/* 계좌 */
-.account-box {
-  display: flex;
-  align-items: center;
-  background: #f4f7ff;
-  border: 1px solid #d6e0ff;
-  border-radius: 8px;
-  padding: 10px;
-  gap: 8px;
-}
-
-.account-text {
-  font-size: 14px;
-  white-space: nowrap;
+.btn-row button {
   flex: 1;
 }
 
-.copy-btn {
-  background: #005FAE;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: none;
+.total {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1e88e5;
+  margin-top: 12px;
+}
+
+.copy-box {
+  background: #f1f1f1;
+  padding: 12px;
+  border-radius: 8px;
+  white-space: pre-line;
+  font-size: 14px;
 }
 </style>
-
-<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 </head>
 
 <body>
+<div class="container">
 
-<h1>싸U 셀프 정산 주문서</h1>
+<h2>싸U 셀프 정산 주문서</h2>
 
-<div class="section">
-  <div class="section-title">고객 정보</div>
-  <div class="divider"></div>
+<div class="section-title">고객 정보</div>
+<hr>
 
-  <div class="field">
-    <label>닉네임</label>
-    <input id="nickname" placeholder="예) GO비욘드">
-  </div>
-
-  <div class="field">
-    <label>이름</label>
-    <input id="name" placeholder="예) 홍길동">
-  </div>
-
-  <div class="field">
-    <label>연락처</label>
-    <input id="phone" placeholder="예) 010-1234-5678">
-  </div>
-
-  <div class="field">
-    <label>주소</label>
-    <div class="address-row">
-      <input id="address" placeholder="주소검색 버튼을 눌러주세요" readonly>
-      <button class="addr-btn" onclick="searchAddress()">주소검색</button>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>상세주소</label>
-    <input id="addressDetail" placeholder="예) 101동 1203호">
-  </div>
+<div class="row">
+  <input id="nickname" placeholder="닉네임" />
+  <input id="name" placeholder="이름" />
 </div>
 
-<div class="section">
-  <div class="section-title">상품 정보</div>
-  <div id="products"></div>
+<input id="phone" placeholder="연락처" />
 
-  <div class="button-line-3">
-    <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
-    <button class="btn-delete" onclick="removeLastProduct()">↑ 상품 삭제</button>
-    <button class="btn-clear" onclick="removeAllProducts()">- 상품목록 삭제</button>
-  </div>
+<div class="row">
+  <input id="address" placeholder="주소" readonly />
+  <button class="btn-gray" onclick="searchAddress()">주소검색</button>
 </div>
 
-<div class="section summary">
-  <div class="summary-line"><span>상품 합계</span><span id="sum">0원</span></div>
-  <div class="summary-line"><span>배송비</span><span id="shipping">4,000원</span></div>
-  <div class="summary-line summary-total"><span>총 결제금액</span><span id="total">4,000원</span></div>
+<input id="detailAddress" placeholder="상세주소" />
+
+<div class="section-title">상품 정보</div>
+<hr>
+
+<div id="productList"></div>
+
+<div class="btn-row">
+  <button class="btn-blue" onclick="addProduct()">+ 상품추가</button>
+  <button class="btn-gray" onclick="clearProducts()">- 상품목록 삭제</button>
 </div>
 
-<div class="section">
-  <div class="section-title">입금 계좌</div>
-  <div class="account-box">
-    <div class="account-text" id="accountText">
-      카카오뱅크 3333-09797-1111 유혜정(유세연)
-    </div>
-    <button class="copy-btn" onclick="copyAccount()">복사</button>
-  </div>
+<div class="total">총 결제금액: <span id="totalPrice">0</span>원</div>
+
+<div class="section-title">입금계좌</div>
+<div class="copy-box">
+카카오뱅크 3333-09797-1111  
+유혜정(유세연)
 </div>
 
-<div class="button-line-3">
-  <button class="btn-check" onclick="checkOrder()">주문서 확인</button>
-  <button class="btn-submit" onclick="submitOrder()">주문 완료</button>
-  <button class="btn-new" onclick="newOrder()">새 주문</button>
+<div class="btn-row">
+  <button class="btn-gray" onclick="showConfirm()">주문서 확인</button>
+  <button class="btn-blue" onclick="completeOrder()">주문 완료</button>
+</div>
+
+<div id="confirmArea" style="display:none; margin-top:12px;">
+  <div class="copy-box" id="confirmText"></div>
+  <button class="btn-blue" style="margin-top:8px;" onclick="copyConfirm()">📋 주문내용 복사</button>
+</div>
+
 </div>
 
 <script>
-const SHIPPING = 4000;
-const productsDiv = document.getElementById("products");
+/* ---------- 고객정보 자동 저장 ---------- */
+const fields = ["nickname","name","phone","address","detailAddress"];
+fields.forEach(id=>{
+  const el = document.getElementById(id);
+  el.value = localStorage.getItem(id) || "";
+  el.addEventListener("input",()=>localStorage.setItem(id, el.value));
+});
+
+/* ---------- 상품 ---------- */
+let products = [];
 
 function addProduct() {
-  const div = document.createElement("div");
-  div.className = "product";
-  div.innerHTML = `
-    <div class="field">
-      <label>상품명</label>
-      <input placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>색상</label>
-        <input placeholder="예) 블랙 / 검정">
-      </div>
-      <div class="field">
-        <label>사이즈</label>
-        <input placeholder="예) L / 라지 / 100">
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>수량</label>
-        <input type="number" value="1" placeholder="1">
-      </div>
-      <div class="field">
-        <label>가격</label>
-        <input type="number" placeholder="예) 59000">
-      </div>
-    </div>
-  `;
-  div.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
-  productsDiv.appendChild(div);
-  calc();
+  products.push({name:"", price:0});
+  renderProducts();
 }
 
-function removeLastProduct() {
-  const items = document.querySelectorAll(".product");
-  if (items.length === 0) return;
-  items[items.length - 1].remove();
-  calc();
+function clearProducts() {
+  products = [];
+  renderProducts();
+  updateTotal();
 }
 
-function removeAllProducts() {
-  if (!confirm("상품목록을 모두 삭제할까요?")) return;
-  productsDiv.innerHTML = "";
-  addProduct();
-}
-
-function calc() {
-  let sum = 0;
-  document.querySelectorAll(".product").forEach(p => {
-    const qty = Number(p.querySelectorAll("input")[3].value || 0);
-    const price = Number(p.querySelectorAll("input")[4].value || 0);
-    sum += qty * price;
+function renderProducts() {
+  const list = document.getElementById("productList");
+  list.innerHTML = "";
+  products.forEach((p,i)=>{
+    list.innerHTML += `
+      <div class="row">
+        <input placeholder="상품명" oninput="products[${i}].name=this.value">
+        <input placeholder="금액" type="number" oninput="products[${i}].price=Number(this.value);updateTotal()">
+      </div>`;
   });
-
-  let shipping = sum >= 100000 ? 0 : SHIPPING;
-
-  sumEl.innerText = sum.toLocaleString() + "원";
-  shippingEl.innerText = shipping.toLocaleString() + "원";
-  totalEl.innerText = (sum + shipping).toLocaleString() + "원";
 }
 
-const sumEl = document.getElementById("sum");
-const shippingEl = document.getElementById("shipping");
-const totalEl = document.getElementById("total");
-
-function copyAccount() {
-  const text = accountText.innerText;
-  const accountNumberOnly = text.replace(/[^0-9]/g, "");
-  navigator.clipboard.writeText(accountNumberOnly);
-  alert("계좌번호만 복사되었습니다.");
+function updateTotal() {
+  const total = products.reduce((s,p)=>s+p.price,0);
+  document.getElementById("totalPrice").innerText = total.toLocaleString();
 }
 
+/* ---------- 주소 검색 ---------- */
 function searchAddress() {
   new daum.Postcode({
     oncomplete: function(data) {
-      address.value = data.address;
-      addressDetail.focus();
+      document.getElementById("address").value = data.address;
+      localStorage.setItem("address", data.address);
     }
   }).open();
 }
 
-function checkOrder() {
-  let text = "[고객 정보]\n";
-  text += `닉네임: ${nickname.value}\n`;
-  text += `이름: ${name.value}\n`;
-  text += `연락처: ${phone.value}\n`;
-  text += `주소: ${address.value} ${addressDetail.value}\n\n`;
+/* ---------- 주문 확인 ---------- */
+function showConfirm() {
+  const text = `
+[싸U 주문확인]
 
-  text += "[상품 정보]\n";
-  document.querySelectorAll(".product").forEach((p, i) => {
-    const inputs = p.querySelectorAll("input");
-    text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
-  });
+닉네임: ${nickname.value}
+이름: ${name.value}
+연락처: ${phone.value}
+주소: ${address.value} ${detailAddress.value}
 
-  text += `\n상품합계: ${sumEl.innerText}\n`;
-  text += `배송비: ${shippingEl.innerText}\n`;
-  text += `총 결제금액: ${totalEl.innerText}\n\n`;
-  text += "위 내용이 맞으면 주문 완료를 눌러주세요.";
+상품:
+${products.map(p=>`- ${p.name} / ${p.price.toLocaleString()}원`).join("\n")}
 
-  alert(text);
+총 결제금액: ${totalPrice.innerText}원
+
+입금계좌:
+카카오뱅크 3333-09797-1111
+유혜정(유세연)
+`;
+  confirmText.innerText = text.trim();
+  confirmArea.style.display = "block";
 }
 
-function submitOrder() {
-  if (!confirm("주문을 완료하시겠습니까?")) return;
-  alert("주문이 정상적으로 접수되었습니다.");
+function copyConfirm() {
+  navigator.clipboard.writeText(confirmText.innerText);
+  alert("주문내용이 복사되었습니다");
 }
 
-function newOrder() {
-  if (confirm("새 주문을 시작할까요?")) location.reload();
+function completeOrder() {
+  alert("주문이 접수되었습니다");
 }
-
-addProduct();
 </script>
-
 </body>
 </html>
