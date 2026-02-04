@@ -254,9 +254,12 @@ const sumEl = document.getElementById("sum");
 const shippingEl = document.getElementById("shipping");
 const totalEl = document.getElementById("total");
 
+/* ✅ 계좌번호만 (숫자 + 하이픈 제거) 복사 */
 function copyAccount() {
-  navigator.clipboard.writeText(accountText.innerText);
-  alert("계좌번호가 복사되었습니다.");
+  const text = accountText.innerText;
+  const accountNumberOnly = text.replace(/[^0-9]/g, "");
+  navigator.clipboard.writeText(accountNumberOnly);
+  alert("계좌번호만 복사되었습니다.");
 }
 
 function checkOrder() {
