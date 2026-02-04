@@ -83,9 +83,10 @@ button {
   margin-top: 12px;
 }
 
+/* 🔥 핵심 수정: gap 고려한 정확한 3등분 */
 .button-line-3 button {
-  flex: 0 0 33.3333%;
-  max-width: 33.3333%;
+  flex: 0 0 calc((100% - 16px) / 3);
+  max-width: calc((100% - 16px) / 3);
 }
 
 /* 버튼 색상 */
@@ -159,11 +160,11 @@ button {
   <div class="section-title">상품 정보</div>
   <div id="products"></div>
 
-  <!-- 상품 버튼 한 줄 -->
+  <!-- 상품 버튼 3개 한 줄 -->
   <div class="button-line-3">
-    <button class="btn-add" onclick="addProduct()">+ 상품추가</button>
-    <button class="btn-delete" onclick="removeLastProduct()">↑ 상품삭제</button>
-    <button class="btn-clear" onclick="removeAllProducts()">- 상품목록 전부삭제</button>
+    <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
+    <button class="btn-delete" onclick="removeLastProduct()">↑ 상품 삭제</button>
+    <button class="btn-clear" onclick="removeAllProducts()">- 상품목록 삭제</button>
   </div>
 </div>
 
