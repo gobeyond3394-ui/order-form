@@ -66,7 +66,7 @@ input {
   flex: 1;
 }
 
-/* 버튼 */
+/* 버튼 기본 */
 button {
   padding: 12px 14px;
   font-size: 14px;
@@ -75,14 +75,20 @@ button {
   cursor: pointer;
 }
 
-.button-line {
+/* 3등분 버튼 라인 */
+.button-line-3 {
   display: flex;
   justify-content: center;
   gap: 8px;
-  flex-wrap: wrap;
   margin-top: 12px;
 }
 
+.button-line-3 button {
+  flex: 0 0 33.3333%;
+  max-width: 33.3333%;
+}
+
+/* 버튼 색상 */
 .btn-add { background:#2f5bea; color:#fff; }
 .btn-clear { background:#2ecc71; color:#fff; }
 .btn-delete { background:#e74c3c; color:#fff; }
@@ -153,10 +159,15 @@ button {
   <div class="section-title">상품 정보</div>
   <div id="products"></div>
 
-  <div class="button-line">
-    <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
+  <!-- 상품 삭제 -->
+  <div class="button-line-3">
     <button class="btn-delete" onclick="removeLastProduct()">상품 삭제</button>
-    <button class="btn-clear" onclick="removeAllProducts()">상품목록 모두 삭제</button>
+  </div>
+
+  <!-- 상품 추가 / 전체 삭제 -->
+  <div class="button-line-3">
+    <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
+    <button class="btn-clear" onclick="removeAllProducts()">- 상품목록 모두 삭제</button>
   </div>
 </div>
 
@@ -176,7 +187,8 @@ button {
   </div>
 </div>
 
-<div class="button-line">
+<!-- 하단 버튼 -->
+<div class="button-line-3">
   <button class="btn-check" onclick="checkOrder()">주문서 확인</button>
   <button class="btn-submit" onclick="submitOrder()">주문 완료</button>
   <button class="btn-new" onclick="newOrder()">새 주문</button>
@@ -184,7 +196,6 @@ button {
 
 <script>
 const SHIPPING = 4000;
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby46Q9iopmJHmsh37thoaJ1fJGlm3gWHjc2W0sVm84Ue9q0W31CyFR3KAd69qBqySXk/exec";
 const productsDiv = document.getElementById("products");
 
 function addProduct() {
@@ -227,8 +238,7 @@ function calc() {
     sum += qty * price;
   });
 
-  let shipping = SHIPPING;
-  if (sum >= 100000) shipping = 0;
+  let shipping = sum >= 100000 ? 0 : SHIPPING;
 
   sumEl.innerText = sum.toLocaleString() + "원";
   shippingEl.innerText = shipping.toLocaleString() + "원";
@@ -253,11 +263,8 @@ function checkOrder() {
 
   text += "[상품 정보]\n";
   document.querySelectorAll(".product").forEach((p, i) => {
-    text += `${i+1}. ${p.querySelectorAll("input")[0].value} / `;
-    text += `${p.querySelectorAll("input")[1].value} / `;
-    text += `${p.querySelectorAll("input")[2].value} / `;
-    text += `${p.querySelectorAll("input")[3].value}개 / `;
-    text += `${p.querySelectorAll("input")[4].value}원\n`;
+    const inputs = p.querySelectorAll("input");
+    text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
   });
 
   text += `\n상품합계: ${sumEl.innerText}\n`;
