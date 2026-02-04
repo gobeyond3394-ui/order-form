@@ -18,6 +18,7 @@ h1 {
   text-align: center;
   font-size: 20px;
   margin-bottom: 24px;
+  color: #005FAE; /* 싸U 로고 파랑 */
 }
 
 .section {
@@ -28,7 +29,12 @@ h1 {
   font-size: 15px;
   font-weight: 700;
   margin-bottom: 10px;
-  color: #0b1e3c;
+  color: #005FAE; /* 싸U 로고 파랑 */
+}
+
+.divider {
+  border-top: 1px solid #eee;
+  margin-top: 20px;
 }
 
 .field {
@@ -70,7 +76,7 @@ input {
 button {
   padding: 12px 14px;
   font-size: 14px;
-  font-weight: 700; /* 🔥 모든 버튼 글씨 진하게 */
+  font-weight: 700;
   border-radius: 8px;
   border: none;
   cursor: pointer;
@@ -84,19 +90,18 @@ button {
   margin-top: 12px;
 }
 
-/* gap 고려한 정확한 3등분 */
 .button-line-3 button {
   flex: 0 0 calc((100% - 16px) / 3);
   max-width: calc((100% - 16px) / 3);
 }
 
-/* 🎨 버튼 색상 */
-.btn-add { background:#005FAE; color:#fff; }     /* 싸U 파랑 */
+/* 버튼 색상 */
+.btn-add { background:#005FAE; color:#fff; }
 .btn-delete { background:#e74c3c; color:#fff; }
-.btn-clear { background:#E0E0E0; color:#333; }  /* 그레이 */
+.btn-clear { background:#E0E0E0; color:#333; }
 
-.btn-check { background:#E0E0E0; color:#333; }  /* 그레이 */
-.btn-submit { background:#005FAE; color:#fff; }/* 싸U 파랑 */
+.btn-check { background:#E0E0E0; color:#333; }
+.btn-submit { background:#005FAE; color:#fff; }
 .btn-new { background:#e74c3c; color:#fff; }
 
 /* 합계 */
@@ -115,6 +120,7 @@ button {
 .summary-total {
   font-weight: 700;
   font-size: 16px;
+  color: #005FAE; /* 총 결제금액 파랑 */
 }
 
 /* 계좌 */
@@ -156,6 +162,7 @@ button {
   <div class="field"><label>이름</label><input id="name"></div>
   <div class="field"><label>연락처</label><input id="phone"></div>
   <div class="field"><label>주소</label><input id="address"></div>
+  <div class="divider"></div>
 </div>
 
 <div class="section">
