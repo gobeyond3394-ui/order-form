@@ -296,7 +296,7 @@ button {
   white-space:nowrap;
 }
 
-/* ✅ 완료목록 접기/펼치기: 글씨 크게 + ▲▼ 표시 */
+/* ✅ 완료목록 접기/펼치기: 상품추가/삭제 버튼과 같은 글씨 크기 */
 .small-link-btn{
   display:block;
   width:100%;
@@ -306,8 +306,8 @@ button {
   border:1px solid #d6e0ff;
   border-radius:10px;
   color:#333;
-  font-size:16px;          /* ✅ 글씨 크게 */
-  font-weight:800;         /* ✅ 더 굵게 */
+  font-size:14px;          /* ✅ 상품추가/삭제 버튼과 동일 */
+  font-weight:700;         /* ✅ 동일 */
   text-align:center;
   cursor:pointer;
 }
@@ -369,11 +369,13 @@ button {
   <div id="products"></div>
 
   <div class="product-controls">
+    <!-- ✅ 완료목록 버튼을 위로 올림 + ▲▼ 문구 수정 -->
+    <button class="small-link-btn" onclick="toggleFold()">완료목록 접기 ▲</button>
+
     <div class="button-line-2">
       <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
       <button class="btn-delete" onclick="removeLastProduct()">- 상품 삭제</button>
     </div>
-    <button class="small-link-btn" onclick="toggleFold()">완료목록 접기 ▼</button>
   </div>
 </div>
 
@@ -418,7 +420,7 @@ function toggleFold() {
   HIDE_DONE = !HIDE_DONE;
 
   const btn = document.querySelector('button[onclick="toggleFold()"]');
-  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기 ▲" : "완료목록 접기 ▼";
+  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기 ▼" : "완료목록 접기 ▲";
 
   applyFoldVisibility();
   renderFoldSummary();
@@ -1227,7 +1229,7 @@ function loadData() {
 
   HIDE_DONE = !!data.hideDone;
   const btn = document.querySelector('button[onclick="toggleFold()"]');
-  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기 ▲" : "완료목록 접기 ▼";
+  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기 ▼" : "완료목록 접기 ▲";
 
   calc();
   applyFoldVisibility();
