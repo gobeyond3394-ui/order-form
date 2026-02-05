@@ -263,6 +263,31 @@ button {
   -webkit-text-fill-color:#777 !important;
   opacity:1 !important;
 }
+
+/* ===== ✅ 변경 그룹 박스 ===== */
+.change-group{
+  border:1px solid #d6e0ff;
+  background:#f7f9ff;
+  border-radius:10px;
+  padding:12px;
+  margin-top:12px;
+}
+.change-group-title{
+  font-size:13px;
+  font-weight:800;
+  color:#005FAE;
+  margin-bottom:8px;
+}
+.change-group .product{
+  border-top:none;
+  padding-top:0;
+  margin-top:0;
+}
+.change-group .product + .product{
+  border-top:1px solid #e7ecff;
+  padding-top:12px;
+  margin-top:12px;
+}
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -311,6 +336,7 @@ button {
 
   <div class="button-line-3">
     <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
+    <button class="btn-delete" onclick="removeLastProduct()">↑ 상품 삭제</button>
     <button class="btn-clear" onclick="removeAllProducts()">- 상품목록 삭제</button>
   </div>
 </div>
@@ -346,6 +372,48 @@ let IS_LOADING = false;
 
 function _uid() {
   return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+function _gid() {
+  return "g_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+function _countChangeGroupsInDOM_() {
+  return document.querySelectorAll(".change-group").length;
+}
+
+function _ensureGroupWrapper_(groupId, groupLabel, insertAfterEl) {
+  let wrap = document.querySelector(`.change-group[data-group-id="${groupId}"]`);
+  if (wrap) return wrap;
+
+  wrap = document.createElement("div");
+  wrap.className = "change-group";
+  wrap.dataset.groupId = groupId;
+  wrap.dataset.groupLabel = groupLabel || "상품 변경";
+  wrap.innerHTML = `<div class="change-group-title">${wrap.dataset.groupLabel}</div>`;
+
+  if (insertAfterEl && insertAfterEl.nodeType === 1 && insertAfterEl.parentNode) {
+    insertAfterEl.insertAdjacentElement("afterend", wrap);
+  } else {
+    productsDiv.appendChild(wrap);
+  }
+  return wrap;
+}
+
+function _cleanupEmptyGroups_() {
+  document.querySelectorAll(".change-group").forEach(wrap => {
+    const products = wrap.querySelectorAll(".product");
+    if (products.length === 0) {
+      wrap.remove();
+      return;
+    }
+    if (products.length === 1) {
+      const only = products[0];
+      wrap.insertAdjacentElement("beforebegin", only);
+      wrap.remove();
+      return;
+    }
+  });
 }
 
 function _isDraftStatus(status) {
@@ -413,6 +481,16 @@ function _renderActions(div) {
     actions.style.display = "flex";
     if (btnChange) btnChange.style.display = "block";
     if (btnCancel) btnCancel.style.display = "block";
+    return;
+  }
+
+  // ✅ 변경으로 생긴 줄에만 저장/삭제(및 저장 후 수정/삭제) 버튼 노출
+  const origin = div.dataset.origin || "";
+  const isChangeDraft = (origin === "change");
+
+  if (!isChangeDraft) {
+    // 일반 미전송은 개별 버튼 없음(상단 버튼으로 관리)
+    actions.style.display = "none";
     return;
   }
 
@@ -503,7 +581,13 @@ function _attachActionHandlers(div) {
       if (!_isDraftStatus(status)) return;
       if (!confirm("해당 상품을 삭제할까요?")) return;
 
+      const parentGroup = div.closest(".change-group");
       div.remove();
+
+      if (parentGroup) {
+        _cleanupEmptyGroups_();
+      }
+
       if (!document.querySelector(".product")) addProduct();
 
       calc();
@@ -516,16 +600,35 @@ function _attachActionHandlers(div) {
       const status = div.dataset.status || "draft_edit";
       if (status !== "sent") return;
 
+      // ✅ 그룹 생성/묶기
+      const gid = _gid();
+      const label = `상품${_countChangeGroupsInDOM_() + 1} 변경`;
+
+      const wrap = _ensureGroupWrapper_(gid, label, div);
+
+      // 원본(전송완료) 이동
+      div.dataset.groupId = gid;
+      div.dataset.groupLabel = label;
+      div.dataset.groupRole = "original";
+      wrap.appendChild(div);
+
+      // 아래: 새 상품(미전송) 편집/저장
       const v = _copyProductValues(div);
       const newDiv = addProduct({
         id: _uid(),
         status: "draft_edit",
+        origin: "change",
+        groupId: gid,
+        groupLabel: label,
+        groupRole: "changed",
         name: v.name,
         color: v.color,
         size: v.size,
         qty: v.qty,
         price: v.price
-      }, div);
+      }, wrap);
+
+      wrap.appendChild(newDiv);
 
       const firstInput = newDiv.querySelectorAll("input")[0];
       if (firstInput) firstInput.focus();
@@ -557,6 +660,11 @@ function addProduct(preset, insertAfterRef) {
 
   div.dataset.id = pid;
   div.dataset.status = pstatus;
+
+  if (preset && preset.origin) div.dataset.origin = preset.origin;
+  if (preset && preset.groupId) div.dataset.groupId = preset.groupId;
+  if (preset && preset.groupLabel) div.dataset.groupLabel = preset.groupLabel;
+  if (preset && preset.groupRole) div.dataset.groupRole = preset.groupRole;
 
   div.innerHTML = `
     <div class="field">
@@ -631,7 +739,9 @@ function removeLastProduct() {
   for (let idx = items.length - 1; idx >= 0; idx--) {
     const st = items[idx].dataset.status || "draft_edit";
     if (_isDraftStatus(st)) {
+      const parentGroup = items[idx].closest(".change-group");
       items[idx].remove();
+      if (parentGroup) _cleanupEmptyGroups_();
       break;
     }
   }
@@ -647,6 +757,8 @@ function removeAllProducts() {
     const st = p.dataset.status || "draft_edit";
     if (_isDraftStatus(st)) p.remove();
   });
+
+  _cleanupEmptyGroups_();
 
   if (!document.querySelector(".product")) {
     addProduct();
@@ -850,6 +962,8 @@ function newOrder() {
     if (_isDraftStatus(st)) p.remove();
   });
 
+  _cleanupEmptyGroups_();
+
   if (!document.querySelector(".product")) {
     addProduct();
   }
@@ -876,6 +990,10 @@ function saveData() {
     data.products.push({
       id: p.dataset.id || _uid(),
       status: p.dataset.status || "draft_edit",
+      origin: p.dataset.origin || "",
+      groupId: p.dataset.groupId || "",
+      groupLabel: p.dataset.groupLabel || "",
+      groupRole: p.dataset.groupRole || "",
       name: i[0].value,
       color: i[1].value,
       size: i[2].value,
@@ -900,17 +1018,37 @@ function loadData() {
   document.getElementById("addressDetail").value = data.customer.addressDetail || "";
 
   productsDiv.innerHTML = "";
+
+  const groupMap = {};
+
   (data.products || []).forEach(p => {
-    addProduct({
+    const preset = {
       id: p.id || _uid(),
       status: p.status || "draft_edit",
+      origin: p.origin || "",
+      groupId: p.groupId || "",
+      groupLabel: p.groupLabel || "",
+      groupRole: p.groupRole || "",
       name: p.name,
       color: p.color,
       size: p.size,
       qty: p.qty,
       price: p.price
-    }, true);
+    };
+
+    if (preset.groupId) {
+      if (!groupMap[preset.groupId]) {
+        const wrap = _ensureGroupWrapper_(preset.groupId, preset.groupLabel || "상품 변경", null);
+        groupMap[preset.groupId] = wrap;
+      }
+      const div = addProduct(preset, true);
+      groupMap[preset.groupId].appendChild(div);
+    } else {
+      addProduct(preset, true);
+    }
   });
+
+  _cleanupEmptyGroups_();
 
   calc();
 
