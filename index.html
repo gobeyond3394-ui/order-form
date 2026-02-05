@@ -584,18 +584,27 @@ function _setStatusBadge(div, status) {
 
   badge.classList.remove("status-draft","status-sent","status-cancel-pending","status-canceled");
 
+  const action = (div.dataset.action || "").trim();
+
   if (status === "draft" || status === "draft_edit" || status === "draft_saved") {
     badge.classList.add("status-draft");
-    badge.innerHTML = `<span class="sq"></span>미전송`;
+    if (action === "modify") {
+      badge.innerHTML = `<span class="sq"></span>[수정] 전송대기`;
+    } else {
+      badge.innerHTML = `<span class="sq"></span>미전송`;
+    }
   } else if (status === "sent") {
     badge.classList.add("status-sent");
     badge.innerHTML = `<span class="sq"></span>전송완료`;
   } else if (status === "cancel_pending") {
     badge.classList.add("status-cancel-pending");
-    badge.innerHTML = `<span class="sq"></span>취소요청`;
+    badge.innerHTML = `<span class="sq"></span>[취소] 전송대기`;
   } else if (status === "canceled") {
     badge.classList.add("status-canceled");
     badge.innerHTML = `<span class="sq"></span>취소완료`;
+  } else if (status === "sent_edit") {
+    badge.classList.add("status-draft");
+    badge.innerHTML = `<span class="sq"></span>수정중`;
   } else {
     badge.classList.add("status-draft");
     badge.innerHTML = `<span class="sq"></span>미전송`;
@@ -634,7 +643,7 @@ function _renderActions(div) {
     if (b) b.style.display = "none";
   });
 
-  // 기본은 버튼라인 보이게(해당 상태에서만)
+  // ✅ 전송완료: [수정] [취소]
   if (status === "sent") {
     // ✅ 변경 그룹으로 묶인 원본(전송완료)은 버튼 숨김
     if ((div.dataset.groupRole || "") === "original") {
@@ -643,8 +652,28 @@ function _renderActions(div) {
     }
 
     actions.style.display = "flex";
-    if (btnChange) btnChange.style.display = "block";
-    if (btnCancel) btnCancel.style.display = "block";
+    if (btnChange) {
+      btnChange.style.display = "block";
+      btnChange.innerText = "수정";
+    }
+    if (btnCancel) {
+      btnCancel.style.display = "block";
+      btnCancel.innerText = "취소";
+    }
+    return;
+  }
+
+  // ✅ 전송완료 수정모드: [저장] [수정 취소]
+  if (status === "sent_edit") {
+    actions.style.display = "flex";
+    if (btnSave) {
+      btnSave.style.display = "block";
+      btnSave.innerText = "저장";
+    }
+    if (btnEdit) {
+      btnEdit.style.display = "block";
+      btnEdit.innerText = "수정 취소";
+    }
     return;
   }
 
@@ -660,14 +689,20 @@ function _renderActions(div) {
 
   if (status === "draft" || status === "draft_edit") {
     actions.style.display = "flex";
-    if (btnSave) btnSave.style.display = "block";
+    if (btnSave) {
+      btnSave.style.display = "block";
+      btnSave.innerText = "저장";
+    }
     if (btnDeleteItem) btnDeleteItem.style.display = "block";
     return;
   }
 
   if (status === "draft_saved") {
     actions.style.display = "flex";
-    if (btnEdit) btnEdit.style.display = "block";
+    if (btnEdit) {
+      btnEdit.style.display = "block";
+      btnEdit.innerText = "수정";
+    }
     if (btnDeleteItem) btnDeleteItem.style.display = "block";
     return;
   }
@@ -710,6 +745,12 @@ function _applyProductUI(div) {
     div.classList.remove("is-locked");
   }
 
+  // ✅ 전송완료 수정모드(sent_edit)는 잠금 해제(흰색)
+  if (status === "sent_edit") {
+    _lockInputs(div, false);
+    div.classList.remove("is-locked");
+  }
+
   _renderActions(div);
 
   applyFoldVisibility();
@@ -738,6 +779,20 @@ function _attachActionHandlers(div) {
   if (btnSave) {
     btnSave.onclick = () => {
       const status = div.dataset.status || "draft_edit";
+
+      // ✅ 전송완료 수정모드 저장: [수정] 전송대기
+      if (status === "sent_edit") {
+        div.dataset.status = "draft_saved";
+        div.dataset.action = "modify";
+        div.dataset.modifiedFrom = "sent";
+        delete div.dataset.snapshot;
+        _applyProductUI(div);
+        calc();
+        saveData();
+        return;
+      }
+
+      // 기존(변경 draft) 저장
       if (status !== "draft" && status !== "draft_edit") return;
 
       div.dataset.status = "draft_saved";
@@ -750,6 +805,27 @@ function _attachActionHandlers(div) {
   if (btnEdit) {
     btnEdit.onclick = () => {
       const status = div.dataset.status || "draft_edit";
+
+      // ✅ 전송완료 수정 취소: 원상복구 + 전송완료 복귀
+      if (status === "sent_edit") {
+        const snap = div.dataset.snapshot ? JSON.parse(div.dataset.snapshot) : null;
+        if (snap) {
+          const i = div.querySelectorAll("input");
+          i[0].value = snap.name || "";
+          i[1].value = snap.color || "";
+          i[2].value = snap.size || "";
+          i[3].value = snap.qty != null ? snap.qty : "1";
+          i[4].value = snap.price != null ? snap.price : "";
+        }
+        div.dataset.status = "sent";
+        delete div.dataset.snapshot;
+        _applyProductUI(div);
+        calc();
+        saveData();
+        return;
+      }
+
+      // 기존(변경 draft_saved) 수정
       if (status !== "draft_saved") return;
 
       div.dataset.status = "draft_edit";
@@ -788,40 +864,14 @@ function _attachActionHandlers(div) {
       const status = div.dataset.status || "draft_edit";
       if (status !== "sent") return;
 
-      // ✅ 그룹 생성/묶기
-      const gid = _gid();
-      const label = `상품${_countChangeGroupsInDOM_() + 1} 변경`;
+      // ✅ 전송완료 상품: 수정모드 진입(덮어쓰기 UI)
+      const snap = _copyProductValues(div);
+      div.dataset.snapshot = JSON.stringify(snap);
 
-      const wrap = _ensureGroupWrapper_(gid, label, div);
-
-      // 원본(전송완료) 이동
-      div.dataset.groupId = gid;
-      div.dataset.groupLabel = label;
-      div.dataset.groupRole = "original";
-      wrap.appendChild(div);
-
-      // ✅ 원본 라벨 즉시 반영
+      div.dataset.status = "sent_edit";
       _applyProductUI(div);
 
-      // 아래: 새 상품(미전송) 편집/저장
-      const v = _copyProductValues(div);
-      const newDiv = addProduct({
-        id: _uid(),
-        status: "draft_edit",
-        origin: "change",
-        groupId: gid,
-        groupLabel: label,
-        groupRole: "changed",
-        name: v.name,
-        color: v.color,
-        size: v.size,
-        qty: v.qty,
-        price: v.price
-      }, wrap);
-
-      wrap.appendChild(newDiv);
-
-      const firstInput = newDiv.querySelectorAll("input")[0];
+      const firstInput = div.querySelectorAll("input")[0];
       if (firstInput) firstInput.focus();
 
       saveData();
@@ -860,6 +910,9 @@ function addProduct(preset, insertAfterRef) {
   if (preset && preset.groupLabel) div.dataset.groupLabel = preset.groupLabel;
   if (preset && preset.groupRole) div.dataset.groupRole = preset.groupRole;
 
+  if (preset && preset.action) div.dataset.action = preset.action;
+  if (preset && preset.modifiedFrom) div.dataset.modifiedFrom = preset.modifiedFrom;
+
   div.innerHTML = `
     <div class="field">
       <label>상품명</label>
@@ -893,7 +946,7 @@ function addProduct(preset, insertAfterRef) {
       <button class="btn-save" type="button">저장</button>
       <button class="btn-edit" type="button">수정</button>
       <button class="btn-delete-item" type="button">삭제</button>
-      <button class="btn-change" type="button">변경</button>
+      <button class="btn-change" type="button">수정</button>
       <button class="btn-cancel" type="button">취소</button>
     </div>
   `;
@@ -1079,8 +1132,11 @@ function checkOrder() {
     pendingItems.forEach((p, i) => {
       const inputs = p.querySelectorAll("input");
       const st = p.dataset.status || "draft_edit";
+      const action = (p.dataset.action || "").trim();
+
       if (_isDraftStatus(st)) {
-        text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
+        const prefix = (action === "modify") ? "[수정] " : "";
+        text += `${i+1}. ${prefix}${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
       } else if (st === "cancel_pending") {
         text += `${i+1}. [취소요청] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
       }
@@ -1217,16 +1273,18 @@ async function submitOrder() {
   document.querySelectorAll(".product").forEach(p => {
     const st = p.dataset.status || "draft_edit";
     const i = p.querySelectorAll("input");
+    const action = (p.dataset.action || "").trim();
 
     if (_isDraftStatus(st)) {
+      const prefix = (action === "modify") ? "[수정] " : "";
       items.push({
-        productName: i[0].value || "",
+        productName: `${prefix}${i[0].value || ""}`.trim(),
         color: i[1].value || "",
         size: i[2].value || "",
         qty: Number(i[3].value || 0),
         price: Number(i[4].value || 0)
       });
-      toFinalize.push({ el: p, nextStatus: "sent" });
+      toFinalize.push({ el: p, nextStatus: "sent", clearAction: true });
     }
 
     if (st === "cancel_pending") {
@@ -1237,7 +1295,7 @@ async function submitOrder() {
         qty: 0,
         price: 0
       });
-      toFinalize.push({ el: p, nextStatus: "canceled" });
+      toFinalize.push({ el: p, nextStatus: "canceled", clearAction: true });
     }
   });
 
@@ -1282,6 +1340,10 @@ async function submitOrder() {
 
     toFinalize.forEach(x => {
       x.el.dataset.status = x.nextStatus;
+      if (x.clearAction) {
+        delete x.el.dataset.action;
+        delete x.el.dataset.modifiedFrom;
+      }
       _applyProductUI(x.el);
     });
 
@@ -1346,6 +1408,8 @@ function saveData() {
       groupId: p.dataset.groupId || "",
       groupLabel: p.dataset.groupLabel || "",
       groupRole: p.dataset.groupRole || "",
+      action: p.dataset.action || "",
+      modifiedFrom: p.dataset.modifiedFrom || "",
       name: i[0].value,
       color: i[1].value,
       size: i[2].value,
@@ -1381,6 +1445,8 @@ function loadData() {
       groupId: p.groupId || "",
       groupLabel: p.groupLabel || "",
       groupRole: p.groupRole || "",
+      action: p.action || "",
+      modifiedFrom: p.modifiedFrom || "",
       name: p.name,
       color: p.color,
       size: p.size,
