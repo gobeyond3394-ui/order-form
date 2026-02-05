@@ -197,7 +197,7 @@ button {
   display:inline-block;
 }
 
-/* 🩶 미전송 */
+/* 🩶 전송대기 */
 .status-draft{
   background:#f2f2f2;
   color:#555;
@@ -213,7 +213,7 @@ button {
 }
 .status-sent .sq{ background:#005FAE; }
 
-/* 🔴 취소요청 */
+/* 🔴 취소 전송대기(기존 클래스 재사용) */
 .status-cancel-pending{
   background:#ffe9e9;
   color:#c0392b;
@@ -290,9 +290,9 @@ button {
   margin-top:12px;
 }
 
-/* ===== ✅ 최종 주문서 확인 버튼 (연블루 + 흰색 진한글씨) ===== */
+/* ===== ✅ 주문 확정서 버튼(아주 진한 그레이 + 흰글씨) ===== */
 .btn-final{
-  background:#7FB0FF;
+  background:#1f1f1f; /* 아주 진한 그레이 */
   color:#fff;
   font-weight:800;
 }
@@ -403,13 +403,13 @@ button {
 </div>
 
 <div class="button-line-3">
-  <button class="btn-check" onclick="checkOrder()">주문 미리보기</button>
-  <button class="btn-submit" onclick="submitOrder()">주문 전송</button>
+  <button class="btn-check" onclick="checkOrder()">주문 예정서</button>
+  <button class="btn-submit" onclick="submitOrder()">주문 전송 완료</button>
   <button class="btn-new" onclick="newOrder()">새 주문</button>
 </div>
 
 <div class="button-line-full">
-  <button class="btn-final" onclick="checkFinalOrder()">최종 주문서 확인</button>
+  <button class="btn-final" onclick="checkFinalOrder()">주문 확정서</button>
 </div>
 
 <script>
@@ -459,17 +459,21 @@ function applyFoldVisibility() {
       return;
     }
 
-    if (_isDraftStatus(st)) {
-      p.style.display = "";
-    } else {
-      p.style.display = IS_FOLDED ? "none" : "";
+    // ✅ 접기 시: 모든 상품카드 숨김(요약은 foldSummary에 한줄)
+    if (IS_FOLDED) {
+      p.style.display = "none";
+      return;
     }
+
+    p.style.display = "";
   });
 
   document.querySelectorAll(".change-group").forEach(g => {
-    const visibleProducts = Array.from(g.querySelectorAll(".product"))
-      .filter(p => p.style.display !== "none");
-    g.style.display = (visibleProducts.length === 0 && IS_FOLDED) ? "none" : "";
+    if (IS_FOLDED) {
+      g.style.display = "none";
+      return;
+    }
+    g.style.display = "";
   });
 }
 
@@ -483,13 +487,12 @@ function renderFoldSummary() {
     return;
   }
 
-  const lines = [];
+  // ✅ 전송대기/전송완료/취소완료/[수정]전송대기/[취소]전송대기 모두 한줄 요약
+  const parts = [];
 
   document.querySelectorAll(".product").forEach(p => {
-    if (p.style.display === "none") return;
-
     const st = p.dataset.status || "draft_edit";
-    if (_isDraftStatus(st)) return;
+    const action = (p.dataset.action || "").trim();
 
     const i = p.querySelectorAll("input");
     const name = (i[0]?.value || "").trim();
@@ -498,34 +501,26 @@ function renderFoldSummary() {
     const qty = (i[3]?.value || "").trim();
     const price = (i[4]?.value || "").trim();
 
-    const stLabel =
-      st === "sent" ? "전송완료" :
-      st === "cancel_pending" ? "취소요청" :
-      st === "canceled" ? "취소완료" : st;
-
-    const role =
-      (p.dataset.groupRole || "") === "original" ? "원본" :
-      (p.dataset.groupRole || "") === "changed" ? "변경" : "";
-
-    const roleText = role ? `(${role}) ` : "";
+    const label =
+      (st === "canceled") ? "취소완료" :
+      (st === "sent") ? "전송완료" :
+      (st === "cancel_pending") ? "[취소] 전송대기" :
+      (st === "sent_edit") ? "[수정] 전송대기" :
+      (_isDraftStatus(st) && action === "modify") ? "[수정] 전송대기" :
+      (_isDraftStatus(st)) ? "전송대기" : "전송대기";
 
     if (st === "canceled") {
-      lines.push(`• [${stLabel}] ${roleText}${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
+      parts.push(`[${label}] ${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
     } else if (st === "cancel_pending") {
-      lines.push(`• [${stLabel}] ${roleText}${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
+      parts.push(`[${label}] ${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
     } else {
-      lines.push(`• [${stLabel}] ${roleText}${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
+      // 전송완료/전송대기/수정전송대기
+      parts.push(`[${label}] ${name} / ${color} / ${size} / ${qty || ""}개 / ${price || ""}원`.replace(/\s+\/\s*$/,""));
     }
   });
 
-  if (lines.length === 0) {
-    box.style.display = "block";
-    box.innerHTML = `완료/취소된 상품이 없습니다.`;
-    return;
-  }
-
   box.style.display = "block";
-  box.innerHTML = lines.join("<br>");
+  box.innerHTML = parts.length ? parts.join(" | ") : "상품이 없습니다.";
 }
 
 function _uid() {
@@ -586,12 +581,13 @@ function _setStatusBadge(div, status) {
 
   const action = (div.dataset.action || "").trim();
 
+  // ✅ 배지 텍스트 3종(전송대기/전송완료/취소완료) + 전송대기 내 prefix([수정]/[취소])
   if (status === "draft" || status === "draft_edit" || status === "draft_saved") {
     badge.classList.add("status-draft");
     if (action === "modify") {
       badge.innerHTML = `<span class="sq"></span>[수정] 전송대기`;
     } else {
-      badge.innerHTML = `<span class="sq"></span>미전송`;
+      badge.innerHTML = `<span class="sq"></span>전송대기`;
     }
   } else if (status === "sent") {
     badge.classList.add("status-sent");
@@ -603,11 +599,12 @@ function _setStatusBadge(div, status) {
     badge.classList.add("status-canceled");
     badge.innerHTML = `<span class="sq"></span>취소완료`;
   } else if (status === "sent_edit") {
+    // ✅ 수정모드도 전송대기 카테고리로 보여주기
     badge.classList.add("status-draft");
-    badge.innerHTML = `<span class="sq"></span>수정중`;
+    badge.innerHTML = `<span class="sq"></span>[수정] 전송대기`;
   } else {
     badge.classList.add("status-draft");
-    badge.innerHTML = `<span class="sq"></span>미전송`;
+    badge.innerHTML = `<span class="sq"></span>전송대기`;
   }
 }
 
@@ -682,7 +679,7 @@ function _renderActions(div) {
   const isChangeDraft = (origin === "change");
 
   if (!isChangeDraft) {
-    // 일반 미전송은 개별 버튼 없음(상단 버튼으로 관리)
+    // 일반 전송대기는 개별 버튼 없음(상단 버튼으로 관리)
     actions.style.display = "none";
     return;
   }
@@ -707,7 +704,6 @@ function _renderActions(div) {
     return;
   }
 
-  // 취소요청/취소완료는 버튼 없음
   actions.style.display = "none";
 }
 
@@ -728,7 +724,7 @@ function _applyProductUI(div) {
       roleEl.style.display = "inline-flex";
       roleEl.classList.remove("role-original");
       roleEl.classList.add("role-changed");
-      roleEl.textContent = "변경";
+      roleEl.textContent = "수정"; // ✅ 변경 → 수정(표시만)
     } else {
       roleEl.style.display = "none";
       roleEl.classList.remove("role-original","role-changed");
@@ -763,7 +759,7 @@ function _copyProductValues(fromDiv) {
     name: i[0].value || "",
     color: i[1].value || "",
     size: i[2].value || "",
-    qty: i[3].value || "1",
+    qty: i[3].value || "",     // ✅ 기본값 "1" 제거
     price: i[4].value || ""
   };
 }
@@ -814,7 +810,7 @@ function _attachActionHandlers(div) {
           i[0].value = snap.name || "";
           i[1].value = snap.color || "";
           i[2].value = snap.size || "";
-          i[3].value = snap.qty != null ? snap.qty : "1";
+          i[3].value = snap.qty != null ? snap.qty : ""; // ✅ 기본값 제거
           i[4].value = snap.price != null ? snap.price : "";
         }
         div.dataset.status = "sent";
@@ -919,7 +915,7 @@ function addProduct(preset, insertAfterRef) {
       <div class="product-title-row">
         <input class="product-name" placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
         <div class="role-badge" style="display:none;"></div>
-        <div class="status-badge status-draft"><span class="sq"></span>미전송</div>
+        <div class="status-badge status-draft"><span class="sq"></span>전송대기</div>
       </div>
     </div>
     <div class="row">
@@ -935,7 +931,7 @@ function addProduct(preset, insertAfterRef) {
     <div class="row">
       <div class="field">
         <label>수량</label>
-        <input type="number" value="1" placeholder="1">
+        <input type="number" value="" placeholder="예) 1"> <!-- ✅ 기본값 제거 + placeholder -->
       </div>
       <div class="field">
         <label>가격</label>
@@ -961,7 +957,7 @@ function addProduct(preset, insertAfterRef) {
     inputs[0].value = preset.name || "";
     inputs[1].value = preset.color || "";
     inputs[2].value = preset.size || "";
-    inputs[3].value = preset.qty != null ? preset.qty : "1";
+    inputs[3].value = preset.qty != null ? preset.qty : ""; // ✅ 기본값 제거
     inputs[4].value = preset.price != null ? preset.price : "";
   }
 
@@ -1122,12 +1118,12 @@ function checkOrder() {
   const pendingItems = [];
   document.querySelectorAll(".product").forEach(p => {
     const st = p.dataset.status || "draft_edit";
-    if (!_isDraftStatus(st) && st !== "cancel_pending") return;
-    pendingItems.push(p);
+    // ✅ 전송대기(일반/수정) + 취소요청만 예정서에 포함
+    if (_isDraftStatus(st) || st === "cancel_pending") pendingItems.push(p);
   });
 
   if (pendingItems.length === 0) {
-    text += "(미전송/취소요청 상품이 없습니다.)\n";
+    text += "전송 대기 / 취소 요청 / 수정 요청 상품이 없습니다.\n"; // ✅ 문구 변경
   } else {
     pendingItems.forEach((p, i) => {
       const inputs = p.querySelectorAll("input");
@@ -1135,10 +1131,10 @@ function checkOrder() {
       const action = (p.dataset.action || "").trim();
 
       if (_isDraftStatus(st)) {
-        const prefix = (action === "modify") ? "[수정] " : "";
+        const prefix = (action === "modify") ? "[수정요청] " : "";
         text += `${i+1}. ${prefix}${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
       } else if (st === "cancel_pending") {
-        text += `${i+1}. [취소요청] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
+        text += `${i+1}. [취소요청] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value}\n`;
       }
     });
   }
@@ -1176,13 +1172,14 @@ function checkFinalOrder() {
       const inputs = p.querySelectorAll("input");
       const st = p.dataset.status || "draft_edit";
       const role = p.dataset.groupRole || "";
-      const rolePrefix = (role === "changed") ? "[변경] " : "";
+      const rolePrefix = (role === "changed") ? "[수정] " : ""; // ✅ 변경 → 수정(표시만)
       if (st === "sent") {
         const qty = Number(inputs[3].value || 0);
         const price = Number(inputs[4].value || 0);
         sum += qty * price;
         text += `${i+1}. ${rolePrefix}${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
       } else if (st === "canceled") {
+        // ✅ 취소완료는 상품명/색상/사이즈만
         text += `${i+1}. [취소완료] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value}\n`;
       }
     });
@@ -1241,7 +1238,7 @@ function _validateBeforeSubmit_() {
   }
 
   if (!hasSendTarget) {
-    alert("미전송/취소요청 상품이 없습니다.");
+    alert("전송 대기 / 취소 요청 / 수정 요청 상품이 없습니다.");
     return false;
   }
 
@@ -1300,7 +1297,7 @@ async function submitOrder() {
   });
 
   if (items.length === 0) {
-    alert("미전송/취소요청 상품이 없습니다.");
+    alert("전송 대기 / 취소 요청 / 수정 요청 상품이 없습니다.");
     return;
   }
 
