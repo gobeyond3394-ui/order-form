@@ -283,6 +283,43 @@ button {
   flex: 1 1 100%;
   max-width: 100%;
 }
+
+/* ✅ 상품추가/상품삭제 2개를 한줄 꽉차게 */
+.button-line-2{
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+}
+.button-line-2 button{
+  flex:1 1 50%;
+  max-width:50%;
+  white-space:nowrap;
+}
+
+/* ✅ 완료목록 접기/펼치기: 작은 텍스트 버튼 */
+.small-link-btn{
+  display:block;
+  width:100%;
+  margin-top:10px;
+  padding:0;
+  background:transparent;
+  border:none;
+  color:#555;
+  font-size:13px;
+  font-weight:700;
+  text-align:center;
+  cursor:pointer;
+}
+.small-link-btn:hover{
+  text-decoration: underline;
+}
+
+/* ✅ 전송완료 상품 버튼들과 하단 컨트롤 분리 */
+.product-controls{
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #eee;
+}
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -330,10 +367,12 @@ button {
   <div id="foldSummary" style="display:none; font-size:13px; color:#333; background:#f7f9ff; border:1px solid #d6e0ff; border-radius:10px; padding:10px; margin:6px 0 10px; line-height:1.5;"></div>
   <div id="products"></div>
 
-  <div class="button-line-3">
-    <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
-    <button class="btn-delete" onclick="removeLastProduct()">- 상품 삭제</button>
-    <button class="btn-check" onclick="toggleFold()">완료목록 삭제</button>
+  <div class="product-controls">
+    <div class="button-line-2">
+      <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
+      <button class="btn-delete" onclick="removeLastProduct()">- 상품 삭제</button>
+    </div>
+    <button class="small-link-btn" onclick="toggleFold()">완료목록 접기</button>
   </div>
 </div>
 
@@ -354,13 +393,14 @@ button {
 </div>
 
 <div class="button-line-3">
-  <button class="btn-check" onclick="checkOrder()">주문 예정서</button>
-  <button class="btn-submit" onclick="submitOrder()">주문 전송 완료</button>
   <button class="btn-new" onclick="newOrder()">새 주문</button>
+  <button class="btn-check" onclick="checkOrder()">미리 보기</button>
+  <button class="btn-submit" onclick="submitOrder()">주문 전송</button>
 </div>
 
 <div class="button-line-full">
-  <button class="btn-final" onclick="checkFinalOrder()">주문 확정서</button>
+  <!-- ✅ 주문 확정서 = 클릭하면 복사(가장 안정적) -->
+  <button class="btn-final" onclick="copyFinalOrder()">주문 확정서</button>
 </div>
 
 <script>
@@ -375,8 +415,9 @@ let HIDE_DONE = false;
 
 function toggleFold() {
   HIDE_DONE = !HIDE_DONE;
+
   const btn = document.querySelector('button[onclick="toggleFold()"]');
-  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기" : "완료목록 삭제";
+  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기" : "완료목록 접기";
 
   applyFoldVisibility();
   renderFoldSummary();
@@ -441,7 +482,6 @@ function _uid() {
 }
 
 function _isDraftStatus(status) {
-  /* ✅ 미전송 용어 제거: draft* 는 전송대기 라인으로만 사용 */
   return (status === "draft" || status === "draft_edit" || status === "draft_saved");
 }
 
@@ -479,7 +519,6 @@ function _setStatusBadge(div, status) {
   }
 
   if (status === "sent_edit") {
-    /* ✅ (1) 수정중 배지 텍스트 */
     badge.classList.add("status-draft");
     badge.innerHTML = `<span class="sq"></span>수정중`;
     return;
@@ -533,7 +572,6 @@ function _renderActions(div) {
 
   const origin = div.dataset.origin || "";
   const isChangeDraft = (origin === "change");
-
   if (!isChangeDraft) { actions.style.display = "none"; return; }
 
   if (status === "draft" || status === "draft_edit") {
@@ -605,7 +643,7 @@ function _attachActionHandlers(div) {
         div.dataset.modifiedFrom = "sent";
         delete div.dataset.snapshot;
 
-        alert("수정 요청이 저장되었습니다.\n반드시 '주문 전송 완료' 버튼을 눌러 전송을 완료해주세요.");
+        alert("수정 요청이 저장되었습니다.\n반드시 '주문 전송' 버튼을 눌러 전송을 완료해주세요.");
 
         _applyProductUI(div);
         calc();
@@ -676,8 +714,7 @@ function _attachActionHandlers(div) {
       const status = div.dataset.status || "draft_edit";
       if (status !== "sent") return;
 
-      /* ✅ (3) 수정 눌렀을 때 안내 */
-      alert("수정 후 저장하면 [수정] 전송대기로 변경됩니다.\n반드시 '주문 전송 완료' 버튼을 눌러 전송을 완료해주세요.");
+      alert("수정 후 저장하면 [수정] 전송대기로 변경됩니다.\n반드시 '주문 전송' 버튼을 눌러 전송을 완료해주세요.");
 
       const snap = _copyProductValues(div);
       div.dataset.snapshot = JSON.stringify(snap);
@@ -700,8 +737,7 @@ function _attachActionHandlers(div) {
       if (status !== "sent") return;
       if (!confirm("해당 상품을 취소요청으로 변경할까요?")) return;
 
-      /* ✅ (3) 취소 눌렀을 때 안내 */
-      alert("[취소] 전송대기로 변경되었습니다.\n반드시 '주문 전송 완료' 버튼을 눌러 전송을 완료해주세요.");
+      alert("[취소] 전송대기로 변경되었습니다.\n반드시 '주문 전송' 버튼을 눌러 전송을 완료해주세요.");
 
       div.dataset.status = "cancel_pending";
       _applyProductUI(div);
@@ -819,7 +855,6 @@ function calc() {
     if (_isDraftStatus(st)) { sum += _getProductAmount_(p); return; }
     if (st === "sent") { sum += _getProductAmount_(p); return; }
     if (st === "cancel_pending") { sum -= _getProductAmount_(p); return; }
-    /* ✅ canceled 는 합계에 영향 없음(0으로) */
   });
 
   let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
@@ -888,12 +923,13 @@ function checkOrder() {
   text += `\n상품합계: ${sumEl.innerText}\n`;
   text += `배송비: ${shippingEl.innerText}\n`;
   text += `총 결제금액: ${totalEl.innerText}\n\n`;
-  text += "위 내용이 맞으면 주문 전송 완료를 눌러주세요.";
+  text += "위 내용이 맞으면 주문 전송을 눌러주세요.";
 
   alert(text);
 }
 
-function checkFinalOrder() {
+/* ✅ 확정서 텍스트 생성 */
+function _buildFinalOrderText_() {
   let text = "[고객 정보]\n";
   text += `닉네임: ${document.getElementById("nickname").value}\n`;
   text += `이름: ${document.getElementById("name").value}\n`;
@@ -923,7 +959,6 @@ function checkFinalOrder() {
         sum += qty * price;
         text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
       } else if (st === "canceled") {
-        /* ✅ (4) 취소완료도 수량/가격 표시(합계엔 0으로만 반영) */
         const qtyText = (inputs[3].value || "").trim();
         const priceText = (inputs[4].value || "").trim();
         const q = qtyText ? `${qtyText}개` : "0개";
@@ -939,7 +974,20 @@ function checkFinalOrder() {
   text += `배송비: ${shipping.toLocaleString()}원\n`;
   text += `총 결제금액: ${(sum + shipping).toLocaleString()}원\n`;
 
-  alert(text);
+  return text;
+}
+
+/* ✅ (3) 주문 확정서 버튼 = 복사(안되면 alert로 전체 표시) */
+async function copyFinalOrder() {
+  const text = _buildFinalOrderText_();
+
+  // 카톡 인앱에서 clipboard API가 막히는 경우가 많아서 try/catch + fallback
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("주문 확정서가 복사되었습니다.\n(붙여넣기 하면 됩니다)");
+  } catch (e) {
+    alert("자동 복사가 지원되지 않는 환경입니다.\n아래 내용을 길게 눌러 복사해서 사용하세요.\n\n" + text);
+  }
 }
 
 function _validateBeforeSubmit_() {
@@ -1192,7 +1240,7 @@ function loadData() {
 
   HIDE_DONE = !!data.hideDone;
   const btn = document.querySelector('button[onclick="toggleFold()"]');
-  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기" : "완료목록 삭제";
+  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기" : "완료목록 접기";
 
   calc();
   applyFoldVisibility();
