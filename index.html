@@ -288,6 +288,13 @@ button {
   padding-top:12px;
   margin-top:12px;
 }
+
+/* ===== ✅ 최종 주문서 확인 버튼 (연블루 + 흰색 진한글씨) ===== */
+.btn-final{
+  background:#7FB0FF;
+  color:#fff;
+  font-weight:800;
+}
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -358,9 +365,13 @@ button {
 </div>
 
 <div class="button-line-3">
-  <button class="btn-check" onclick="checkOrder()">주문서 확인</button>
-  <button class="btn-submit" onclick="submitOrder()">주문 완료(수정)</button>
+  <button class="btn-check" onclick="checkOrder()">주문 미리보기</button>
+  <button class="btn-submit" onclick="submitOrder()">주문 전송</button>
   <button class="btn-new" onclick="newOrder()">새 주문</button>
+</div>
+
+<div class="button-line-3">
+  <button class="btn-final" onclick="checkFinalOrder()">최종 주문서 확인</button>
 </div>
 
 <script>
@@ -841,6 +852,49 @@ function checkOrder() {
   text += `배송비: ${shippingEl.innerText}\n`;
   text += `총 결제금액: ${totalEl.innerText}\n\n`;
   text += "위 내용이 맞으면 주문 완료를 눌러주세요.";
+
+  alert(text);
+}
+
+function checkFinalOrder() {
+  let text = "[고객 정보]\n";
+  text += `닉네임: ${document.getElementById("nickname").value}\n`;
+  text += `이름: ${document.getElementById("name").value}\n`;
+  text += `연락처: ${document.getElementById("phone").value}\n`;
+  text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
+
+  text += "[상품 정보]\n";
+
+  const finalItems = [];
+  document.querySelectorAll(".product").forEach(p => {
+    const st = p.dataset.status || "draft_edit";
+    if (st === "sent" || st === "canceled") finalItems.push(p);
+  });
+
+  let sum = 0;
+
+  if (finalItems.length === 0) {
+    text += "(전송 완료/취소 완료 상품이 없습니다.)\n";
+  } else {
+    finalItems.forEach((p, i) => {
+      const inputs = p.querySelectorAll("input");
+      const st = p.dataset.status || "draft_edit";
+      if (st === "sent") {
+        const qty = Number(inputs[3].value || 0);
+        const price = Number(inputs[4].value || 0);
+        sum += qty * price;
+        text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
+      } else if (st === "canceled") {
+        text += `${i+1}. [취소완료] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value}\n`;
+      }
+    });
+  }
+
+  let shipping = sum >= 100000 ? 0 : SHIPPING;
+
+  text += `\n상품합계: ${sum.toLocaleString()}원\n`;
+  text += `배송비: ${shipping.toLocaleString()}원\n`;
+  text += `총 결제금액: ${(sum + shipping).toLocaleString()}원\n`;
 
   alert(text);
 }
