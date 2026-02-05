@@ -249,7 +249,7 @@ button {
 .btn-edit{ background:#E0E0E0; color:#333; }
 .btn-delete-item{ background:#e74c3c; color:#fff; }
 
-/* ===== ✅ 잠금(전송완료/취소요청/취소완료/미전송-저장됨) 시 입력칸 회색 처리 ===== */
+/* ===== ✅ 잠금(전송완료/취소요청/취소완료/전송대기-저장됨) 시 입력칸 회색 처리 ===== */
 .product.is-locked input{
   background:#f2f2f2 !important;
   color:#777 !important;
@@ -332,8 +332,8 @@ button {
 
   <div class="button-line-3">
     <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
-    <button class="btn-delete" onclick="removeLastProduct()">↑ 상품 삭제</button>
-    <button class="btn-check" onclick="toggleFold()">상품목록 접기</button>
+    <button class="btn-delete" onclick="removeLastProduct()">- 상품 삭제</button>
+    <button class="btn-check" onclick="toggleFold()">완료목록 삭제</button>
   </div>
 </div>
 
@@ -369,13 +369,14 @@ const productsDiv = document.getElementById("products");
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypyL9er4QVtnZzXVrLNFRmfjXPDQFmKYcQBC-xoErOYYF_HY3DeGpvWwUkMmQmoEIs/exec";
 
 let IS_LOADING = false;
-let IS_FOLDED = false;
+
+/* ✅ 완료목록 숨김 토글 (sent/canceled만 숨김) */
+let HIDE_DONE = false;
 
 function toggleFold() {
-  IS_FOLDED = !IS_FOLDED;
-
+  HIDE_DONE = !HIDE_DONE;
   const btn = document.querySelector('button[onclick="toggleFold()"]');
-  if (btn) btn.innerText = IS_FOLDED ? "상품목록 펼치기" : "상품목록 접기";
+  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기" : "완료목록 삭제";
 
   applyFoldVisibility();
   renderFoldSummary();
@@ -392,32 +393,24 @@ function _getProductAmount_(p) {
 function applyFoldVisibility() {
   document.querySelectorAll(".product").forEach(p => {
     const st = p.dataset.status || "draft_edit";
-
-    if (_isDraftStatus(st)) {
-      p.style.display = "";
+    if (HIDE_DONE && (st === "sent" || st === "canceled")) {
+      p.style.display = "none";
     } else {
-      p.style.display = IS_FOLDED ? "none" : "";
+      p.style.display = "";
     }
   });
 }
 
+/* ✅ 요약은 자동 표시(완료된 것들만) */
 function renderFoldSummary() {
   const box = document.getElementById("foldSummary");
   if (!box) return;
 
-  if (!IS_FOLDED) {
-    box.style.display = "none";
-    box.innerHTML = "";
-    return;
-  }
-
   const lines = [];
 
   document.querySelectorAll(".product").forEach(p => {
-    if (p.style.display === "none") return;
-
     const st = p.dataset.status || "draft_edit";
-    if (_isDraftStatus(st)) return;
+    if (!(st === "sent" || st === "canceled")) return;
 
     const i = p.querySelectorAll("input");
     const name = (i[0]?.value || "").trim();
@@ -425,30 +418,17 @@ function renderFoldSummary() {
     const size = (i[2]?.value || "").trim();
     const qty = (i[3]?.value || "").trim();
     const price = (i[4]?.value || "").trim();
-    const action = (p.dataset.action || "").trim();
-
-    const stLabel =
-      st === "sent" ? "전송완료" :
-      st === "cancel_pending" ? "[취소] 전송대기" :
-      st === "canceled" ? "취소완료" :
-      st === "sent_edit" ? "수정중" : st;
 
     if (st === "canceled") {
-      lines.push(`• [${stLabel}] ${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
-    } else if (st === "cancel_pending") {
-      lines.push(`• [${stLabel}] ${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
-    } else if (_isDraftStatus(st) && action === "modify") {
-      lines.push(`• [[수정] 전송대기] ${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
-    } else if (_isDraftStatus(st)) {
-      lines.push(`• [전송대기] ${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
+      lines.push(`• [취소완료] ${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
     } else {
-      lines.push(`• [${stLabel}] ${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
+      lines.push(`• [전송완료] ${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
     }
   });
 
   if (lines.length === 0) {
-    box.style.display = "block";
-    box.innerHTML = `완료/취소된 상품이 없습니다.`;
+    box.style.display = "none";
+    box.innerHTML = "";
     return;
   }
 
@@ -461,6 +441,7 @@ function _uid() {
 }
 
 function _isDraftStatus(status) {
+  /* ✅ 미전송 용어 제거: draft* 는 전송대기 라인으로만 사용 */
   return (status === "draft" || status === "draft_edit" || status === "draft_saved");
 }
 
@@ -472,41 +453,48 @@ function _setStatusBadge(div, status) {
 
   const action = (div.dataset.action || "").trim();
 
-  if (status === "draft" || status === "draft_edit" || status === "draft_saved") {
+  if (_isDraftStatus(status)) {
     badge.classList.add("status-draft");
-    if (action === "modify") {
-      badge.innerHTML = `<span class="sq"></span>[수정] 전송대기`;
-    } else {
-      badge.innerHTML = `<span class="sq"></span>전송대기`;
-    }
-  } else if (status === "sent") {
+    if (action === "modify") badge.innerHTML = `<span class="sq"></span>[수정] 전송대기`;
+    else badge.innerHTML = `<span class="sq"></span>전송대기`;
+    return;
+  }
+
+  if (status === "sent") {
     badge.classList.add("status-sent");
     badge.innerHTML = `<span class="sq"></span>전송완료`;
-  } else if (status === "cancel_pending") {
+    return;
+  }
+
+  if (status === "cancel_pending") {
     badge.classList.add("status-cancel-pending");
     badge.innerHTML = `<span class="sq"></span>[취소] 전송대기`;
-  } else if (status === "canceled") {
+    return;
+  }
+
+  if (status === "canceled") {
     badge.classList.add("status-canceled");
     badge.innerHTML = `<span class="sq"></span>취소완료`;
-  } else if (status === "sent_edit") {
-    /* ✅ (1) 수정중 배지 텍스트 복원 */
+    return;
+  }
+
+  if (status === "sent_edit") {
+    /* ✅ (1) 수정중 배지 텍스트 */
     badge.classList.add("status-draft");
     badge.innerHTML = `<span class="sq"></span>수정중`;
-  } else {
-    badge.classList.add("status-draft");
-    badge.innerHTML = `<span class="sq"></span>전송대기`;
+    return;
   }
+
+  badge.classList.add("status-draft");
+  badge.innerHTML = `<span class="sq"></span>전송대기`;
 }
 
 function _lockInputs(div, lock) {
   const inputs = div.querySelectorAll("input");
   inputs.forEach((inp, idx) => {
     if (lock) {
-      if (idx === 3 || idx === 4) {
-        inp.disabled = true;
-      } else {
-        inp.readOnly = true;
-      }
+      if (idx === 3 || idx === 4) inp.disabled = true;
+      else inp.readOnly = true;
     } else {
       inp.disabled = false;
       inp.readOnly = false;
@@ -531,54 +519,33 @@ function _renderActions(div) {
 
   if (status === "sent") {
     actions.style.display = "flex";
-    if (btnChange) {
-      btnChange.style.display = "block";
-      btnChange.innerText = "수정";
-    }
-    if (btnCancel) {
-      btnCancel.style.display = "block";
-      btnCancel.innerText = "취소";
-    }
+    if (btnChange) { btnChange.style.display = "block"; btnChange.innerText = "수정"; }
+    if (btnCancel) { btnCancel.style.display = "block"; btnCancel.innerText = "취소"; }
     return;
   }
 
   if (status === "sent_edit") {
     actions.style.display = "flex";
-    if (btnSave) {
-      btnSave.style.display = "block";
-      btnSave.innerText = "저장";
-    }
-    if (btnEdit) {
-      btnEdit.style.display = "block";
-      btnEdit.innerText = "수정 취소";
-    }
+    if (btnSave) { btnSave.style.display = "block"; btnSave.innerText = "저장"; }
+    if (btnEdit) { btnEdit.style.display = "block"; btnEdit.innerText = "수정 취소"; }
     return;
   }
 
   const origin = div.dataset.origin || "";
   const isChangeDraft = (origin === "change");
 
-  if (!isChangeDraft) {
-    actions.style.display = "none";
-    return;
-  }
+  if (!isChangeDraft) { actions.style.display = "none"; return; }
 
   if (status === "draft" || status === "draft_edit") {
     actions.style.display = "flex";
-    if (btnSave) {
-      btnSave.style.display = "block";
-      btnSave.innerText = "저장";
-    }
+    if (btnSave) { btnSave.style.display = "block"; btnSave.innerText = "저장"; }
     if (btnDeleteItem) btnDeleteItem.style.display = "block";
     return;
   }
 
   if (status === "draft_saved") {
     actions.style.display = "flex";
-    if (btnEdit) {
-      btnEdit.style.display = "block";
-      btnEdit.innerText = "수정";
-    }
+    if (btnEdit) { btnEdit.style.display = "block"; btnEdit.innerText = "수정"; }
     if (btnDeleteItem) btnDeleteItem.style.display = "block";
     return;
   }
@@ -637,6 +604,9 @@ function _attachActionHandlers(div) {
         div.dataset.action = "modify";
         div.dataset.modifiedFrom = "sent";
         delete div.dataset.snapshot;
+
+        alert("수정 요청이 저장되었습니다.\n반드시 '주문 전송 완료' 버튼을 눌러 전송을 완료해주세요.");
+
         _applyProductUI(div);
         calc();
         saveData();
@@ -694,7 +664,6 @@ function _attachActionHandlers(div) {
       if (!confirm("해당 상품을 삭제할까요?")) return;
 
       div.remove();
-
       if (!document.querySelector(".product")) addProduct();
 
       calc();
@@ -707,6 +676,9 @@ function _attachActionHandlers(div) {
       const status = div.dataset.status || "draft_edit";
       if (status !== "sent") return;
 
+      /* ✅ (3) 수정 눌렀을 때 안내 */
+      alert("수정 후 저장하면 [수정] 전송대기로 변경됩니다.\n반드시 '주문 전송 완료' 버튼을 눌러 전송을 완료해주세요.");
+
       const snap = _copyProductValues(div);
       div.dataset.snapshot = JSON.stringify(snap);
 
@@ -717,7 +689,6 @@ function _attachActionHandlers(div) {
       if (firstInput) firstInput.focus();
 
       saveData();
-
       applyFoldVisibility();
       renderFoldSummary();
     };
@@ -728,6 +699,9 @@ function _attachActionHandlers(div) {
       const status = div.dataset.status || "draft_edit";
       if (status !== "sent") return;
       if (!confirm("해당 상품을 취소요청으로 변경할까요?")) return;
+
+      /* ✅ (3) 취소 눌렀을 때 안내 */
+      alert("[취소] 전송대기로 변경되었습니다.\n반드시 '주문 전송 완료' 버튼을 눌러 전송을 완료해주세요.");
 
       div.dataset.status = "cancel_pending";
       _applyProductUI(div);
@@ -842,20 +816,10 @@ function calc() {
   document.querySelectorAll(".product").forEach(p => {
     const st = p.dataset.status || "draft_edit";
 
-    if (_isDraftStatus(st)) {
-      sum += _getProductAmount_(p);
-      return;
-    }
-
-    if (st === "sent") {
-      sum += _getProductAmount_(p);
-      return;
-    }
-
-    if (st === "cancel_pending") {
-      sum -= _getProductAmount_(p);
-      return;
-    }
+    if (_isDraftStatus(st)) { sum += _getProductAmount_(p); return; }
+    if (st === "sent") { sum += _getProductAmount_(p); return; }
+    if (st === "cancel_pending") { sum -= _getProductAmount_(p); return; }
+    /* ✅ canceled 는 합계에 영향 없음(0으로) */
   });
 
   let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
@@ -924,7 +888,7 @@ function checkOrder() {
   text += `\n상품합계: ${sumEl.innerText}\n`;
   text += `배송비: ${shippingEl.innerText}\n`;
   text += `총 결제금액: ${totalEl.innerText}\n\n`;
-  text += "위 내용이 맞으면 주문 전송을 눌러주세요.";
+  text += "위 내용이 맞으면 주문 전송 완료를 눌러주세요.";
 
   alert(text);
 }
@@ -940,9 +904,6 @@ function checkFinalOrder() {
 
   const finalItems = [];
   document.querySelectorAll(".product").forEach(p => {
-    /* ✅ (2) 접기 상태(IS_FOLDED)일 땐 display:none 필터를 무시 */
-    if (p.style.display === "none" && !IS_FOLDED) return;
-
     const st = p.dataset.status || "draft_edit";
     if (st === "sent" || st === "canceled") finalItems.push(p);
   });
@@ -962,7 +923,12 @@ function checkFinalOrder() {
         sum += qty * price;
         text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
       } else if (st === "canceled") {
-        text += `${i+1}. [취소완료] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value}\n`;
+        /* ✅ (4) 취소완료도 수량/가격 표시(합계엔 0으로만 반영) */
+        const qtyText = (inputs[3].value || "").trim();
+        const priceText = (inputs[4].value || "").trim();
+        const q = qtyText ? `${qtyText}개` : "0개";
+        const pr = priceText ? `${priceText}원` : "0원";
+        text += `${i+1}. [취소완료] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${q} / ${pr}\n`;
       }
     });
   }
@@ -1172,7 +1138,7 @@ function saveData() {
       addressDetail: document.getElementById("addressDetail").value
     },
     products: [],
-    isFolded: IS_FOLDED
+    hideDone: HIDE_DONE
   };
 
   document.querySelectorAll(".product").forEach(p => {
@@ -1224,12 +1190,11 @@ function loadData() {
     addProduct(preset, true);
   });
 
-  calc();
-
-  IS_FOLDED = !!data.isFolded;
+  HIDE_DONE = !!data.hideDone;
   const btn = document.querySelector('button[onclick="toggleFold()"]');
-  if (btn) btn.innerText = IS_FOLDED ? "상품목록 펼치기" : "상품목록 접기";
+  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기" : "완료목록 삭제";
 
+  calc();
   applyFoldVisibility();
   renderFoldSummary();
 
