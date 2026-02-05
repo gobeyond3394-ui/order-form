@@ -307,6 +307,30 @@ button {
   flex: 1 1 100%;
   max-width: 100%;
 }
+
+/* ===== ✅ 원본/변경 라벨(명확하게) ===== */
+.role-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:800;
+  padding:6px 10px;
+  border-radius:6px;
+  white-space:nowrap;
+  user-select:none;
+  border:1px solid transparent;
+}
+.role-original{
+  background:#f2f2f2;
+  color:#555;
+  border-color:#d9d9d9;
+}
+.role-changed{
+  background:#e8f2ff;
+  color:#005FAE;
+  border-color:#c8ddff;
+}
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -351,12 +375,13 @@ button {
 
 <div class="section">
   <div class="section-title">상품 정보</div>
+  <div id="foldSummary" style="display:none; font-size:13px; color:#333; background:#f7f9ff; border:1px solid #d6e0ff; border-radius:10px; padding:10px; margin:6px 0 10px; line-height:1.5;"></div>
   <div id="products"></div>
 
   <div class="button-line-3">
     <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
     <button class="btn-delete" onclick="removeLastProduct()">↑ 상품 삭제</button>
-    <button class="btn-clear" onclick="removeAllProducts()">- 상품목록 삭제</button>
+    <button class="btn-check" onclick="toggleFold()">상품목록 접기</button>
   </div>
 </div>
 
@@ -392,6 +417,88 @@ const productsDiv = document.getElementById("products");
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypyL9er4QVtnZzXVrLNFRmfjXPDQFmKYcQBC-xoErOYYF_HY3DeGpvWwUkMmQmoEIs/exec";
 
 let IS_LOADING = false;
+let IS_FOLDED = false;
+
+function toggleFold() {
+  IS_FOLDED = !IS_FOLDED;
+
+  const btn = document.querySelector('button[onclick="toggleFold()"]');
+  if (btn) btn.innerText = IS_FOLDED ? "상품목록 펼치기" : "상품목록 접기";
+
+  applyFoldVisibility();
+  renderFoldSummary();
+  saveData();
+}
+
+function applyFoldVisibility() {
+  document.querySelectorAll(".product").forEach(p => {
+    const st = p.dataset.status || "draft_edit";
+    if (_isDraftStatus(st)) {
+      p.style.display = "";
+    } else {
+      p.style.display = IS_FOLDED ? "none" : "";
+    }
+  });
+
+  document.querySelectorAll(".change-group").forEach(g => {
+    const visibleProducts = Array.from(g.querySelectorAll(".product"))
+      .filter(p => p.style.display !== "none");
+    g.style.display = (visibleProducts.length === 0 && IS_FOLDED) ? "none" : "";
+  });
+}
+
+function renderFoldSummary() {
+  const box = document.getElementById("foldSummary");
+  if (!box) return;
+
+  if (!IS_FOLDED) {
+    box.style.display = "none";
+    box.innerHTML = "";
+    return;
+  }
+
+  const lines = [];
+
+  document.querySelectorAll(".product").forEach(p => {
+    const st = p.dataset.status || "draft_edit";
+    if (_isDraftStatus(st)) return;
+
+    const i = p.querySelectorAll("input");
+    const name = (i[0]?.value || "").trim();
+    const color = (i[1]?.value || "").trim();
+    const size = (i[2]?.value || "").trim();
+    const qty = (i[3]?.value || "").trim();
+    const price = (i[4]?.value || "").trim();
+
+    const stLabel =
+      st === "sent" ? "전송완료" :
+      st === "cancel_pending" ? "취소요청" :
+      st === "canceled" ? "취소완료" : st;
+
+    const role =
+      (p.dataset.groupRole || "") === "original" ? "원본" :
+      (p.dataset.groupRole || "") === "changed" ? "변경" : "";
+
+    const roleText = role ? `(${role}) ` : "";
+
+    if (st === "canceled") {
+      lines.push(`• [${stLabel}] ${roleText}${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
+    } else if (st === "cancel_pending") {
+      lines.push(`• [${stLabel}] ${roleText}${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
+    } else {
+      lines.push(`• [${stLabel}] ${roleText}${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
+    }
+  });
+
+  if (lines.length === 0) {
+    box.style.display = "block";
+    box.innerHTML = `완료/취소된 상품이 없습니다.`;
+    return;
+  }
+
+  box.style.display = "block";
+  box.innerHTML = lines.join("<br>");
+}
 
 function _uid() {
   return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
@@ -501,6 +608,12 @@ function _renderActions(div) {
 
   // 기본은 버튼라인 보이게(해당 상태에서만)
   if (status === "sent") {
+    // ✅ 변경 그룹으로 묶인 원본(회색 처리된 sent)은 버튼 숨김
+    if ((div.dataset.groupRole || "") === "original") {
+      actions.style.display = "none";
+      return;
+    }
+
     actions.style.display = "flex";
     if (btnChange) btnChange.style.display = "block";
     if (btnCancel) btnCancel.style.display = "block";
@@ -539,6 +652,27 @@ function _applyProductUI(div) {
   const status = div.dataset.status || "draft_edit";
   _setStatusBadge(div, status);
 
+  // ✅ 원본/변경 역할 라벨 표시(변경 그룹에 속한 상품만)
+  const roleEl = div.querySelector(".role-badge");
+  if (roleEl) {
+    const role = div.dataset.groupRole || "";
+    if (role === "original") {
+      roleEl.style.display = "inline-flex";
+      roleEl.classList.remove("role-changed");
+      roleEl.classList.add("role-original");
+      roleEl.textContent = "원본";
+    } else if (role === "changed") {
+      roleEl.style.display = "inline-flex";
+      roleEl.classList.remove("role-original");
+      roleEl.classList.add("role-changed");
+      roleEl.textContent = "변경";
+    } else {
+      roleEl.style.display = "none";
+      roleEl.classList.remove("role-original","role-changed");
+      roleEl.textContent = "";
+    }
+  }
+
   // draft_saved + (sent/cancel_pending/canceled) 는 잠금
   if (status === "draft_saved" || status === "sent" || status === "cancel_pending" || status === "canceled") {
     _lockInputs(div, true);
@@ -549,6 +683,9 @@ function _applyProductUI(div) {
   }
 
   _renderActions(div);
+
+  applyFoldVisibility();
+  renderFoldSummary();
 }
 
 function _copyProductValues(fromDiv) {
@@ -657,6 +794,9 @@ function _attachActionHandlers(div) {
       if (firstInput) firstInput.focus();
 
       saveData();
+
+      applyFoldVisibility();
+      renderFoldSummary();
     };
   }
 
@@ -694,6 +834,7 @@ function addProduct(preset, insertAfterRef) {
       <label>상품명</label>
       <div class="product-title-row">
         <input class="product-name" placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
+        <div class="role-badge" style="display:none;"></div>
         <div class="status-badge status-draft"><span class="sq"></span>미전송</div>
       </div>
     </div>
@@ -751,6 +892,8 @@ function addProduct(preset, insertAfterRef) {
   _applyProductUI(div);
 
   calc();
+  applyFoldVisibility();
+  renderFoldSummary();
   if (!IS_LOADING) saveData();
   return div;
 }
@@ -771,6 +914,8 @@ function removeLastProduct() {
 
   calc();
   saveData();
+  applyFoldVisibility();
+  renderFoldSummary();
 }
 
 function removeAllProducts() {
@@ -788,6 +933,8 @@ function removeAllProducts() {
   }
 
   saveData();
+  applyFoldVisibility();
+  renderFoldSummary();
 }
 
 function calc() {
@@ -807,6 +954,9 @@ function calc() {
   sumEl.innerText = sum.toLocaleString() + "원";
   shippingEl.innerText = shipping.toLocaleString() + "원";
   totalEl.innerText = (sum + shipping).toLocaleString() + "원";
+
+  applyFoldVisibility();
+  renderFoldSummary();
 }
 
 const sumEl = document.getElementById("sum");
@@ -863,7 +1013,7 @@ function checkOrder() {
   text += `\n상품합계: ${sumEl.innerText}\n`;
   text += `배송비: ${shippingEl.innerText}\n`;
   text += `총 결제금액: ${totalEl.innerText}\n\n`;
-  text += "위 내용이 맞으면 주문 완료를 눌러주세요.";
+  text += "위 내용이 맞으면 주문 전송을 눌러주세요.";
 
   alert(text);
 }
@@ -911,7 +1061,59 @@ function checkFinalOrder() {
   alert(text);
 }
 
+function _validateBeforeSubmit_() {
+  const nickname = document.getElementById("nickname");
+  const name = document.getElementById("name");
+  const phone = document.getElementById("phone");
+  const address = document.getElementById("address");
+  const addressDetail = document.getElementById("addressDetail");
+
+  if (!nickname.value.trim()) { alert("닉네임을 입력해주세요."); nickname.focus(); return false; }
+  if (!name.value.trim()) { alert("이름을 입력해주세요."); name.focus(); return false; }
+  if (!phone.value.trim()) { alert("연락처를 입력해주세요."); phone.focus(); return false; }
+  if (!address.value.trim()) { alert("주소검색으로 주소를 입력해주세요."); return false; }
+  if (!addressDetail.value.trim()) { alert("상세주소를 입력해주세요."); addressDetail.focus(); return false; }
+
+  let hasSendTarget = false;
+
+  const products = document.querySelectorAll(".product");
+  for (let idx = 0; idx < products.length; idx++) {
+    const p = products[idx];
+    const st = p.dataset.status || "draft_edit";
+    const i = p.querySelectorAll("input");
+
+    const pName = (i[0]?.value || "").trim();
+    const pColor = (i[1]?.value || "").trim();
+    const pSize = (i[2]?.value || "").trim();
+    const pQty = (i[3]?.value || "").trim();
+    const pPrice = (i[4]?.value || "").trim();
+
+    if (_isDraftStatus(st) || st === "cancel_pending") {
+      hasSendTarget = true;
+
+      if (!pName) { alert("상품명을 입력해주세요."); i[0].focus(); return false; }
+      if (!pColor) { alert("색상을 입력해주세요."); i[1].focus(); return false; }
+      if (!pSize) { alert("사이즈를 입력해주세요."); i[2].focus(); return false; }
+
+      if (_isDraftStatus(st)) {
+        const nQty = Number(pQty || 0);
+        const nPrice = Number(pPrice || 0);
+        if (!pQty || nQty <= 0) { alert("수량을 입력해주세요."); i[3].focus(); return false; }
+        if (!pPrice || nPrice <= 0) { alert("가격을 입력해주세요."); i[4].focus(); return false; }
+      }
+    }
+  }
+
+  if (!hasSendTarget) {
+    alert("미전송/취소요청 상품이 없습니다.");
+    return false;
+  }
+
+  return true;
+}
+
 async function submitOrder() {
+  if (!_validateBeforeSubmit_()) return;
   if (!confirm("주문을 완료하시겠습니까?")) return;
 
   saveData();
@@ -1012,30 +1214,33 @@ async function submitOrder() {
   }
 }
 
-/* 🔹 수정된 부분: 상품만 초기화 */
+/* 🔹 수정된 부분: 고객 정보 유지 + 상품 전체 초기화 */
 function newOrder() {
-  if (!confirm("미전송 상품만 새로 주문할까요?")) return;
+  if (!confirm("새로 주문을 시작할까요?")) return;
 
   const data = JSON.parse(localStorage.getItem("orderData") || "{}");
-  data.products = (data.products || []).filter(p => {
-    const st = p.status || "draft_edit";
-    return !_isDraftStatus(st);
-  });
+
+  data.customer = data.customer || {
+    nickname: document.getElementById("nickname").value,
+    name: document.getElementById("name").value,
+    phone: document.getElementById("phone").value,
+    address: document.getElementById("address").value,
+    addressDetail: document.getElementById("addressDetail").value
+  };
+
+  data.products = [];
   localStorage.setItem("orderData", JSON.stringify(data));
 
-  document.querySelectorAll(".product").forEach(p => {
-    const st = p.dataset.status || "draft_edit";
-    if (_isDraftStatus(st)) p.remove();
-  });
+  document.querySelectorAll(".product").forEach(p => p.remove());
+  document.querySelectorAll(".change-group").forEach(g => g.remove());
 
-  _cleanupEmptyGroups_();
-
-  if (!document.querySelector(".product")) {
-    addProduct();
-  }
+  addProduct();
 
   calc();
   saveData();
+
+  applyFoldVisibility();
+  renderFoldSummary();
 }
 
 /* 🔹 자동 저장 / 복원 (추가 코드) */
@@ -1048,7 +1253,8 @@ function saveData() {
       address: document.getElementById("address").value,
       addressDetail: document.getElementById("addressDetail").value
     },
-    products: []
+    products: [],
+    isFolded: IS_FOLDED
   };
 
   document.querySelectorAll(".product").forEach(p => {
@@ -1117,6 +1323,13 @@ function loadData() {
   _cleanupEmptyGroups_();
 
   calc();
+
+  IS_FOLDED = !!data.isFolded;
+  const btn = document.querySelector('button[onclick="toggleFold()"]');
+  if (btn) btn.innerText = IS_FOLDED ? "상품목록 펼치기" : "상품목록 접기";
+
+  applyFoldVisibility();
+  renderFoldSummary();
 
   IS_LOADING = false;
   saveData();
