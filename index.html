@@ -213,7 +213,7 @@ button {
 }
 .status-sent .sq{ background:#005FAE; }
 
-/* 🔴 취소 전송대기(기존 클래스 재사용) */
+/* 🔴 [취소] 전송대기 */
 .status-cancel-pending{
   background:#ffe9e9;
   color:#c0392b;
@@ -265,39 +265,14 @@ button {
   opacity:1 !important;
 }
 
-/* ===== ✅ 변경 그룹 박스 ===== */
-.change-group{
-  border:1px solid #d6e0ff;
-  background:#f7f9ff;
-  border-radius:10px;
-  padding:12px;
-  margin-top:12px;
-}
-.change-group-title{
-  font-size:13px;
-  font-weight:800;
-  color:#005FAE;
-  margin-bottom:8px;
-}
-.change-group .product{
-  border-top:none;
-  padding-top:0;
-  margin-top:0;
-}
-.change-group .product + .product{
-  border-top:1px solid #e7ecff;
-  padding-top:12px;
-  margin-top:12px;
-}
-
 /* ===== ✅ 주문 확정서 버튼(아주 진한 그레이 + 흰글씨) ===== */
 .btn-final{
-  background:#1f1f1f; /* 아주 진한 그레이 */
+  background:#1f1f1f;
   color:#fff;
   font-weight:800;
 }
 
-/* ===== ✅ 최종 주문서 확인 버튼 한 줄 가득 ===== */
+/* ===== ✅ 주문 확정서 버튼 한 줄 가득 ===== */
 .button-line-full{
   display: flex;
   justify-content: center;
@@ -307,30 +282,6 @@ button {
 .button-line-full button{
   flex: 1 1 100%;
   max-width: 100%;
-}
-
-/* ===== ✅ 원본/변경 라벨(명확하게) ===== */
-.role-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  font-size:12px;
-  font-weight:800;
-  padding:6px 10px;
-  border-radius:6px;
-  white-space:nowrap;
-  user-select:none;
-  border:1px solid transparent;
-}
-.role-original{
-  background:#f2f2f2;
-  color:#555;
-  border-color:#d9d9d9;
-}
-.role-changed{
-  background:#e8f2ff;
-  color:#005FAE;
-  border-color:#c8ddff;
 }
 </style>
 
@@ -438,42 +389,15 @@ function _getProductAmount_(p) {
   return qty * price;
 }
 
-/* ✅ 변경완료(변경안이 sent)면 원본 자동 숨김 */
-function _isChangeCompletedGroup_(groupId) {
-  if (!groupId) return false;
-  const changed = document.querySelector(`.product[data-group-id="${groupId}"][data-group-role="changed"]`);
-  if (!changed) return false;
-  const st = changed.dataset.status || "draft_edit";
-  return st === "sent";
-}
-
 function applyFoldVisibility() {
   document.querySelectorAll(".product").forEach(p => {
     const st = p.dataset.status || "draft_edit";
-    const gid = p.dataset.groupId || "";
-    const role = p.dataset.groupRole || "";
 
-    /* ✅ 변경완료면 원본은 항상 숨김(접기/펼치기와 무관) */
-    if (role === "original" && gid && _isChangeCompletedGroup_(gid)) {
-      p.style.display = "none";
-      return;
+    if (_isDraftStatus(st)) {
+      p.style.display = "";
+    } else {
+      p.style.display = IS_FOLDED ? "none" : "";
     }
-
-    // ✅ 접기 시: 모든 상품카드 숨김(요약은 foldSummary에 한줄)
-    if (IS_FOLDED) {
-      p.style.display = "none";
-      return;
-    }
-
-    p.style.display = "";
-  });
-
-  document.querySelectorAll(".change-group").forEach(g => {
-    if (IS_FOLDED) {
-      g.style.display = "none";
-      return;
-    }
-    g.style.display = "";
   });
 }
 
@@ -487,12 +411,13 @@ function renderFoldSummary() {
     return;
   }
 
-  // ✅ 전송대기/전송완료/취소완료/[수정]전송대기/[취소]전송대기 모두 한줄 요약
-  const parts = [];
+  const lines = [];
 
   document.querySelectorAll(".product").forEach(p => {
+    if (p.style.display === "none") return;
+
     const st = p.dataset.status || "draft_edit";
-    const action = (p.dataset.action || "").trim();
+    if (_isDraftStatus(st)) return;
 
     const i = p.querySelectorAll("input");
     const name = (i[0]?.value || "").trim();
@@ -500,73 +425,39 @@ function renderFoldSummary() {
     const size = (i[2]?.value || "").trim();
     const qty = (i[3]?.value || "").trim();
     const price = (i[4]?.value || "").trim();
+    const action = (p.dataset.action || "").trim();
 
-    const label =
-      (st === "canceled") ? "취소완료" :
-      (st === "sent") ? "전송완료" :
-      (st === "cancel_pending") ? "[취소] 전송대기" :
-      (st === "sent_edit") ? "[수정] 전송대기" :
-      (_isDraftStatus(st) && action === "modify") ? "[수정] 전송대기" :
-      (_isDraftStatus(st)) ? "전송대기" : "전송대기";
+    const stLabel =
+      st === "sent" ? "전송완료" :
+      st === "cancel_pending" ? "[취소] 전송대기" :
+      st === "canceled" ? "취소완료" :
+      st === "sent_edit" ? "수정중" : st;
 
     if (st === "canceled") {
-      parts.push(`[${label}] ${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
+      lines.push(`• [${stLabel}] ${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
     } else if (st === "cancel_pending") {
-      parts.push(`[${label}] ${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
+      lines.push(`• [${stLabel}] ${name} / ${color} / ${size}`.replace(/\s+\/\s*$/,""));
+    } else if (_isDraftStatus(st) && action === "modify") {
+      lines.push(`• [[수정] 전송대기] ${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
+    } else if (_isDraftStatus(st)) {
+      lines.push(`• [전송대기] ${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
     } else {
-      // 전송완료/전송대기/수정전송대기
-      parts.push(`[${label}] ${name} / ${color} / ${size} / ${qty || ""}개 / ${price || ""}원`.replace(/\s+\/\s*$/,""));
+      lines.push(`• [${stLabel}] ${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
     }
   });
 
+  if (lines.length === 0) {
+    box.style.display = "block";
+    box.innerHTML = `완료/취소된 상품이 없습니다.`;
+    return;
+  }
+
   box.style.display = "block";
-  box.innerHTML = parts.length ? parts.join(" | ") : "상품이 없습니다.";
+  box.innerHTML = lines.join("<br>");
 }
 
 function _uid() {
   return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
-}
-
-function _gid() {
-  return "g_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
-}
-
-function _countChangeGroupsInDOM_() {
-  return document.querySelectorAll(".change-group").length;
-}
-
-function _ensureGroupWrapper_(groupId, groupLabel, insertAfterEl) {
-  let wrap = document.querySelector(`.change-group[data-group-id="${groupId}"]`);
-  if (wrap) return wrap;
-
-  wrap = document.createElement("div");
-  wrap.className = "change-group";
-  wrap.dataset.groupId = groupId;
-  wrap.dataset.groupLabel = groupLabel || "상품 변경";
-  wrap.innerHTML = `<div class="change-group-title">${wrap.dataset.groupLabel}</div>`;
-
-  if (insertAfterEl && insertAfterEl.nodeType === 1 && insertAfterEl.parentNode) {
-    insertAfterEl.insertAdjacentElement("afterend", wrap);
-  } else {
-    productsDiv.appendChild(wrap);
-  }
-  return wrap;
-}
-
-function _cleanupEmptyGroups_() {
-  document.querySelectorAll(".change-group").forEach(wrap => {
-    const products = wrap.querySelectorAll(".product");
-    if (products.length === 0) {
-      wrap.remove();
-      return;
-    }
-    if (products.length === 1) {
-      const only = products[0];
-      wrap.insertAdjacentElement("beforebegin", only);
-      wrap.remove();
-      return;
-    }
-  });
 }
 
 function _isDraftStatus(status) {
@@ -581,7 +472,6 @@ function _setStatusBadge(div, status) {
 
   const action = (div.dataset.action || "").trim();
 
-  // ✅ 배지 텍스트 3종(전송대기/전송완료/취소완료) + 전송대기 내 prefix([수정]/[취소])
   if (status === "draft" || status === "draft_edit" || status === "draft_saved") {
     badge.classList.add("status-draft");
     if (action === "modify") {
@@ -599,9 +489,9 @@ function _setStatusBadge(div, status) {
     badge.classList.add("status-canceled");
     badge.innerHTML = `<span class="sq"></span>취소완료`;
   } else if (status === "sent_edit") {
-    // ✅ 수정모드도 전송대기 카테고리로 보여주기
+    /* ✅ (1) 수정중 배지 텍스트 복원 */
     badge.classList.add("status-draft");
-    badge.innerHTML = `<span class="sq"></span>[수정] 전송대기`;
+    badge.innerHTML = `<span class="sq"></span>수정중`;
   } else {
     badge.classList.add("status-draft");
     badge.innerHTML = `<span class="sq"></span>전송대기`;
@@ -635,19 +525,11 @@ function _renderActions(div) {
   const btnChange = actions.querySelector(".btn-change");
   const btnCancel = actions.querySelector(".btn-cancel");
 
-  // 모두 숨김 후 필요한 것만 표시
   [btnSave, btnEdit, btnDeleteItem, btnChange, btnCancel].forEach(b => {
     if (b) b.style.display = "none";
   });
 
-  // ✅ 전송완료: [수정] [취소]
   if (status === "sent") {
-    // ✅ 변경 그룹으로 묶인 원본(전송완료)은 버튼 숨김
-    if ((div.dataset.groupRole || "") === "original") {
-      actions.style.display = "none";
-      return;
-    }
-
     actions.style.display = "flex";
     if (btnChange) {
       btnChange.style.display = "block";
@@ -660,7 +542,6 @@ function _renderActions(div) {
     return;
   }
 
-  // ✅ 전송완료 수정모드: [저장] [수정 취소]
   if (status === "sent_edit") {
     actions.style.display = "flex";
     if (btnSave) {
@@ -674,12 +555,10 @@ function _renderActions(div) {
     return;
   }
 
-  // ✅ 변경으로 생긴 줄에만 저장/삭제(및 저장 후 수정/삭제) 버튼 노출
   const origin = div.dataset.origin || "";
   const isChangeDraft = (origin === "change");
 
   if (!isChangeDraft) {
-    // 일반 전송대기는 개별 버튼 없음(상단 버튼으로 관리)
     actions.style.display = "none";
     return;
   }
@@ -711,28 +590,6 @@ function _applyProductUI(div) {
   const status = div.dataset.status || "draft_edit";
   _setStatusBadge(div, status);
 
-  // ✅ 원본/변경 역할 라벨 표시(변경 그룹에 속한 상품만)
-  const roleEl = div.querySelector(".role-badge");
-  if (roleEl) {
-    const role = div.dataset.groupRole || "";
-    if (role === "original") {
-      roleEl.style.display = "inline-flex";
-      roleEl.classList.remove("role-changed");
-      roleEl.classList.add("role-original");
-      roleEl.textContent = "원본";
-    } else if (role === "changed") {
-      roleEl.style.display = "inline-flex";
-      roleEl.classList.remove("role-original");
-      roleEl.classList.add("role-changed");
-      roleEl.textContent = "수정"; // ✅ 변경 → 수정(표시만)
-    } else {
-      roleEl.style.display = "none";
-      roleEl.classList.remove("role-original","role-changed");
-      roleEl.textContent = "";
-    }
-  }
-
-  // draft_saved + (sent/cancel_pending/canceled) 는 잠금
   if (status === "draft_saved" || status === "sent" || status === "cancel_pending" || status === "canceled") {
     _lockInputs(div, true);
     div.classList.add("is-locked");
@@ -741,7 +598,6 @@ function _applyProductUI(div) {
     div.classList.remove("is-locked");
   }
 
-  // ✅ 전송완료 수정모드(sent_edit)는 잠금 해제(흰색)
   if (status === "sent_edit") {
     _lockInputs(div, false);
     div.classList.remove("is-locked");
@@ -759,7 +615,7 @@ function _copyProductValues(fromDiv) {
     name: i[0].value || "",
     color: i[1].value || "",
     size: i[2].value || "",
-    qty: i[3].value || "",     // ✅ 기본값 "1" 제거
+    qty: i[3].value || "",
     price: i[4].value || ""
   };
 }
@@ -776,7 +632,6 @@ function _attachActionHandlers(div) {
     btnSave.onclick = () => {
       const status = div.dataset.status || "draft_edit";
 
-      // ✅ 전송완료 수정모드 저장: [수정] 전송대기
       if (status === "sent_edit") {
         div.dataset.status = "draft_saved";
         div.dataset.action = "modify";
@@ -788,7 +643,6 @@ function _attachActionHandlers(div) {
         return;
       }
 
-      // 기존(변경 draft) 저장
       if (status !== "draft" && status !== "draft_edit") return;
 
       div.dataset.status = "draft_saved";
@@ -802,7 +656,6 @@ function _attachActionHandlers(div) {
     btnEdit.onclick = () => {
       const status = div.dataset.status || "draft_edit";
 
-      // ✅ 전송완료 수정 취소: 원상복구 + 전송완료 복귀
       if (status === "sent_edit") {
         const snap = div.dataset.snapshot ? JSON.parse(div.dataset.snapshot) : null;
         if (snap) {
@@ -810,7 +663,7 @@ function _attachActionHandlers(div) {
           i[0].value = snap.name || "";
           i[1].value = snap.color || "";
           i[2].value = snap.size || "";
-          i[3].value = snap.qty != null ? snap.qty : ""; // ✅ 기본값 제거
+          i[3].value = snap.qty != null ? snap.qty : "";
           i[4].value = snap.price != null ? snap.price : "";
         }
         div.dataset.status = "sent";
@@ -821,7 +674,6 @@ function _attachActionHandlers(div) {
         return;
       }
 
-      // 기존(변경 draft_saved) 수정
       if (status !== "draft_saved") return;
 
       div.dataset.status = "draft_edit";
@@ -841,12 +693,7 @@ function _attachActionHandlers(div) {
       if (!_isDraftStatus(status)) return;
       if (!confirm("해당 상품을 삭제할까요?")) return;
 
-      const parentGroup = div.closest(".change-group");
       div.remove();
-
-      if (parentGroup) {
-        _cleanupEmptyGroups_();
-      }
 
       if (!document.querySelector(".product")) addProduct();
 
@@ -860,7 +707,6 @@ function _attachActionHandlers(div) {
       const status = div.dataset.status || "draft_edit";
       if (status !== "sent") return;
 
-      // ✅ 전송완료 상품: 수정모드 진입(덮어쓰기 UI)
       const snap = _copyProductValues(div);
       div.dataset.snapshot = JSON.stringify(snap);
 
@@ -902,10 +748,6 @@ function addProduct(preset, insertAfterRef) {
   div.dataset.status = pstatus;
 
   if (preset && preset.origin) div.dataset.origin = preset.origin;
-  if (preset && preset.groupId) div.dataset.groupId = preset.groupId;
-  if (preset && preset.groupLabel) div.dataset.groupLabel = preset.groupLabel;
-  if (preset && preset.groupRole) div.dataset.groupRole = preset.groupRole;
-
   if (preset && preset.action) div.dataset.action = preset.action;
   if (preset && preset.modifiedFrom) div.dataset.modifiedFrom = preset.modifiedFrom;
 
@@ -914,7 +756,6 @@ function addProduct(preset, insertAfterRef) {
       <label>상품명</label>
       <div class="product-title-row">
         <input class="product-name" placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
-        <div class="role-badge" style="display:none;"></div>
         <div class="status-badge status-draft"><span class="sq"></span>전송대기</div>
       </div>
     </div>
@@ -931,7 +772,7 @@ function addProduct(preset, insertAfterRef) {
     <div class="row">
       <div class="field">
         <label>수량</label>
-        <input type="number" value="" placeholder="예) 1"> <!-- ✅ 기본값 제거 + placeholder -->
+        <input type="number" value="" placeholder="예) 1">
       </div>
       <div class="field">
         <label>가격</label>
@@ -957,11 +798,10 @@ function addProduct(preset, insertAfterRef) {
     inputs[0].value = preset.name || "";
     inputs[1].value = preset.color || "";
     inputs[2].value = preset.size || "";
-    inputs[3].value = preset.qty != null ? preset.qty : ""; // ✅ 기본값 제거
+    inputs[3].value = preset.qty != null ? preset.qty : "";
     inputs[4].value = preset.price != null ? preset.price : "";
   }
 
-  // ✅ insertAfterRef가 엘리먼트면 "바로 아래"에 삽입
   if (insertAfterRef && typeof insertAfterRef !== "boolean" && insertAfterRef.nodeType === 1 && insertAfterRef.parentNode) {
     insertAfterRef.insertAdjacentElement("afterend", div);
   } else {
@@ -985,9 +825,7 @@ function removeLastProduct() {
   for (let idx = items.length - 1; idx >= 0; idx--) {
     const st = items[idx].dataset.status || "draft_edit";
     if (_isDraftStatus(st)) {
-      const parentGroup = items[idx].closest(".change-group");
       items[idx].remove();
-      if (parentGroup) _cleanupEmptyGroups_();
       break;
     }
   }
@@ -998,64 +836,10 @@ function removeLastProduct() {
   renderFoldSummary();
 }
 
-function removeAllProducts() {
-  if (!confirm("상품목록을 모두 삭제할까요?")) return;
-
-  document.querySelectorAll(".product").forEach(p => {
-    const st = p.dataset.status || "draft_edit";
-    if (_isDraftStatus(st)) p.remove();
-  });
-
-  _cleanupEmptyGroups_();
-
-  if (!document.querySelector(".product")) {
-    addProduct();
-  }
-
-  saveData();
-  applyFoldVisibility();
-  renderFoldSummary();
-}
-
 function calc() {
   let sum = 0;
 
-  /* ✅ 그룹(변경) 계산: "변경완료(sent)"면 변경만, 아니면 원본만 */
-  const groupIds = new Set();
   document.querySelectorAll(".product").forEach(p => {
-    const gid = p.dataset.groupId || "";
-    if (gid) groupIds.add(gid);
-  });
-
-  const usedIds = new Set();
-
-  groupIds.forEach(gid => {
-    const original = document.querySelector(`.product[data-group-id="${gid}"][data-group-role="original"]`);
-    const changed = document.querySelector(`.product[data-group-id="${gid}"][data-group-role="changed"]`);
-
-    if (changed) usedIds.add(changed.dataset.id || "");
-    if (original) usedIds.add(original.dataset.id || "");
-
-    const cSt = changed ? (changed.dataset.status || "draft_edit") : "";
-    const oSt = original ? (original.dataset.status || "draft_edit") : "";
-
-    if (changed && cSt === "sent") {
-      sum += _getProductAmount_(changed);
-      return;
-    }
-
-    if (original) {
-      if (oSt === "sent") sum += _getProductAmount_(original);
-      if (oSt === "cancel_pending") sum -= _getProductAmount_(original);
-      return;
-    }
-  });
-
-  /* ✅ 단독 상품 계산 (그룹 아닌 것들) */
-  document.querySelectorAll(".product").forEach(p => {
-    const pid = p.dataset.id || "";
-    if (usedIds.has(pid)) return;
-
     const st = p.dataset.status || "draft_edit";
 
     if (_isDraftStatus(st)) {
@@ -1074,7 +858,6 @@ function calc() {
     }
   });
 
-  /* ✅ 배송비 규칙: 합계가 0 이하이면 0원, 10만원 이상이면 0원 */
   let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
 
   sumEl.innerText = sum.toLocaleString() + "원";
@@ -1118,12 +901,11 @@ function checkOrder() {
   const pendingItems = [];
   document.querySelectorAll(".product").forEach(p => {
     const st = p.dataset.status || "draft_edit";
-    // ✅ 전송대기(일반/수정) + 취소요청만 예정서에 포함
     if (_isDraftStatus(st) || st === "cancel_pending") pendingItems.push(p);
   });
 
   if (pendingItems.length === 0) {
-    text += "전송 대기 / 취소 요청 / 수정 요청 상품이 없습니다.\n"; // ✅ 문구 변경
+    text += "전송 대기 / 취소 요청 / 수정 요청 상품이 없습니다.\n";
   } else {
     pendingItems.forEach((p, i) => {
       const inputs = p.querySelectorAll("input");
@@ -1158,7 +940,9 @@ function checkFinalOrder() {
 
   const finalItems = [];
   document.querySelectorAll(".product").forEach(p => {
-    if (p.style.display === "none") return;
+    /* ✅ (2) 접기 상태(IS_FOLDED)일 땐 display:none 필터를 무시 */
+    if (p.style.display === "none" && !IS_FOLDED) return;
+
     const st = p.dataset.status || "draft_edit";
     if (st === "sent" || st === "canceled") finalItems.push(p);
   });
@@ -1171,15 +955,13 @@ function checkFinalOrder() {
     finalItems.forEach((p, i) => {
       const inputs = p.querySelectorAll("input");
       const st = p.dataset.status || "draft_edit";
-      const role = p.dataset.groupRole || "";
-      const rolePrefix = (role === "changed") ? "[수정] " : ""; // ✅ 변경 → 수정(표시만)
+
       if (st === "sent") {
         const qty = Number(inputs[3].value || 0);
         const price = Number(inputs[4].value || 0);
         sum += qty * price;
-        text += `${i+1}. ${rolePrefix}${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
+        text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
       } else if (st === "canceled") {
-        // ✅ 취소완료는 상품명/색상/사이즈만
         text += `${i+1}. [취소완료] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value}\n`;
       }
     });
@@ -1353,7 +1135,6 @@ async function submitOrder() {
   }
 }
 
-/* 🔹 수정된 부분: 고객 정보 유지 + 상품 전체 초기화 */
 function newOrder() {
   if (!confirm("새로 주문을 시작할까요?")) return;
 
@@ -1371,7 +1152,6 @@ function newOrder() {
   localStorage.setItem("orderData", JSON.stringify(data));
 
   document.querySelectorAll(".product").forEach(p => p.remove());
-  document.querySelectorAll(".change-group").forEach(g => g.remove());
 
   addProduct();
 
@@ -1382,7 +1162,6 @@ function newOrder() {
   renderFoldSummary();
 }
 
-/* 🔹 자동 저장 / 복원 (추가 코드) */
 function saveData() {
   const data = {
     customer: {
@@ -1402,9 +1181,6 @@ function saveData() {
       id: p.dataset.id || _uid(),
       status: p.dataset.status || "draft_edit",
       origin: p.dataset.origin || "",
-      groupId: p.dataset.groupId || "",
-      groupLabel: p.dataset.groupLabel || "",
-      groupRole: p.dataset.groupRole || "",
       action: p.dataset.action || "",
       modifiedFrom: p.dataset.modifiedFrom || "",
       name: i[0].value,
@@ -1432,16 +1208,11 @@ function loadData() {
 
   productsDiv.innerHTML = "";
 
-  const groupMap = {};
-
   (data.products || []).forEach(p => {
     const preset = {
       id: p.id || _uid(),
       status: p.status || "draft_edit",
       origin: p.origin || "",
-      groupId: p.groupId || "",
-      groupLabel: p.groupLabel || "",
-      groupRole: p.groupRole || "",
       action: p.action || "",
       modifiedFrom: p.modifiedFrom || "",
       name: p.name,
@@ -1450,20 +1221,8 @@ function loadData() {
       qty: p.qty,
       price: p.price
     };
-
-    if (preset.groupId) {
-      if (!groupMap[preset.groupId]) {
-        const wrap = _ensureGroupWrapper_(preset.groupId, preset.groupLabel || "상품 변경", null);
-        groupMap[preset.groupId] = wrap;
-      }
-      const div = addProduct(preset, true);
-      groupMap[preset.groupId].appendChild(div);
-    } else {
-      addProduct(preset, true);
-    }
+    addProduct(preset, true);
   });
-
-  _cleanupEmptyGroups_();
 
   calc();
 
