@@ -295,6 +295,18 @@ button {
   color:#fff;
   font-weight:800;
 }
+
+/* ===== ✅ 최종 주문서 확인 버튼 한 줄 가득 ===== */
+.button-line-full{
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.button-line-full button{
+  flex: 1 1 100%;
+  max-width: 100%;
+}
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -370,7 +382,7 @@ button {
   <button class="btn-new" onclick="newOrder()">새 주문</button>
 </div>
 
-<div class="button-line-3">
+<div class="button-line-full">
   <button class="btn-final" onclick="checkFinalOrder()">최종 주문서 확인</button>
 </div>
 
