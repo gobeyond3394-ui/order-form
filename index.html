@@ -862,15 +862,54 @@ function removeLastProduct() {
   renderFoldSummary();
 }
 
+/* ============================
+   ✅ (수정됨) 상태별 최종합계 계산
+   - sent: 그대로 포함
+   - 새 전송대기: +현재금액
+   - [수정] 전송대기: 기존(sent) 금액을 수정금액으로 "교체" => 차액만 반영
+   - [취소] 전송대기: 기존(sent) 금액만큼 마이너스
+   ============================ */
 function calc() {
   let sum = 0;
 
   document.querySelectorAll(".product").forEach(p => {
     const st = p.dataset.status || "draft_edit";
+    const action = (p.dataset.action || "").trim();
+    const i = p.querySelectorAll("input");
 
-    if (_isDraftStatus(st)) { sum += _getProductAmount_(p); return; }
-    if (st === "sent") { sum += _getProductAmount_(p); return; }
-    if (st === "cancel_pending") { sum -= _getProductAmount_(p); return; }
+    const curQty = Number((i[3]?.value || "").trim() || 0);
+    const curPrice = Number((i[4]?.value || "").trim() || 0);
+    const curAmt = curQty * curPrice;
+
+    const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : null;
+    const snapQty = snap ? Number(String(snap.qty || "").trim() || 0) : 0;
+    const snapPrice = snap ? Number(String(snap.price || "").trim() || 0) : 0;
+    const snapAmt = snapQty * snapPrice;
+
+    if (st === "sent") {
+      sum += curAmt;
+      return;
+    }
+
+    // 새 상품 전송대기
+    if (_isDraftStatus(st) && action !== "modify") {
+      sum += curAmt;
+      return;
+    }
+
+    // 수정 전송대기: 기존금액(snap) -> 수정금액(cur) 교체
+    if (_isDraftStatus(st) && action === "modify") {
+      const delta = snap ? (curAmt - snapAmt) : 0;
+      sum += delta;
+      return;
+    }
+
+    // 취소 전송대기: 기존금액(snap)만큼 마이너스
+    if (st === "cancel_pending") {
+      const cancelAmt = snap ? snapAmt : curAmt;
+      sum -= cancelAmt;
+      return;
+    }
   });
 
   let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
@@ -922,16 +961,20 @@ function checkOrder() {
   if (pendingItems.length === 0) {
     text += "전송 대기 / 취소 요청 / 수정 요청 상품이 없습니다.\n";
   } else {
-    pendingItems.forEach((p, i) => {
+    pendingItems.forEach((p, idx) => {
       const inputs = p.querySelectorAll("input");
       const st = p.dataset.status || "draft_edit";
       const action = (p.dataset.action || "").trim();
 
       if (_isDraftStatus(st)) {
         const prefix = (action === "modify") ? "[수정요청] " : "";
-        text += `${i+1}. ${prefix}${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
+        text += `${idx+1}. ${prefix}${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
       } else if (st === "cancel_pending") {
-        text += `${i+1}. [취소요청] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value}\n`;
+        // ✅ (수정됨) 취소요청도 수량/가격 표시: snapshot이 있으면 snapshot 기준(원래 주문)
+        const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : null;
+        const q = snap ? (snap.qty || "") : (inputs[3].value || "");
+        const pr = snap ? (snap.price || "") : (inputs[4].value || "");
+        text += `${idx+1}. [취소요청] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${q}개 / ${pr}원\n`;
       }
     });
   }
