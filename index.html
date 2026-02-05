@@ -296,22 +296,23 @@ button {
   white-space:nowrap;
 }
 
-/* ✅ 완료목록 접기/펼치기: 작은 텍스트 버튼 */
+/* ✅ 완료목록 접기/펼치기: 글씨 크게 + ▲▼ 표시 */
 .small-link-btn{
   display:block;
   width:100%;
   margin-top:10px;
-  padding:0;
-  background:transparent;
-  border:none;
-  color:#555;
-  font-size:13px;
-  font-weight:700;
+  padding:10px 12px;
+  background:#f4f7ff;
+  border:1px solid #d6e0ff;
+  border-radius:10px;
+  color:#333;
+  font-size:16px;          /* ✅ 글씨 크게 */
+  font-weight:800;         /* ✅ 더 굵게 */
   text-align:center;
   cursor:pointer;
 }
 .small-link-btn:hover{
-  text-decoration: underline;
+  filter: brightness(0.98);
 }
 
 /* ✅ 전송완료 상품 버튼들과 하단 컨트롤 분리 */
@@ -372,7 +373,7 @@ button {
       <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
       <button class="btn-delete" onclick="removeLastProduct()">- 상품 삭제</button>
     </div>
-    <button class="small-link-btn" onclick="toggleFold()">완료목록 접기</button>
+    <button class="small-link-btn" onclick="toggleFold()">완료목록 접기 ▼</button>
   </div>
 </div>
 
@@ -399,8 +400,8 @@ button {
 </div>
 
 <div class="button-line-full">
-  <!-- ✅ 주문 확정서 = 클릭하면 복사(가장 안정적) -->
-  <button class="btn-final" onclick="copyFinalOrder()">주문 확정서</button>
+  <!-- ✅ 주문 확정서: 원래대로(내용 alert로 표시) -->
+  <button class="btn-final" onclick="checkFinalOrder()">주문 확정서</button>
 </div>
 
 <script>
@@ -417,7 +418,7 @@ function toggleFold() {
   HIDE_DONE = !HIDE_DONE;
 
   const btn = document.querySelector('button[onclick="toggleFold()"]');
-  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기" : "완료목록 접기";
+  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기 ▲" : "완료목록 접기 ▼";
 
   applyFoldVisibility();
   renderFoldSummary();
@@ -928,8 +929,7 @@ function checkOrder() {
   alert(text);
 }
 
-/* ✅ 확정서 텍스트 생성 */
-function _buildFinalOrderText_() {
+function checkFinalOrder() {
   let text = "[고객 정보]\n";
   text += `닉네임: ${document.getElementById("nickname").value}\n`;
   text += `이름: ${document.getElementById("name").value}\n`;
@@ -974,20 +974,7 @@ function _buildFinalOrderText_() {
   text += `배송비: ${shipping.toLocaleString()}원\n`;
   text += `총 결제금액: ${(sum + shipping).toLocaleString()}원\n`;
 
-  return text;
-}
-
-/* ✅ (3) 주문 확정서 버튼 = 복사(안되면 alert로 전체 표시) */
-async function copyFinalOrder() {
-  const text = _buildFinalOrderText_();
-
-  // 카톡 인앱에서 clipboard API가 막히는 경우가 많아서 try/catch + fallback
-  try {
-    await navigator.clipboard.writeText(text);
-    alert("주문 확정서가 복사되었습니다.\n(붙여넣기 하면 됩니다)");
-  } catch (e) {
-    alert("자동 복사가 지원되지 않는 환경입니다.\n아래 내용을 길게 눌러 복사해서 사용하세요.\n\n" + text);
-  }
+  alert(text);
 }
 
 function _validateBeforeSubmit_() {
@@ -1240,7 +1227,7 @@ function loadData() {
 
   HIDE_DONE = !!data.hideDone;
   const btn = document.querySelector('button[onclick="toggleFold()"]');
-  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기" : "완료목록 접기";
+  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기 ▲" : "완료목록 접기 ▼";
 
   calc();
   applyFoldVisibility();
