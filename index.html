@@ -306,8 +306,8 @@ button {
   border:1px solid #d6e0ff;
   border-radius:10px;
   color:#333;
-  font-size:14px;          /* ✅ 상품추가/삭제 버튼과 동일 */
-  font-weight:700;         /* ✅ 동일 */
+  font-size:14px;
+  font-weight:700;
   text-align:center;
   cursor:pointer;
 }
@@ -369,7 +369,6 @@ button {
   <div id="products"></div>
 
   <div class="product-controls">
-    <!-- ✅ 완료목록 버튼을 위로 올림 + ▲▼ 문구 수정 -->
     <button class="small-link-btn" onclick="toggleFold()">완료목록 접기 ▲</button>
 
     <div class="button-line-2">
@@ -402,7 +401,6 @@ button {
 </div>
 
 <div class="button-line-full">
-  <!-- ✅ 주문 확정서: 원래대로(내용 alert로 표시) -->
   <button class="btn-final" onclick="checkFinalOrder()">주문 확정서</button>
 </div>
 
@@ -416,6 +414,13 @@ let IS_LOADING = false;
 /* ✅ 완료목록 숨김 토글 (sent/canceled만 숨김) */
 let HIDE_DONE = false;
 
+/* ✅ 주문ID(서버 필수): 로컬에 저장/복구 */
+let ORDER_ID = "";
+function newOrderId_(){
+  return "oid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+/* ✅ 완료목록 숨김 토글 */
 function toggleFold() {
   HIDE_DONE = !HIDE_DONE;
 
@@ -644,7 +649,7 @@ function _attachActionHandlers(div) {
         div.dataset.status = "draft_saved";
         div.dataset.action = "modify";
         div.dataset.modifiedFrom = "sent";
-        delete div.dataset.snapshot;
+        // ✅ 차액 계산을 위해 snapshot 유지(삭제하지 않음)
 
         alert("수정 요청이 저장되었습니다.\n반드시 '주문 전송' 버튼을 눌러 전송을 완료해주세요.");
 
@@ -740,6 +745,12 @@ function _attachActionHandlers(div) {
       if (status !== "sent") return;
       if (!confirm("해당 상품을 취소요청으로 변경할까요?")) return;
 
+      // ✅ 취소도 “원래 금액”을 저장해두면 차액(마이너스) 계산이 정확해짐
+      if (!div.dataset.snapshot) {
+        const snap = _copyProductValues(div);
+        div.dataset.snapshot = JSON.stringify(snap);
+      }
+
       alert("[취소] 전송대기로 변경되었습니다.\n반드시 '주문 전송' 버튼을 눌러 전송을 완료해주세요.");
 
       div.dataset.status = "cancel_pending";
@@ -763,6 +774,8 @@ function addProduct(preset, insertAfterRef) {
   if (preset && preset.origin) div.dataset.origin = preset.origin;
   if (preset && preset.action) div.dataset.action = preset.action;
   if (preset && preset.modifiedFrom) div.dataset.modifiedFrom = preset.modifiedFrom;
+
+  if (preset && preset.snapshot) div.dataset.snapshot = preset.snapshot; // ✅ (수정/취소 스냅샷 복구용)
 
   div.innerHTML = `
     <div class="field">
@@ -1030,13 +1043,18 @@ function _validateBeforeSubmit_() {
   return true;
 }
 
+/* ✅ 금액 차액 계산(수정/취소용) */
+function _amountOf_(obj) {
+  const q = Number(obj.qty || 0);
+  const p = Number(obj.price || 0);
+  return q * p;
+}
+
 async function submitOrder() {
   if (!_validateBeforeSubmit_()) return;
   if (!confirm("주문을 완료하시겠습니까?")) return;
 
   saveData();
-
-  const onlyNumber = (s) => Number(String(s || "").replace(/[^0-9]/g, "") || 0);
 
   const kstNowString = () => {
     const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -1052,32 +1070,80 @@ async function submitOrder() {
   const items = [];
   const toFinalize = [];
 
+  let deltaSum = 0;     // ✅ 이번 전송 “변화분” 합계(취소는 음수)
+  let hasNewItem = false; // ✅ 새 상품(일반 주문)이 포함되어 있으면 배송비 규칙 적용
+
   document.querySelectorAll(".product").forEach(p => {
     const st = p.dataset.status || "draft_edit";
     const i = p.querySelectorAll("input");
     const action = (p.dataset.action || "").trim();
 
-    if (_isDraftStatus(st)) {
-      const prefix = (action === "modify") ? "[수정] " : "";
+    const cur = {
+      name: (i[0].value || "").trim(),
+      color: (i[1].value || "").trim(),
+      size: (i[2].value || "").trim(),
+      qty: Number(i[3].value || 0),
+      price: Number(i[4].value || 0)
+    };
+
+    // ✅ 수정요청(= draft 상태 + action=modify) → 차액 전송
+    if (_isDraftStatus(st) && action === "modify") {
+      const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : { qty: 0, price: 0 };
+      const oldAmt = _amountOf_(snap);
+      const newAmt = _amountOf_(cur);
+      const delta = newAmt - oldAmt;
+
       items.push({
-        productName: `${prefix}${i[0].value || ""}`.trim(),
-        color: i[1].value || "",
-        size: i[2].value || "",
-        qty: Number(i[3].value || 0),
-        price: Number(i[4].value || 0)
+        productName: `[수정] ${cur.name}`.trim(),
+        color: cur.color,
+        size: cur.size,
+        qty: cur.qty,
+        price: cur.price,
+        amountDelta: delta
       });
-      toFinalize.push({ el: p, nextStatus: "sent", clearAction: true });
+
+      deltaSum += delta;
+
+      toFinalize.push({ el: p, nextStatus: "sent", clearAction: true, clearSnapshot: true });
+      return;
     }
 
-    if (st === "cancel_pending") {
+    // ✅ 일반 전송(= draft 상태 + action 없음) → 상품금액 그대로 전송
+    if (_isDraftStatus(st) && action !== "modify") {
       items.push({
-        productName: `[취소] ${i[0].value || ""}`.trim(),
-        color: i[1].value || "",
-        size: i[2].value || "",
-        qty: 0,
-        price: 0
+        productName: `${cur.name}`.trim(),
+        color: cur.color,
+        size: cur.size,
+        qty: cur.qty,
+        price: cur.price
       });
-      toFinalize.push({ el: p, nextStatus: "canceled", clearAction: true });
+
+      deltaSum += _amountOf_(cur);
+      hasNewItem = true;
+
+      toFinalize.push({ el: p, nextStatus: "sent", clearAction: true, clearSnapshot: true });
+      return;
+    }
+
+    // ✅ 취소요청 → 마이너스(원금액) 전송
+    if (st === "cancel_pending") {
+      const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : cur;
+      const oldAmt = _amountOf_(snap);
+      const delta = -oldAmt;
+
+      items.push({
+        productName: `[취소] ${cur.name}`.trim(),
+        color: cur.color,
+        size: cur.size,
+        qty: 0,
+        price: 0,
+        amountDelta: delta
+      });
+
+      deltaSum += delta;
+
+      toFinalize.push({ el: p, nextStatus: "canceled", clearAction: true, clearSnapshot: true });
+      return;
     }
   });
 
@@ -1086,7 +1152,18 @@ async function submitOrder() {
     return;
   }
 
+  // ✅ 배송비 규칙:
+  // - “새 상품 전송”이 포함된 경우만 배송비 규칙 적용
+  // - 수정/취소만 보낼 때는 배송비 0원
+  let shipping = 0;
+  if (hasNewItem) {
+    shipping = (deltaSum > 0 && deltaSum < 100000) ? SHIPPING : 0;
+  } else {
+    shipping = 0;
+  }
+
   const payload = {
+    orderId: ORDER_ID || newOrderId_(),         // ✅ 서버 필수
     orderTime: kstNowString(),
     customer: {
       nickname: document.getElementById("nickname").value || "",
@@ -1095,9 +1172,10 @@ async function submitOrder() {
       address: `${document.getElementById("address").value || ""} ${document.getElementById("addressDetail").value || ""}`.trim()
     },
     items: items,
-    sum: onlyNumber(sumEl.innerText),
-    shipping: onlyNumber(shippingEl.innerText),
-    total: onlyNumber(totalEl.innerText)
+    // ✅ 이번 전송 “변화분”만 보냄 (취소는 음수)
+    sum: deltaSum,
+    shipping: shipping,
+    total: deltaSum + shipping
   };
 
   try {
@@ -1126,6 +1204,9 @@ async function submitOrder() {
         delete x.el.dataset.action;
         delete x.el.dataset.modifiedFrom;
       }
+      if (x.clearSnapshot) {
+        delete x.el.dataset.snapshot;
+      }
       _applyProductUI(x.el);
     });
 
@@ -1151,6 +1232,10 @@ function newOrder() {
     addressDetail: document.getElementById("addressDetail").value
   };
 
+  // ✅ 새 주문이면 orderId 새로 발급
+  ORDER_ID = newOrderId_();
+  data.orderId = ORDER_ID;
+
   data.products = [];
   localStorage.setItem("orderData", JSON.stringify(data));
 
@@ -1167,6 +1252,7 @@ function newOrder() {
 
 function saveData() {
   const data = {
+    orderId: ORDER_ID,   // ✅ 저장
     customer: {
       nickname: document.getElementById("nickname").value,
       name: document.getElementById("name").value,
@@ -1186,6 +1272,7 @@ function saveData() {
       origin: p.dataset.origin || "",
       action: p.dataset.action || "",
       modifiedFrom: p.dataset.modifiedFrom || "",
+      snapshot: p.dataset.snapshot || "", // ✅ 스냅샷 저장(수정/취소 차액 계산용)
       name: i[0].value,
       color: i[1].value,
       size: i[2].value,
@@ -1199,15 +1286,23 @@ function saveData() {
 
 function loadData() {
   const data = JSON.parse(localStorage.getItem("orderData") || "null");
-  if (!data) return;
+  if (!data) {
+    // ✅ 최초 진입: orderId 생성
+    ORDER_ID = newOrderId_();
+    saveData();
+    return;
+  }
 
   IS_LOADING = true;
 
-  document.getElementById("nickname").value = data.customer.nickname || "";
-  document.getElementById("name").value = data.customer.name || "";
-  document.getElementById("phone").value = data.customer.phone || "";
-  document.getElementById("address").value = data.customer.address || "";
-  document.getElementById("addressDetail").value = data.customer.addressDetail || "";
+  // ✅ orderId 복구(없으면 생성)
+  ORDER_ID = data.orderId || newOrderId_();
+
+  document.getElementById("nickname").value = (data.customer && data.customer.nickname) ? data.customer.nickname : "";
+  document.getElementById("name").value = (data.customer && data.customer.name) ? data.customer.name : "";
+  document.getElementById("phone").value = (data.customer && data.customer.phone) ? data.customer.phone : "";
+  document.getElementById("address").value = (data.customer && data.customer.address) ? data.customer.address : "";
+  document.getElementById("addressDetail").value = (data.customer && data.customer.addressDetail) ? data.customer.addressDetail : "";
 
   productsDiv.innerHTML = "";
 
@@ -1218,6 +1313,7 @@ function loadData() {
       origin: p.origin || "",
       action: p.action || "",
       modifiedFrom: p.modifiedFrom || "",
+      snapshot: p.snapshot || "",
       name: p.name,
       color: p.color,
       size: p.size,
