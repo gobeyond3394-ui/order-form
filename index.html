@@ -431,9 +431,34 @@ function toggleFold() {
   saveData();
 }
 
+function _getProductAmount_(p) {
+  const i = p.querySelectorAll("input");
+  const qty = Number(i[3]?.value || 0);
+  const price = Number(i[4]?.value || 0);
+  return qty * price;
+}
+
+/* ✅ 변경완료(변경안이 sent)면 원본 자동 숨김 */
+function _isChangeCompletedGroup_(groupId) {
+  if (!groupId) return false;
+  const changed = document.querySelector(`.product[data-group-id="${groupId}"][data-group-role="changed"]`);
+  if (!changed) return false;
+  const st = changed.dataset.status || "draft_edit";
+  return st === "sent";
+}
+
 function applyFoldVisibility() {
   document.querySelectorAll(".product").forEach(p => {
     const st = p.dataset.status || "draft_edit";
+    const gid = p.dataset.groupId || "";
+    const role = p.dataset.groupRole || "";
+
+    /* ✅ 변경완료면 원본은 항상 숨김(접기/펼치기와 무관) */
+    if (role === "original" && gid && _isChangeCompletedGroup_(gid)) {
+      p.style.display = "none";
+      return;
+    }
+
     if (_isDraftStatus(st)) {
       p.style.display = "";
     } else {
@@ -461,6 +486,8 @@ function renderFoldSummary() {
   const lines = [];
 
   document.querySelectorAll(".product").forEach(p => {
+    if (p.style.display === "none") return;
+
     const st = p.dataset.status || "draft_edit";
     if (_isDraftStatus(st)) return;
 
@@ -609,7 +636,7 @@ function _renderActions(div) {
 
   // 기본은 버튼라인 보이게(해당 상태에서만)
   if (status === "sent") {
-    // ✅ 변경 그룹으로 묶인 원본(회색 처리된 sent)은 버튼 숨김
+    // ✅ 변경 그룹으로 묶인 원본(전송완료)은 버튼 숨김
     if ((div.dataset.groupRole || "") === "original") {
       actions.style.display = "none";
       return;
@@ -944,16 +971,62 @@ function removeAllProducts() {
 function calc() {
   let sum = 0;
 
+  /* ✅ 그룹(변경) 계산: "변경완료(sent)"면 변경만, 아니면 원본만 */
+  const groupIds = new Set();
   document.querySelectorAll(".product").forEach(p => {
-    const st = p.dataset.status || "draft_edit";
-    if (!_isDraftStatus(st)) return;
-
-    const qty = Number(p.querySelectorAll("input")[3].value || 0);
-    const price = Number(p.querySelectorAll("input")[4].value || 0);
-    sum += qty * price;
+    const gid = p.dataset.groupId || "";
+    if (gid) groupIds.add(gid);
   });
 
-  let shipping = sum >= 100000 ? 0 : SHIPPING;
+  const usedIds = new Set();
+
+  groupIds.forEach(gid => {
+    const original = document.querySelector(`.product[data-group-id="${gid}"][data-group-role="original"]`);
+    const changed = document.querySelector(`.product[data-group-id="${gid}"][data-group-role="changed"]`);
+
+    if (changed) usedIds.add(changed.dataset.id || "");
+    if (original) usedIds.add(original.dataset.id || "");
+
+    const cSt = changed ? (changed.dataset.status || "draft_edit") : "";
+    const oSt = original ? (original.dataset.status || "draft_edit") : "";
+
+    if (changed && cSt === "sent") {
+      sum += _getProductAmount_(changed);
+      return;
+    }
+
+    if (original) {
+      if (oSt === "sent") sum += _getProductAmount_(original);
+      if (oSt === "cancel_pending") sum -= _getProductAmount_(original);
+      return;
+    }
+  });
+
+  /* ✅ 단독 상품 계산 (그룹 아닌 것들) */
+  document.querySelectorAll(".product").forEach(p => {
+    const pid = p.dataset.id || "";
+    if (usedIds.has(pid)) return;
+
+    const st = p.dataset.status || "draft_edit";
+
+    if (_isDraftStatus(st)) {
+      sum += _getProductAmount_(p);
+      return;
+    }
+
+    if (st === "sent") {
+      sum += _getProductAmount_(p);
+      return;
+    }
+
+    if (st === "cancel_pending") {
+      sum -= _getProductAmount_(p);
+      return;
+    }
+  });
+
+  /* ✅ 배송비 규칙: 합계가 0 이하이면 0원, 10만원 이상이면 0원 */
+  let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
 
   sumEl.innerText = sum.toLocaleString() + "원";
   shippingEl.innerText = shipping.toLocaleString() + "원";
@@ -1033,6 +1106,7 @@ function checkFinalOrder() {
 
   const finalItems = [];
   document.querySelectorAll(".product").forEach(p => {
+    if (p.style.display === "none") return;
     const st = p.dataset.status || "draft_edit";
     if (st === "sent" || st === "canceled") finalItems.push(p);
   });
@@ -1058,7 +1132,7 @@ function checkFinalOrder() {
     });
   }
 
-  let shipping = sum >= 100000 ? 0 : SHIPPING;
+  let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
 
   text += `\n상품합계: ${sum.toLocaleString()}원\n`;
   text += `배송비: ${shipping.toLocaleString()}원\n`;
