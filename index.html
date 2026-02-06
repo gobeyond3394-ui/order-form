@@ -403,6 +403,36 @@
   .help-row .help-title{
     margin-bottom:0; /* 기존 8px 제거 */
   }
+
+  /* ✅ (추가) 가운데 1개 버튼(폭 2/3) */
+  .button-center-one{
+    display:flex;
+    justify-content:center;
+    margin-top:12px;
+  }
+  .button-center-one button{
+    width:66.666%;
+    max-width:560px;
+  }
+
+  /* ✅ (추가) 완료된 주문 다시보기 버튼(수정완료 톤 + 글씨 검정) */
+  .btn-replay{
+    background:#fff7e6;
+    color:#111;
+    border:1px solid #ffe1a6;
+  }
+
+  /* ✅ (추가) 카카오톡 문의하기 밑줄 텍스트 */
+  .kakao-underline{
+    text-align:center;
+    margin-top:6px;
+  }
+  .kakao-underline a{
+    color:#005FAE;
+    font-weight:900;
+    font-size:13px;
+    text-decoration:underline;
+  }
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -498,42 +528,39 @@
 
 <!-- ✅ 주문 입력 화면 하단 -->
 <div id="formControls">
-  <div class="button-line-main">
-    <button class="btn-order btn-main" type="button" onclick="submitOrder()">주문하기</button>
-    <button class="btn-check btn-side" type="button" onclick="checkOrder()">주문내용확인</button>
-  </div>
-  <div class="button-line-sub">
-    <button class="btn-preview" type="button" onclick="goCompletePreview()">주문접수결과 다시보기</button>
-    <!-- ✅ 6) 문의 버튼 문구/동작 변경 -->
-    <button class="btn-check" type="button" onclick="goKakaoChat()">💬 카카오톡 문의하기 &gt;</button>
+  <!-- ✅ 주문하기: 가운데 정렬 1개(폭 2/3) -->
+  <div class="button-center-one">
+    <button class="btn-order" type="button" onclick="submitOrder()">주문하기</button>
   </div>
 
-  <div class="help-wrap">
-    <!-- ✅ 6) 같은 줄 + 오른쪽 끝 링크 -->
-    <div class="help-row">
-      <div class="help-title"><span class="bubble">💬</span>주문 후 문의가 필요하신가요?</div>
-      <a class="help-link" href="http://pf.kakao.com/_exnahX/chat">💬 카카오톡 문의하기 &gt;</a>
-    </div>
+  <!-- ✅ 다음 줄: 주문내용확인 / 완료된 주문 다시보기 -->
+  <div class="button-line-2">
+    <button class="btn-check" type="button" onclick="checkOrder()">주문내용확인</button>
+    <button class="btn-replay" type="button" onclick="goCompletePreview()">완료된 주문 다시보기</button>
+  </div>
+
+  <!-- ✅ 카카오톡 문의하기: 밑줄 텍스트 -->
+  <div class="kakao-underline">
+    <a href="http://pf.kakao.com/_exnahX/chat">카카오톡 문의하기</a>
   </div>
 </div>
 
 <!-- ✅ 완료 화면 하단 -->
 <div id="completeControls" style="display:none;">
-  <div class="button-line-main">
-    <button class="btn-add-order btn-main" type="button" onclick="goToFormForAdd()">추가 주문하기</button>
-    <button class="btn-gray btn-side" type="button" onclick="showOrderHistory()">주문확인서 보기</button>
-  </div>
-  <div class="button-line-sub">
-    <button class="btn-cancel-do" type="button" onclick="submitCancel()">전체 취소하기</button>
-    <!-- ✅ 6) 문의 버튼 문구/동작 변경 -->
-    <button class="btn-preview" type="button" onclick="goKakaoChat()">💬 카카오톡 문의하기 &gt;</button>
+  <!-- ✅ 추가 주문하기: 가운데 정렬 1개(폭 2/3) -->
+  <div class="button-center-one">
+    <button class="btn-add-order" type="button" onclick="goToFormForAdd()">추가 주문하기</button>
   </div>
 
-  <div class="help-wrap">
-    <div class="help-row">
-      <div class="help-title"><span class="bubble">💬</span>주문 후 문의가 필요하신가요?</div>
-      <a class="help-link" href="http://pf.kakao.com/_exnahX/chat">💬 카카오톡 문의하기 &gt;</a>
-    </div>
+  <!-- ✅ 다음 줄: 주문확인서 보기 / 전체 취소하기 -->
+  <div class="button-line-2">
+    <button class="btn-gray" type="button" onclick="showOrderHistory()">주문확인서 보기</button>
+    <button class="btn-cancel-do" type="button" onclick="submitCancel()">전체 취소하기</button>
+  </div>
+
+  <!-- ✅ 카카오톡 문의하기: 밑줄 텍스트 -->
+  <div class="kakao-underline">
+    <a href="http://pf.kakao.com/_exnahX/chat">카카오톡 문의하기</a>
   </div>
 </div>
 
@@ -589,7 +616,7 @@
     return `${yyyy}.${mm}.${dd}`;
   }
 
-  // ✅ 1) 완료 배너 문구 2줄 추가
+  // ✅ 1) 완료 배너 문구(순서/문구 변경 + 파란색 강조)
   function setBanner(text){
     const banner = document.getElementById("modeBanner");
     if (!banner) return;
@@ -601,14 +628,18 @@
 
     const oid = (LAST_DONE_ORDER_ID || "").trim();
     const line1 = oid ? `${formatKstDateOnly_(kstNowDate_())} 주문번호는 ${oid} 입니다.` : "";
-    const line2 = `입금 후 확인되면 발송됩니다.`;
-    const line3 = `수정/취소는 아래 ‘주문상세 보기 ▼’에서 가능합니다.`;
+
+    // ✅ 요청 반영:
+    // 1) 주문번호 아래: 방송 종료 전까지 '주문상세 보기'에서 수정/취소가 가능합니다.
+    // 2) 그 아래: 입금 후 확인되면 발송됩니다. (파란색)
+    const line2 = `방송 종료 전까지 ‘주문상세 보기’에서 수정/취소가 가능합니다.`;
+    const line3 = `입금 후 확인되면 발송됩니다.`;
 
     if (oidBox){
       oidBox.innerHTML = `
         ${line1 ? `<div>${line1}</div>` : ""}
         <div>${line2}</div>
-        <div>${line3}</div>
+        <div style="color:#005FAE; font-weight:900;">${line3}</div>
       `;
     }
   }
@@ -628,7 +659,7 @@
     setMode("complete", "주문이 정상적으로 접수되었습니다.", { detailClosedOnEnter:true });
   }
 
-  // ✅ 7) 카카오톡 문의 이동
+  // ✅ 7) 카카오톡 문의 이동 (현재 UI에서는 버튼 제거했지만, 함수는 유지)
   function goKakaoChat(){
     window.location.href = KAKAO_CHAT_URL;
   }
@@ -1241,7 +1272,9 @@
         div.dataset.status = "modified";
         exitEdit_(false);
 
+        // ✅ 1) 수정완료 시 배너로 커서 이동
         setBanner("수정이 완료되었습니다.");
+        focusBanner();
         alert("수정이 완료되었습니다.");
       } catch(e){
         alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
@@ -1301,7 +1334,9 @@
           setBadge(div);
           refreshProductActionRows_(div);
 
+          // ✅ 2) 취소완료 시 배너로 커서 이동
           setBanner("취소가 완료되었습니다.");
+          focusBanner();
           calc();
           renderDoneSummary();
           saveData();
@@ -1562,7 +1597,9 @@
         setBadge(p);
       });
 
+      // ✅ 2) 전체 취소 시 배너로 커서 이동
       setBanner("취소가 완료되었습니다.");
+      focusBanner();
       calc();
       renderDoneSummary();
       saveData();
