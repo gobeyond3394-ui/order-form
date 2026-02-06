@@ -298,6 +298,7 @@
 
   body.mode-complete .form-product-controls{ display:none !important; }
 
+  /* ✅ 주문입력 화면 버튼영역 */
   #formControls{
     display:flex;
     flex-direction:column;
@@ -305,6 +306,14 @@
     margin-top:12px;
   }
   #formControls .button-line-3{ margin-top:0; }
+
+  /* ✅ (추가/수정) 완료화면 버튼영역도 formControls와 동일한 간격 적용 */
+  #completeControls{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:12px;
+  }
 
   /* ✅ 주문상세 보기/닫기 버튼(완료화면 전용) */
   #detailToggleWrap{ display:none; }
@@ -348,29 +357,6 @@
   .btn-item-cancel:disabled{
     opacity:.55;
     cursor:not-allowed;
-  }
-
-  /* ✅ 버튼 레이아웃: 2/3 + 1/3 */
-  .button-line-main{
-    display:flex;
-    gap:8px;
-    margin-top:12px;
-    align-items:stretch;
-  }
-  .button-line-main .btn-main{
-    flex:2;
-  }
-  .button-line-main .btn-side{
-    flex:1;
-  }
-  .button-line-sub{
-    display:flex;
-    gap:8px;
-    margin-top:10px;
-  }
-  .button-line-sub button{
-    flex:1;
-    white-space:nowrap;
   }
 
   /* ✅ 문의하기(말풍선) */
@@ -418,7 +404,7 @@
     gap:10px;
   }
   .help-row .help-title{
-    margin-bottom:0; /* 기존 8px 제거 */
+    margin-bottom:0;
   }
 
   /* ✅ (추가) 가운데 1개 버튼(폭 2/3) */
@@ -437,18 +423,6 @@
     background:#fff7e6;
     color:#111;
     border:1px solid #ffe1a6;
-  }
-
-  /* ✅ (추가) 카카오톡 문의하기 밑줄 텍스트 */
-  .kakao-underline{
-    text-align:center;
-    margin-top:6px;
-  }
-  .kakao-underline a{
-    color:#005FAE;
-    font-weight:900;
-    font-size:13px;
-    text-decoration:underline;
   }
 
   /* ✅ (추가) 가격 입력칸 오른쪽 "원" 표시 */
@@ -525,7 +499,7 @@
 <div class="section">
   <div class="section-title" id="productSectionTitle">상품 정보</div>
 
-  <!-- ✅ (추가) 주문입력 화면: 작성 중(입력중/입력완료) 상품 요약 -->
+  <!-- ✅ 주문입력 화면: 작성 중(입력중/입력완료) 상품 요약 -->
   <div id="draftSummary"></div>
 
   <!-- ✅ 완료 화면에서만: 완료된 주문목록 요약 -->
@@ -574,11 +548,6 @@
     <button class="btn-check" type="button" onclick="checkOrder()">주문내용확인</button>
     <button class="btn-replay" type="button" onclick="goCompletePreview()">완료된 주문 다시보기</button>
   </div>
-
-  <!-- ✅ 카카오톡 문의하기: 밑줄 텍스트 -->
-  <div class="kakao-underline">
-    <a href="http://pf.kakao.com/_exnahX/chat">카카오톡 문의하기</a>
-  </div>
 </div>
 
 <!-- ✅ 완료 화면 하단 -->
@@ -592,11 +561,6 @@
   <div class="button-line-2">
     <button class="btn-gray" type="button" onclick="showOrderHistory()">주문확인서 보기</button>
     <button class="btn-cancel-do" type="button" onclick="submitCancel()">전체 취소하기</button>
-  </div>
-
-  <!-- ✅ 카카오톡 문의하기: 밑줄 텍스트 -->
-  <div class="kakao-underline">
-    <a href="http://pf.kakao.com/_exnahX/chat">카카오톡 문의하기</a>
   </div>
 </div>
 
@@ -845,7 +809,7 @@
 
     if (MODE === "complete"){
       formControls.style.display = "none";
-      completeControls.style.display = "block";
+      completeControls.style.display = "flex";
       shipActions.style.display = "flex";
 
       if (customerTitle) customerTitle.textContent = "배송지 정보";
@@ -859,7 +823,7 @@
 
       renderShippingSummary();
       renderDoneSummary();
-      renderDraftSummary(); // ✅ (추가) 모드 전환 시 동기화
+      renderDraftSummary();
 
       updateShippingStatuses_(true);
 
@@ -886,7 +850,7 @@
     exitShipEdit(true);
 
     renderDoneSummary();
-    renderDraftSummary(); // ✅ (추가)
+    renderDraftSummary();
 
     document.querySelectorAll(".product").forEach(p=>{
       lockProductInputs(p, false);
@@ -942,6 +906,13 @@
     const box = document.getElementById("doneSummary");
     if (!box) return;
 
+    /* ✅ form 모드에서는 JS가 절대 켜지지 않게 강제 숨김 */
+    if (MODE !== "complete"){
+      box.style.display = "none";
+      box.innerHTML = "";
+      return;
+    }
+
     const lines = [];
 
     document.querySelectorAll(".product").forEach(p=>{
@@ -977,7 +948,7 @@
     box.innerHTML = lines.join("<br>");
   }
 
-  // ✅ (추가) 주문입력 화면: 작성 중 상품 요약(입력중/입력완료)
+  // ✅ 주문입력 화면: 작성 중 상품 요약(입력중/입력완료)
   function renderDraftSummary(){
     const box = document.getElementById("draftSummary");
     if (!box) return;
@@ -1008,7 +979,6 @@
       const qtyText = qtyRaw ? `${qty}개` : "-";
       const priceText = priceRaw ? _fmtMoney_(price) : "-";
 
-      // 입력 다 했는지 간단 표시
       const complete = (name && color && size && qty > 0 && price > 0);
       const tag = complete ? "[입력완료]" : "[입력중]";
 
@@ -1137,7 +1107,7 @@
 
     if (changed){
       renderDoneSummary();
-      renderDraftSummary(); // ✅ (추가)
+      renderDraftSummary();
       calc();
       if (!silentSave) saveData();
       else if (!IS_LOADING) saveData();
@@ -1244,7 +1214,6 @@
         </div>
         <div class="field">
           <label>가격</label>
-          <!-- ✅ (요청) 가격 입력칸 오른쪽에 '원' 표시 -->
           <div class="money-wrap">
             <input type="number" placeholder="예) 59000">
             <span class="money-suffix">원</span>
@@ -1279,7 +1248,7 @@
       inputs[k].addEventListener("input", ()=>{
         if (MODE !== "form" && div.dataset.editing !== "1") return;
         calc();
-        renderDraftSummary();   // ✅ (추가)
+        renderDraftSummary();
         saveData();
       });
     }
@@ -1320,7 +1289,7 @@
       setBadge(div);
       calc();
       renderDoneSummary();
-      renderDraftSummary(); // ✅ (추가)
+      renderDraftSummary();
       refreshProductActionRows_(div);
       saveData();
     }
@@ -1431,7 +1400,7 @@
           focusBanner();
           calc();
           renderDoneSummary();
-          renderDraftSummary(); // ✅ (추가)
+          renderDraftSummary();
           saveData();
           alert("취소가 완료되었습니다.");
         } catch(e){
@@ -1453,7 +1422,7 @@
 
     calc();
     renderDoneSummary();
-    renderDraftSummary(); // ✅ (추가)
+    renderDraftSummary();
     applyProductVisibility_();
 
     if (!IS_LOADING) saveData();
@@ -1474,7 +1443,7 @@
     if (!document.querySelector('.product[data-status="draft"]')) addProduct();
 
     calc();
-    renderDraftSummary(); // ✅ (추가)
+    renderDraftSummary();
     saveData();
     renderDoneSummary();
     applyProductVisibility_();
@@ -1630,7 +1599,7 @@
 
       calc();
       renderDoneSummary();
-      renderDraftSummary(); // ✅ (추가)
+      renderDraftSummary();
       saveData();
 
       alert("주문이 접수되었습니다.\n완료 화면에서 ‘주문상세 보기’로 수정/취소가 가능합니다.");
@@ -1726,7 +1695,7 @@
 
     calc();
     renderDoneSummary();
-    renderDraftSummary(); // ✅ (추가)
+    renderDraftSummary();
     saveData();
   }
 
@@ -1895,7 +1864,7 @@
 
       renderShippingSummary();
       renderDoneSummary();
-      renderDraftSummary(); // ✅ (추가)
+      renderDraftSummary();
       calc();
 
       setMode("form");
@@ -1936,7 +1905,7 @@
 
     renderShippingSummary();
     renderDoneSummary();
-    renderDraftSummary(); // ✅ (추가)
+    renderDraftSummary();
     calc();
 
     updateShippingStatuses_(true);
