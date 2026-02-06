@@ -59,7 +59,7 @@
     padding:12px 14px; cursor:pointer; white-space:nowrap;
   }
 
-  /* ✅ 배송지 요약(완료 화면에서 표시) */
+  /* ✅ 배송지 정보(완료 화면에서 표시) */
   #shipSummary{
     display:none;
     background:#f7f7f7;
@@ -196,7 +196,8 @@
   .status-sent{ background:#e8f2ff; color:#005FAE; border:1px solid #c8ddff; }
   .status-sent .sq{ background:#005FAE; }
 
-  .status-modified{ background:#fff7e6; color:#9a6b00; border:1px solid #ffe1a6; } /* ✅ 수정완료 색=수정하기 버튼 색 */
+  /* ✅ 수정완료 색=수정하기 버튼 색 */
+  .status-modified{ background:#fff7e6; color:#9a6b00; border:1px solid #ffe1a6; }
   .status-modified .sq{ background:#9a6b00; }
 
   .status-canceled{ background:#ededed; color:#222; border:1px solid #cfcfcf; }
@@ -318,7 +319,7 @@
   <div class="section-title">고객 정보</div>
   <div class="divider"></div>
 
-  <!-- ✅ 완료 화면 배송지 요약 -->
+  <!-- ✅ 완료 화면 배송지 정보 -->
   <div id="shipSummary"></div>
 
   <!-- ✅ 완료 화면 배송지 수정 버튼 -->
@@ -375,8 +376,8 @@
   <!-- ✅ 폼에서만: 상품추가/삭제 -->
   <div class="form-product-controls">
     <div class="button-line-2">
-      <button class="btn-add" type="button" onclick="addProduct()">+ 상품 추가</button>
-      <button class="btn-delete" type="button" onclick="removeLastProduct()">- 상품 삭제</button>
+      <button class="btn-add" type="button" onclick="addProduct()">+ 상품추가</button>
+      <button class="btn-delete" type="button" onclick="removeLastProduct()">- 상품삭제</button>
     </div>
   </div>
 </div>
@@ -398,7 +399,7 @@
 
 <!-- ✅ 폼 화면 버튼(미리보기는 여기만) -->
 <div class="button-line-3" id="formControls">
-  <button class="btn-check" type="button" onclick="checkOrder()">미리 보기</button>
+  <button class="btn-check" type="button" onclick="checkOrder()">미리보기</button>
   <button class="btn-order" type="button" onclick="submitOrder()">주문하기</button>
   <button class="btn-red" type="button" onclick="newOrder()">새 주문</button>
 </div>
@@ -492,7 +493,7 @@
     const fullAddr = `${(c.address||"").trim()} ${(c.addressDetail||"").trim()}`.trim();
 
     box.innerHTML = `
-      <div style="font-weight:900; margin-bottom:6px;">배송지 요약</div>
+      <div style="font-weight:900; margin-bottom:6px;">배송지 정보</div>
       <div>닉네임: <b>${(c.nickname||"-")}</b></div>
       <div>수령인: <b>${(c.name||"-")}</b></div>
       <div>연락처: <b>${(c.phone||"-")}</b></div>
@@ -502,7 +503,6 @@
 
   function lockProductInputs(div, lock){
     const inputs = div.querySelectorAll("input");
-    // 0~4: 상품 입력
     for (let k=0;k<5;k++){
       if (!inputs[k]) continue;
       inputs[k].readOnly = lock;
@@ -533,16 +533,13 @@
       const banner = document.getElementById("modeBanner");
       banner.innerText = bannerText || "주문이 완료되었습니다.";
 
-      // ✅ 완료화면 진입 시 기본 접힘
       if (opts.foldOnEnter === true) HIDE_DONE = true;
 
-      // ✅ 배송지 수정 모드 종료
       exitShipEdit(true);
 
       renderShippingSummary();
       renderDoneSummary();
 
-      // ✅ 완료화면 기본: 카드 잠금
       document.querySelectorAll(".product").forEach(p=>{
         lockProductInputs(p, true);
         setBadge(p);
@@ -550,13 +547,13 @@
 
       applyFoldVisibilityComplete();
 
-      calc(); // ✅ 완료화면 합계/배송비/총액 갱신
+      calc();
       saveData();
       setTimeout(focusBanner, 50);
       return;
     }
 
-    // MODE === form
+    // form
     formControls.style.display = "flex";
     completeControls.style.display = "none";
     completeMiniControls.style.display = "none";
@@ -587,7 +584,6 @@
       const st = p.dataset.status || "draft";
       const isDoneCard = (st === "sent" || st === "modified" || st === "canceled" || st === "cancel_pending");
 
-      // 완료화면에서만 접기 적용
       if (isDoneCard){
         p.style.display = HIDE_DONE ? "none" : "";
       } else {
@@ -595,16 +591,22 @@
       }
 
       // 펼쳐졌을 때만: 개별 수정 버튼 노출(취소완료 제외)
-      const editRow = p.querySelector(".edit-row");
-      if (editRow){
+      const editRows = p.querySelectorAll(".edit-row");
+      if (editRows.length){
+        const editRow = editRows[0];
         const canEdit = (MODE==="complete" && !HIDE_DONE && (st==="sent" || st==="modified") && !p.dataset.editing && !SHIP_EDITING);
         editRow.style.display = canEdit ? "flex" : "none";
       }
 
-      // 펼쳐졌을 때만 취소 체크 접근 가능(원래 의도대로)
       const cancelRow = p.querySelector(".cancel-pick-row");
       if (cancelRow){
         cancelRow.style.display = (MODE==="complete" && !HIDE_DONE && (st==="sent" || st==="modified" || st==="cancel_pending")) ? "flex" : "none";
+      }
+
+      // 수정중 컨트롤 행
+      const editControlsRow = p.querySelector('[data-edit-controls="1"]');
+      if (editControlsRow){
+        editControlsRow.style.display = (p.dataset.editing === "1") ? "flex" : "none";
       }
     });
 
@@ -618,7 +620,6 @@
     saveData();
   }
 
-  /* ✅ 완료화면에서 수정하기 버튼 눌렀을 때: 접기 풀고 배너로 시선 */
   function unfoldAndHint(type){
     if (MODE !== "complete") return;
 
@@ -667,7 +668,6 @@
       return;
     }
 
-    // draft는 뱃지 숨김(작성중)
     badge.style.display = "none";
   }
 
@@ -726,8 +726,6 @@
 
   /* =========================
      ✅ 합계 계산(완료화면에서도 보이게!)
-     - sent/modified: 포함
-     - cancel_pending: 선택된 상품만큼 마이너스 반영
      ========================= */
   function calc(){
     let sum = 0;
@@ -743,7 +741,6 @@
         if (st === "sent" || st === "modified") sum += amt;
 
         if (st === "cancel_pending"){
-          // 취소선택은 원래금액을 뺌(snapshot 기준)
           const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : snapshotOfProduct(p);
           const q = Number(snap.qty || 0);
           const pr = Number(snap.price || 0);
@@ -752,7 +749,6 @@
         return;
       }
 
-      // 폼에서는 draft만 합산(새 주문 작성)
       if (st === "draft") sum += amt;
     });
 
@@ -798,7 +794,6 @@
 
   /* =========================
      ✅ 상품 카드 생성
-     - 완료화면에서: 취소 체크 + 개별 수정 버튼
      ========================= */
   function addProduct(preset){
     const div = document.createElement("div");
@@ -862,7 +857,6 @@
       inputs[4].value = preset.price != null ? preset.price : "";
     }
 
-    // 폼 입력 이벤트(0~4)
     for (let k=0;k<5;k++){
       inputs[k].addEventListener("input", ()=>{
         if (MODE !== "form") return;
@@ -871,7 +865,6 @@
       });
     }
 
-    // ✅ 취소 체크박스
     const chk = div.querySelector(".chk-cancel-pick");
     chk.addEventListener("change", ()=>{
       if (MODE !== "complete") return;
@@ -883,19 +876,15 @@
 
       if (chk.checked){
         if (!(st === "sent" || st === "modified")) { chk.checked = false; return; }
-        // ✅ 취소선택 시 원금액 snapshot 저장(정확한 차감)
         if (!div.dataset.snapshot){
           div.dataset.snapshot = JSON.stringify(snapshotOfProduct(div));
         }
+        div.dataset.prevDoneStatus = st; // ✅ 원래 상태 기억
         div.dataset.status = "cancel_pending";
       } else {
         if (st !== "cancel_pending") return;
-        // 취소선택 해제 → 원상복구
-        div.dataset.status = "sent"; // 원래가 modified였어도, 취소선택 해제는 '정상 완료 상태'로 복귀
-        // 수정완료였던 상품이면 modified로 돌려주는 게 자연스럽다:
-        // snapshot이 있었으면 그 전 상태를 저장해둘 수도 있지만, 간단히 "modified 유지"를 위해 아래 처리:
-        // - snapshot이 없으면 modified로 유지 불가
-        // - 여기선 "modified 상품도 취소선택 해제 시 modified로 유지"를 위해 dataset.prevDoneStatus 사용
+        div.dataset.status = div.dataset.prevDoneStatus || "sent";
+        delete div.dataset.prevDoneStatus;
       }
 
       setBadge(div);
@@ -904,8 +893,7 @@
       saveData();
     });
 
-    // ✅ 개별 수정 버튼 (완료화면 펼쳤을 때만 보이게)
-    const editBtn = div.querySelectorAll(".edit-row button")[0]; // 첫 edit-row의 "수정하기"
+    const editBtn = div.querySelectorAll(".edit-row button")[0];
     const editControlsRow = div.querySelector('[data-edit-controls="1"]');
     const editDoneBtn = editControlsRow.querySelectorAll("button")[0];
     const editCancelBtn = editControlsRow.querySelectorAll("button")[1];
@@ -918,33 +906,28 @@
       const st = div.dataset.status || "draft";
       if (!(st === "sent" || st === "modified")) return;
 
-      // 취소선택 중이면 먼저 해제
       const chk2 = div.querySelector(".chk-cancel-pick");
       if (chk2 && chk2.checked){
         alert("취소 선택을 해제한 후 수정해주세요.");
         return;
       }
 
-      // snapshot 저장(차액 계산용)
       div.dataset.snapshot = JSON.stringify(snapshotOfProduct(div));
       div.dataset.editing = "1";
 
       lockProductInputs(div, false);
-      div.classList.remove("is-locked");
 
-      // 버튼 토글
       editBtn.parentElement.style.display = "none";
       editControlsRow.style.display = "flex";
 
-      // 취소 체크 비활성
       if (chk2) chk2.disabled = true;
 
+      document.getElementById("modeBanner").innerText = "상품 수정 중입니다. 수정완료를 눌러주세요.";
       focusBanner();
       saveData();
     };
 
     editCancelBtn.onclick = () => {
-      // snapshot으로 되돌리고 잠금
       const snap = div.dataset.snapshot ? JSON.parse(div.dataset.snapshot) : null;
       if (snap){
         inputs[0].value = snap.name || "";
@@ -955,7 +938,6 @@
       }
 
       delete div.dataset.editing;
-      // snapshot은 취소니까 삭제
       delete div.dataset.snapshot;
 
       lockProductInputs(div, true);
@@ -978,7 +960,6 @@
     editDoneBtn.onclick = async () => {
       if (MODE !== "complete") return;
 
-      // 유효성 검사
       const pName = (inputs[0].value || "").trim();
       const pColor = (inputs[1].value || "").trim();
       const pSize = (inputs[2].value || "").trim();
@@ -1025,7 +1006,6 @@
       try{
         await sendPayload(payload);
 
-        // ✅ 수정완료 처리
         div.dataset.status = "modified";
         delete div.dataset.editing;
         delete div.dataset.snapshot;
@@ -1052,7 +1032,6 @@
 
     productsDiv.appendChild(div);
 
-    // 초기 UI
     setBadge(div);
     lockProductInputs(div, MODE === "complete");
     calc();
@@ -1172,7 +1151,6 @@
     }
     if (!confirm("주문을 완료하시겠습니까?")) return;
 
-    // payload 만들기
     const items = [];
     let sum = 0;
 
@@ -1215,7 +1193,6 @@
     try{
       await sendPayload(payload);
 
-      // draft → sent
       targets.forEach(p=>{
         p.dataset.status = "sent";
         setBadge(p);
@@ -1223,10 +1200,8 @@
 
       ORDER_ID = payload.orderId;
 
-      // 완료화면 진입(기본 접힘)
       setMode("complete", "주문이 완료되었습니다.", { foldOnEnter:true });
 
-      // 완료화면 합계 표시 갱신
       calc();
       renderDoneSummary();
       applyFoldVisibilityComplete();
@@ -1240,7 +1215,6 @@
 
   /* =========================
      ✅ 취소하기(완료화면)
-     - 체크된(cancel_pending) 것만 전송 → canceled로 확정
      ========================= */
   async function submitCancel(){
     if (MODE !== "complete") return;
@@ -1315,10 +1289,10 @@
     try{
       await sendPayload(payload);
 
-      // cancel_pending → canceled
       targets.forEach(p=>{
         p.dataset.status = "canceled";
         delete p.dataset.snapshot;
+        delete p.dataset.prevDoneStatus;
 
         const chk = p.querySelector(".chk-cancel-pick");
         if (chk) chk.checked = false;
@@ -1327,7 +1301,6 @@
         lockProductInputs(p, true);
       });
 
-      // 취소 후 다시 접힘(취소 유도 최소화)
       HIDE_DONE = true;
       applyFoldVisibilityComplete();
 
@@ -1345,10 +1318,9 @@
   }
 
   /* =========================
-     ✅ 추가주문: 상품/배송지 유지 + 폼으로 이동 + 새 draft 1개 추가
+     ✅ 추가주문
      ========================= */
   function goToFormForAdd(){
-    // 완료화면에서 취소선택/수정중이면 막기
     if (SHIP_EDITING){ alert("배송지 수정 중에는 추가주문을 진행할 수 없습니다."); return; }
     const editingAny = Array.from(document.querySelectorAll(".product")).some(p => p.dataset.editing === "1");
     if (editingAny){ alert("상품 수정 중에는 추가주문을 진행할 수 없습니다."); return; }
@@ -1356,7 +1328,8 @@
     // 취소선택 해제(원복)
     document.querySelectorAll(".product").forEach(p=>{
       if (p.dataset.status === "cancel_pending"){
-        p.dataset.status = "sent";
+        p.dataset.status = p.dataset.prevDoneStatus || "sent";
+        delete p.dataset.prevDoneStatus;
         delete p.dataset.snapshot;
         const chk = p.querySelector(".chk-cancel-pick");
         if (chk) chk.checked = false;
@@ -1366,7 +1339,7 @@
 
     setMode("form");
 
-    const newP = addProduct(); // draft
+    const newP = addProduct();
     setTimeout(()=>{
       const first = newP.querySelectorAll("input")[0];
       if (first) first.focus();
@@ -1379,7 +1352,7 @@
   }
 
   /* =========================
-     ✅ 새 주문(초기화) : 빨강 + 흰글씨
+     ✅ 새 주문(초기화)
      ========================= */
   function newOrder(){
     if (!confirm("기존 상품 정보가 모두 초기화됩니다.\n정말 새 주문을 시작할까요?")) return;
@@ -1392,7 +1365,6 @@
     productsDiv.innerHTML = "";
     addProduct();
 
-    // 고객정보 유지
     document.getElementById("nickname").value = keepCustomer.nickname || "";
     document.getElementById("name").value = keepCustomer.name || "";
     document.getElementById("phone").value = keepCustomer.phone || "";
@@ -1412,7 +1384,6 @@
   function enterShipEdit(){
     if (MODE !== "complete") return;
     if (HIDE_DONE === false){
-      // 펼쳐져 있어도 상관없지만, 실수 방지로 접어두고 시작
       HIDE_DONE = true;
       applyFoldVisibilityComplete();
     }
@@ -1431,7 +1402,7 @@
     document.getElementById("shipEditControls").style.display = "flex";
     document.getElementById("shipActions").style.display = "none";
 
-    document.getElementById("modeBanner").innerText = "배송지 수정 중입니다. 저장 후 계속 진행해주세요.";
+    document.getElementById("modeBanner").innerText = "배송지 수정 중. 저장 후 계속 진행해주세요.";
     focusBanner();
 
     saveData();
@@ -1464,7 +1435,6 @@
   function cancelShipEdit(){
     if (!SHIP_EDITING) return;
 
-    // 원복
     const s = SHIP_SNAPSHOT || {};
     document.getElementById("nickname").value = s.nickname || "";
     document.getElementById("name").value = s.name || "";
@@ -1482,7 +1452,6 @@
   async function saveShipEdit(){
     if (!SHIP_EDITING) return;
 
-    // 배송지 필수 체크
     if (!_validateCustomer_()) return;
     if (!confirm("배송지를 저장할까요?")) return;
 
@@ -1536,6 +1505,7 @@
         status: p.dataset.status || "draft",
         snapshot: p.dataset.snapshot || "",
         editing: p.dataset.editing || "",
+        prevDoneStatus: p.dataset.prevDoneStatus || "",
         name: i[0]?.value || "",
         color: i[1]?.value || "",
         size: i[2]?.value || "",
@@ -1566,7 +1536,6 @@
     ORDER_ID = data.orderId || newOrderId_();
     HIDE_DONE = !!data.hideDone;
 
-    // 고객정보
     const c = data.customer || {};
     document.getElementById("nickname").value = c.nickname || "";
     document.getElementById("name").value = c.name || "";
@@ -1574,7 +1543,6 @@
     document.getElementById("address").value = c.address || "";
     document.getElementById("addressDetail").value = c.addressDetail || "";
 
-    // 상품
     productsDiv.innerHTML = "";
     (data.products || []).forEach(p=>{
       const div = addProduct({
@@ -1593,8 +1561,10 @@
         if (chk) chk.checked = true;
       }
 
+      if (p.prevDoneStatus) div.dataset.prevDoneStatus = p.prevDoneStatus;
+
       if (p.editing === "1"){
-        // 편집중 상태는 복구하지 않고 안전하게 잠금 상태로
+        // 안전하게 편집중은 복구하지 않음
         delete div.dataset.editing;
       }
 
@@ -1604,6 +1574,9 @@
     if (!document.querySelector(".product")) addProduct();
 
     IS_LOADING = false;
+
+    // ✅ ORDER_ID 안전 한 줄(요청하신 추가)
+    if (!ORDER_ID) ORDER_ID = newOrderId_();
 
     renderShippingSummary();
     renderDoneSummary();
@@ -1630,6 +1603,9 @@
   });
 
   loadData();
+
+  // ✅ 혹시라도 loadData 전에/후에 비어있을 가능성까지 완전 차단(한 번 더)
+  if (!ORDER_ID) ORDER_ID = newOrderId_();
 </script>
 
 </body>
