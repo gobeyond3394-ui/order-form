@@ -257,8 +257,25 @@
     line-height:1.55;
     font-weight:900;
   }
-  body.mode-form #doneSummary{ display:block; }
+  /* ✅ (요청) 주문입력 화면에서는 완료 요약 숨김 */
+  body.mode-form #doneSummary{ display:none; }
   body.mode-complete #doneSummary{ display:block; }
+
+  /* ✅ (추가) 주문입력 화면에서만: 작성 중 상품 요약 */
+  #draftSummary{
+    display:none;
+    font-size:13px;
+    color:#333;
+    background:#f7f9ff;
+    border:1px solid #d6e0ff;
+    border-radius:10px;
+    padding:10px;
+    margin:6px 0 10px;
+    line-height:1.55;
+    font-weight:900;
+  }
+  body.mode-form #draftSummary{ display:block; }
+  body.mode-complete #draftSummary{ display:none; }
 
   .edit-row{ display:none; margin-top:10px; gap:8px; justify-content:flex-end; }
   .edit-row button{ padding:10px 12px; font-size:13px; border-radius:10px; }
@@ -433,6 +450,21 @@
     font-size:13px;
     text-decoration:underline;
   }
+
+  /* ✅ (추가) 가격 입력칸 오른쪽 "원" 표시 */
+  .money-wrap{ position:relative; }
+  .money-wrap input{ padding-right:40px; }
+  .money-wrap .money-suffix{
+    position:absolute;
+    right:12px;
+    top:50%;
+    transform:translateY(-50%);
+    font-size:14px;
+    font-weight:900;
+    color:#666;
+    pointer-events:none;
+    user-select:none;
+  }
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -493,6 +525,10 @@
 <div class="section">
   <div class="section-title" id="productSectionTitle">상품 정보</div>
 
+  <!-- ✅ (추가) 주문입력 화면: 작성 중(입력중/입력완료) 상품 요약 -->
+  <div id="draftSummary"></div>
+
+  <!-- ✅ 완료 화면에서만: 완료된 주문목록 요약 -->
   <div id="doneSummary"></div>
 
   <!-- ✅ 완료화면에서만: 주문상세 보기/닫기 -->
@@ -564,6 +600,14 @@
   </div>
 </div>
 
+<!-- ✅ (요청) 맨 하단: 말풍선(왼쪽) + 카카오톡 문의(오른쪽) -->
+<div class="help-wrap">
+  <div class="help-row">
+    <div class="help-title"><span class="bubble">💬</span>주문 후 문의가 필요하신가요?</div>
+    <a class="help-link" href="http://pf.kakao.com/_exnahX/chat"><span class="bubble">💬</span>카카오톡 문의하기 &gt;</a>
+  </div>
+</div>
+
 <script>
   const SHIPPING = 4000;
   const productsDiv = document.getElementById("products");
@@ -629,9 +673,6 @@
     const oid = (LAST_DONE_ORDER_ID || "").trim();
     const line1 = oid ? `${formatKstDateOnly_(kstNowDate_())} 주문번호는 ${oid} 입니다.` : "";
 
-    // ✅ 요청 반영:
-    // 1) 주문번호 아래: 방송 종료 전까지 '주문상세 보기'에서 수정/취소가 가능합니다.
-    // 2) 그 아래: 입금 후 확인되면 발송됩니다. (파란색)
     const line2 = `방송 종료 전까지 ‘주문상세 보기’에서 수정/취소가 가능합니다.`;
     const line3 = `입금 후 확인되면 발송됩니다.`;
 
@@ -664,14 +705,12 @@
     window.location.href = KAKAO_CHAT_URL;
   }
 
-  // ✅ (카톡 인앱 포함) 안전하게: id 전역변수 의존 제거
   function copyAccount(){
     const el = document.getElementById("accountText");
     const text = el ? el.innerText : "";
     const accountNumberOnly = text.replace(/[^0-9]/g, "");
     try{
       navigator.clipboard.writeText(accountNumberOnly);
-      // ✅ 5) 문구 변경
       alert("계좌번호가 복사되었습니다.");
     }catch(e){
       alert("복사에 실패했습니다. 계좌번호를 길게 눌러 복사해주세요.");
@@ -692,7 +731,6 @@
     alert("문의는 카카오톡 채널(또는 상담창)로 부탁드립니다.\n\n예) 카카오톡에서 ‘싸U’ 채널을 검색 후 메시지 보내기");
   }
 
-  // ✅ 3) 연락처 자동 포맷팅(010-1234-5678)
   function formatPhoneKR_(value){
     const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
     if (digits.length <= 3) return digits;
@@ -821,6 +859,7 @@
 
       renderShippingSummary();
       renderDoneSummary();
+      renderDraftSummary(); // ✅ (추가) 모드 전환 시 동기화
 
       updateShippingStatuses_(true);
 
@@ -847,6 +886,7 @@
     exitShipEdit(true);
 
     renderDoneSummary();
+    renderDraftSummary(); // ✅ (추가)
 
     document.querySelectorAll(".product").forEach(p=>{
       lockProductInputs(p, false);
@@ -925,6 +965,54 @@
         "[주문완료]";
 
       lines.push(`• <b>${tag}</b> ${name} / ${color} / ${size} / ${qtyText} / ${priceText}`);
+    });
+
+    if (lines.length === 0){
+      box.style.display = "none";
+      box.innerHTML = "";
+      return;
+    }
+
+    box.style.display = "block";
+    box.innerHTML = lines.join("<br>");
+  }
+
+  // ✅ (추가) 주문입력 화면: 작성 중 상품 요약(입력중/입력완료)
+  function renderDraftSummary(){
+    const box = document.getElementById("draftSummary");
+    if (!box) return;
+
+    if (MODE !== "form"){
+      box.style.display = "none";
+      box.innerHTML = "";
+      return;
+    }
+
+    const lines = [];
+
+    const drafts = Array.from(document.querySelectorAll(".product")).filter(p => (p.dataset.status === "draft"));
+    drafts.forEach(p=>{
+      const i = p.querySelectorAll("input");
+      const name = (i[0]?.value || "").trim();
+      const color = (i[1]?.value || "").trim();
+      const size = (i[2]?.value || "").trim();
+      const qtyRaw = (i[3]?.value || "").trim();
+      const priceRaw = (i[4]?.value || "").trim();
+
+      const qty = Number(qtyRaw || 0);
+      const price = Number(priceRaw || 0);
+
+      // 전부 비어있으면(완전 새 상품) 요약에서 제외
+      if (!name && !color && !size && !qtyRaw && !priceRaw) return;
+
+      const qtyText = qtyRaw ? `${qty}개` : "-";
+      const priceText = priceRaw ? _fmtMoney_(price) : "-";
+
+      // 입력 다 했는지 간단 표시
+      const complete = (name && color && size && qty > 0 && price > 0);
+      const tag = complete ? "[입력완료]" : "[입력중]";
+
+      lines.push(`• <b>${tag}</b> ${name || "-"} / ${color || "-"} / ${size || "-"} / ${qtyText} / ${priceText}`);
     });
 
     if (lines.length === 0){
@@ -1049,6 +1137,7 @@
 
     if (changed){
       renderDoneSummary();
+      renderDraftSummary(); // ✅ (추가)
       calc();
       if (!silentSave) saveData();
       else if (!IS_LOADING) saveData();
@@ -1155,7 +1244,11 @@
         </div>
         <div class="field">
           <label>가격</label>
-          <input type="number" placeholder="예) 59000">
+          <!-- ✅ (요청) 가격 입력칸 오른쪽에 '원' 표시 -->
+          <div class="money-wrap">
+            <input type="number" placeholder="예) 59000">
+            <span class="money-suffix">원</span>
+          </div>
         </div>
       </div>
 
@@ -1186,6 +1279,7 @@
       inputs[k].addEventListener("input", ()=>{
         if (MODE !== "form" && div.dataset.editing !== "1") return;
         calc();
+        renderDraftSummary();   // ✅ (추가)
         saveData();
       });
     }
@@ -1226,6 +1320,7 @@
       setBadge(div);
       calc();
       renderDoneSummary();
+      renderDraftSummary(); // ✅ (추가)
       refreshProductActionRows_(div);
       saveData();
     }
@@ -1272,7 +1367,6 @@
         div.dataset.status = "modified";
         exitEdit_(false);
 
-        // ✅ 1) 수정완료 시 배너로 커서 이동
         setBanner("수정이 완료되었습니다.");
         focusBanner();
         alert("수정이 완료되었습니다.");
@@ -1281,7 +1375,6 @@
       }
     };
 
-    // ✅ 개별 취소 버튼
     const cancelBtn = div.querySelector('[data-cancel-row="1"] button');
     if (cancelBtn){
       cancelBtn.onclick = async ()=>{
@@ -1334,11 +1427,11 @@
           setBadge(div);
           refreshProductActionRows_(div);
 
-          // ✅ 2) 취소완료 시 배너로 커서 이동
           setBanner("취소가 완료되었습니다.");
           focusBanner();
           calc();
           renderDoneSummary();
+          renderDraftSummary(); // ✅ (추가)
           saveData();
           alert("취소가 완료되었습니다.");
         } catch(e){
@@ -1360,6 +1453,7 @@
 
     calc();
     renderDoneSummary();
+    renderDraftSummary(); // ✅ (추가)
     applyProductVisibility_();
 
     if (!IS_LOADING) saveData();
@@ -1380,6 +1474,7 @@
     if (!document.querySelector('.product[data-status="draft"]')) addProduct();
 
     calc();
+    renderDraftSummary(); // ✅ (추가)
     saveData();
     renderDoneSummary();
     applyProductVisibility_();
@@ -1535,6 +1630,7 @@
 
       calc();
       renderDoneSummary();
+      renderDraftSummary(); // ✅ (추가)
       saveData();
 
       alert("주문이 접수되었습니다.\n완료 화면에서 ‘주문상세 보기’로 수정/취소가 가능합니다.");
@@ -1543,7 +1639,6 @@
     }
   }
 
-  // ✅ 완료화면 '전체 취소하기' = 주문완료/수정완료 전체 취소
   async function submitCancel(){
     if (MODE !== "complete") return;
 
@@ -1597,7 +1692,6 @@
         setBadge(p);
       });
 
-      // ✅ 2) 전체 취소 시 배너로 커서 이동
       setBanner("취소가 완료되었습니다.");
       focusBanner();
       calc();
@@ -1632,6 +1726,7 @@
 
     calc();
     renderDoneSummary();
+    renderDraftSummary(); // ✅ (추가)
     saveData();
   }
 
@@ -1800,6 +1895,7 @@
 
       renderShippingSummary();
       renderDoneSummary();
+      renderDraftSummary(); // ✅ (추가)
       calc();
 
       setMode("form");
@@ -1840,6 +1936,7 @@
 
     renderShippingSummary();
     renderDoneSummary();
+    renderDraftSummary(); // ✅ (추가)
     calc();
 
     updateShippingStatuses_(true);
@@ -1865,7 +1962,6 @@
     });
   });
 
-  // ✅ 3) 연락처 입력 시 자동 포맷팅 + 저장/요약 반영
   document.getElementById("phone").addEventListener("input", (e)=>{
     const el = e.target;
     const formatted = formatPhoneKR_(el.value);
