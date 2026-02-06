@@ -386,10 +386,22 @@
     color:#005FAE;
     cursor:pointer;
     user-select:none;
+    text-decoration:none;
   }
   .help-link .bubble{
     font-size:14px;
     line-height:1;
+  }
+
+  /* ✅ (추가) 문의 한 줄 정렬 */
+  .help-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .help-row .help-title{
+    margin-bottom:0; /* 기존 8px 제거 */
   }
 </style>
 
@@ -406,7 +418,8 @@
 
 <div class="section">
   <div class="section-title" id="customerSectionTitle">고객 정보</div>
-  <div class="divider"></div>
+  <!-- ✅ 2) 배송지 정보 밑 그레이 구분선 제거 -->
+  <!-- <div class="divider"></div> -->
 
   <div id="shipSummary"></div>
 
@@ -425,7 +438,7 @@
     </div>
     <div class="field">
       <label>연락처</label>
-      <input id="phone" placeholder="예) 010-1234-5678">
+      <input id="phone" placeholder="예) 010-1234-5678" inputmode="numeric">
     </div>
     <div class="field">
       <label>주소</label>
@@ -435,7 +448,8 @@
       </div>
     </div>
     <div class="field">
-      <label>상세주소</label>
+      <!-- ✅ 4) 라벨 변경 -->
+      <label>상세주소(동/호수 꼭 입력)</label>
       <input id="addressDetail" placeholder="예) 101동 1203호">
     </div>
 
@@ -490,12 +504,16 @@
   </div>
   <div class="button-line-sub">
     <button class="btn-preview" type="button" onclick="goCompletePreview()">주문접수결과 다시보기</button>
-    <button class="btn-check" type="button" onclick="showHelp()">문의하기</button>
+    <!-- ✅ 6) 문의 버튼 문구/동작 변경 -->
+    <button class="btn-check" type="button" onclick="goKakaoChat()">💬 카카오톡 문의하기 &gt;</button>
   </div>
 
   <div class="help-wrap">
-    <div class="help-title"><span class="bubble">💬</span>주문 후 문의가 필요하신가요?</div>
-    <div class="help-link" onclick="showHelp()"><span class="bubble">💬</span>[문의하기]</div>
+    <!-- ✅ 6) 같은 줄 + 오른쪽 끝 링크 -->
+    <div class="help-row">
+      <div class="help-title"><span class="bubble">💬</span>주문 후 문의가 필요하신가요?</div>
+      <a class="help-link" href="http://pf.kakao.com/_exnahX/chat">💬 카카오톡 문의하기 &gt;</a>
+    </div>
   </div>
 </div>
 
@@ -506,14 +524,16 @@
     <button class="btn-gray btn-side" type="button" onclick="showOrderHistory()">주문확인서 보기</button>
   </div>
   <div class="button-line-sub">
-    <!-- ✅ 1) 취소하기 -> 전체 취소하기 -->
     <button class="btn-cancel-do" type="button" onclick="submitCancel()">전체 취소하기</button>
-    <button class="btn-preview" type="button" onclick="showHelp()">문의하기</button>
+    <!-- ✅ 6) 문의 버튼 문구/동작 변경 -->
+    <button class="btn-preview" type="button" onclick="goKakaoChat()">💬 카카오톡 문의하기 &gt;</button>
   </div>
 
   <div class="help-wrap">
-    <div class="help-title"><span class="bubble">💬</span>주문 후 문의가 필요하신가요?</div>
-    <div class="help-link" onclick="showHelp()"><span class="bubble">💬</span>[문의하기]</div>
+    <div class="help-row">
+      <div class="help-title"><span class="bubble">💬</span>주문 후 문의가 필요하신가요?</div>
+      <a class="help-link" href="http://pf.kakao.com/_exnahX/chat">💬 카카오톡 문의하기 &gt;</a>
+    </div>
   </div>
 </div>
 
@@ -523,6 +543,9 @@
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypKfZsjR0uu9Lcc7OirR2tiyjIzzLwREGd3Bw3szXmLVIHHNGhwlmoOdRaInh2xebf/exec";
   const PAY_NOTICE = "⚠️ 입금 확인 후 상품이 발송됩니다.";
+
+  // ✅ 7) 카카오톡 문의 링크
+  const KAKAO_CHAT_URL = "http://pf.kakao.com/_exnahX/chat";
 
   let IS_LOADING = false;
 
@@ -566,6 +589,7 @@
     return `${yyyy}.${mm}.${dd}`;
   }
 
+  // ✅ 1) 완료 배너 문구 2줄 추가
   function setBanner(text){
     const banner = document.getElementById("modeBanner");
     if (!banner) return;
@@ -576,13 +600,16 @@
     if (main) main.textContent = text || "";
 
     const oid = (LAST_DONE_ORDER_ID || "").trim();
+    const line1 = oid ? `${formatKstDateOnly_(kstNowDate_())} 주문번호는 ${oid} 입니다.` : "";
+    const line2 = `입금 후 확인되면 발송됩니다.`;
+    const line3 = `수정/취소는 아래 ‘주문상세 보기 ▼’에서 가능합니다.`;
+
     if (oidBox){
-      if (oid){
-        const d = kstNowDate_();
-        oidBox.textContent = `${formatKstDateOnly_(d)} 주문번호는 ${oid} 입니다.`;
-      } else {
-        oidBox.textContent = "";
-      }
+      oidBox.innerHTML = `
+        ${line1 ? `<div>${line1}</div>` : ""}
+        <div>${line2}</div>
+        <div>${line3}</div>
+      `;
     }
   }
 
@@ -601,6 +628,11 @@
     setMode("complete", "주문이 정상적으로 접수되었습니다.", { detailClosedOnEnter:true });
   }
 
+  // ✅ 7) 카카오톡 문의 이동
+  function goKakaoChat(){
+    window.location.href = KAKAO_CHAT_URL;
+  }
+
   // ✅ (카톡 인앱 포함) 안전하게: id 전역변수 의존 제거
   function copyAccount(){
     const el = document.getElementById("accountText");
@@ -608,7 +640,8 @@
     const accountNumberOnly = text.replace(/[^0-9]/g, "");
     try{
       navigator.clipboard.writeText(accountNumberOnly);
-      alert("계좌번호만 복사되었습니다.");
+      // ✅ 5) 문구 변경
+      alert("계좌번호가 복사되었습니다.");
     }catch(e){
       alert("복사에 실패했습니다. 계좌번호를 길게 눌러 복사해주세요.");
     }
@@ -626,6 +659,14 @@
 
   function showHelp(){
     alert("문의는 카카오톡 채널(또는 상담창)로 부탁드립니다.\n\n예) 카카오톡에서 ‘싸U’ 채널을 검색 후 메시지 보내기");
+  }
+
+  // ✅ 3) 연락처 자동 포맷팅(010-1234-5678)
+  function formatPhoneKR_(value){
+    const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 7) return `${digits.slice(0,3)}-${digits.slice(3)}`;
+    return `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7)}`;
   }
 
   function _uid(){
@@ -1097,7 +1138,6 @@
       </div>
 
       <div class="cancel-row" data-cancel-row="1">
-        <!-- ✅ 3) 버튼 문구 변경 -->
         <button class="btn-item-cancel" type="button">이 상품 취소하기</button>
       </div>
     `;
@@ -1468,7 +1508,7 @@
     }
   }
 
-  // ✅ 1) 완료화면 '전체 취소하기' = 주문완료/수정완료 전체 취소
+  // ✅ 완료화면 '전체 취소하기' = 주문완료/수정완료 전체 취소
   async function submitCancel(){
     if (MODE !== "complete") return;
 
@@ -1781,11 +1821,20 @@
     saveData();
   }
 
-  ["nickname","name","phone","addressDetail"].forEach(id=>{
+  ["nickname","name","addressDetail"].forEach(id=>{
     document.getElementById(id).addEventListener("input", ()=>{
       renderShippingSummary();
       saveData();
     });
+  });
+
+  // ✅ 3) 연락처 입력 시 자동 포맷팅 + 저장/요약 반영
+  document.getElementById("phone").addEventListener("input", (e)=>{
+    const el = e.target;
+    const formatted = formatPhoneKR_(el.value);
+    if (el.value !== formatted) el.value = formatted;
+    renderShippingSummary();
+    saveData();
   });
 
   loadData();
