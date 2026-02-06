@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>싸U 주문서</title>
+<title>싸U 구매주문서</title>
 
 <style>
   body{
@@ -13,16 +13,15 @@
   }
   h1{ text-align:center; font-size:20px; margin:0 0 12px; color:#005FAE; }
 
-  /* ✅ 라벨(고객정보/상품정보 동일 크기) */
-  label{ font-weight:900; font-size:13px; }
+  /* ✅ 라벨/요약/계좌/합계 */
+  label{ font-weight:800; font-size:15px; }
+  .summary-line{ font-size:14px; display:flex; justify-content:space-between; } /* ✅ 오른쪽 끝 정렬 */
+  .summary-line span{ font-weight:900; }
+  .account-text{ font-weight:900; font-size:14px; flex:1; } /* ✅ 오른쪽 끝에 복사 버튼 */
+  input{ font-weight:400; font-size:15px; } /* ✅ 입력칸은 진하게 X */
 
-  /* ✅ 입력칸은 진하게 하지 않기 */
-  input{ font-weight:500; }
-
-  /* ✅ placeholder는 살짝만 */
   input::placeholder{ color:#999; font-weight:500; }
 
-  /* ✅ 버튼 누름 효과 */
   button{
     padding:12px 14px;
     font-size:14px;
@@ -33,10 +32,7 @@
     transition: transform .06s ease, filter .12s ease, box-shadow .12s ease;
     -webkit-tap-highlight-color: transparent;
   }
-  button:active{
-    transform: scale(0.98);
-    filter: brightness(0.96);
-  }
+  button:active{ transform: scale(0.98); filter: brightness(0.96); }
   button:focus-visible{
     outline: 3px solid rgba(0,95,174,.25);
     outline-offset: 2px;
@@ -52,6 +48,8 @@
     margin:0 auto 14px;
     max-width:560px;
     outline:none;
+    line-height:1.35;
+    white-space:pre-line;
   }
   body.mode-complete .mode-banner{
     display:block;
@@ -61,61 +59,28 @@
   }
   body.mode-complete h1{ display:none; }
 
-  .banner-title{
-    font-size:15px;
-    font-weight:900;
-    line-height:1.35;
-  }
-  .banner-sub{
-    margin-top:6px;
-    font-size:13px;
-    line-height:1.45;
-    color:#003e76;
-    font-weight:900;
-  }
-  .banner-sub-row{
-    display:flex;
-    gap:8px;
-    justify-content:center;
-    align-items:center;
-    flex-wrap:wrap;
-  }
-  .banner-copy{
-    padding:8px 10px;
-    font-size:13px;
-    border-radius:10px;
-    background:#005FAE;
-    color:#fff;
-    border:none;
-  }
-
   .section{ margin-bottom:28px; }
   .section-title{ font-size:15px; font-weight:800; margin-bottom:10px; color:#005FAE; }
   .divider{ border-top:1px solid #eee; margin:12px 0 16px; }
-
   .field{ margin-bottom:12px; }
 
   input{
     width:100%;
     padding:12px;
-    font-size:15px;
     border:1px solid #ddd;
     border-radius:6px;
     box-sizing:border-box;
   }
 
-  .address-row{ display:flex; gap:8px; align-items:stretch; }
+  .address-row{ display:flex; gap:8px; }
   .address-row input{ flex:1; }
-
-  /* ✅ 주소검색 버튼 크기/스타일 = 다른 버튼과 동일 */
   .addr-btn{
-    background:#005FAE;
-    color:#fff;
-    font-weight:900;
+    background:#005FAE; color:#fff;
     border:none;
     border-radius:8px;
     padding:12px 14px;
     font-size:14px;
+    font-weight:900;
     cursor:pointer;
     white-space:nowrap;
   }
@@ -129,13 +94,11 @@
     padding:12px;
     font-size:14px;
     line-height:1.55;
-    font-weight:900;
+    font-weight:800;
   }
   body.mode-complete #shipSummary{ display:block; }
-
   body.mode-complete #customerFormFields{ display:none; }
 
-  /* ✅ 완료화면 배송지 수정 버튼 영역 */
   .ship-actions{
     display:none;
     gap:8px;
@@ -187,13 +150,11 @@
     white-space:nowrap;
   }
 
-  /* ✅ 작성 화면 버튼 */
   .btn-check{ background:#E0E0E0; color:#333; }
   .btn-order{ background:#005FAE; color:#fff; }
   .btn-add{ background:#005FAE; color:#fff; }
   .btn-delete{ background:#e74c3c; color:#fff; }
 
-  /* ✅ 완료 화면 메인 버튼 */
   .btn-edit-go{
     background:#fff7e6;
     color:#9a6b00;
@@ -208,23 +169,15 @@
   }
   .btn-add-order{ background:#005FAE; color:#fff; font-weight:900; }
 
-  /* ✅ 입금계좌: 오른쪽 끝에 복사 */
   .account-box{
     display:flex;
     align-items:center;
-    justify-content:space-between;
+    justify-content:space-between; /* ✅ 오른쪽 끝 복사 */
     background:#f4f7ff;
     border:1px solid #d6e0ff;
     border-radius:8px;
     padding:10px;
     gap:8px;
-  }
-  .account-text{
-    font-weight:900;
-    font-size:14px;
-    line-height:1.4;
-    flex:1;
-    padding-right:8px;
   }
   .copy-btn{
     background:#005FAE;
@@ -234,18 +187,17 @@
     padding:6px 10px;
     border-radius:6px;
     border:none;
-    flex:0 0 auto;
-  }
-  /* ✅ 계좌 밑에 칸 만들지 않고, 계좌문구 아래줄로 안내만 */
-  .account-inline-note{
-    margin-top:6px;
-    font-size:13px;
-    line-height:1.45;
-    font-weight:900;
-    color:#c0392b;
   }
 
-  /* ✅ 상태 배지 */
+  /* ✅ 입금확인 문구(계좌 아래) */
+  .pay-note{
+    margin-top:8px;
+    font-size:13px;
+    font-weight:900;
+    color:#c0392b;
+    line-height:1.4;
+  }
+
   .product-title-row{ display:flex; align-items:center; gap:8px; }
   .product-title-row input{ flex:1; }
 
@@ -274,7 +226,6 @@
   .status-cancel-pick{ background:#ffe9e9; color:#c0392b; border:1px solid #ffc9c9; }
   .status-cancel-pick .sq{ background:#e74c3c; }
 
-  /* ✅ 요약 박스(폼/완료 둘 다 사용) */
   #doneSummary{
     display:none;
     font-size:13px;
@@ -296,59 +247,12 @@
     display:none !important;
   }
 
-  .small-link-btn{
-    display:none;
-    width:100%;
-    margin-top:10px;
-    padding:10px 12px;
-    background:#f4f7ff;
-    border:1px solid #d6e0ff;
-    border-radius:10px;
-    color:#333;
-    font-size:14px;
-    font-weight:900;
-    text-align:center;
-    cursor:pointer;
-  }
-  body.mode-complete .small-link-btn{ display:block; }
+  /* ✅ 완료화면에서는 "요약만" 보이게 */
+  body.mode-complete #products{ display:none !important; }
+  body.mode-complete .small-link-btn{ display:none !important; }
 
-  .cancel-pick-row{
-    display:none;
-    margin-top:10px;
-    padding:10px;
-    border:1px dashed #eee;
-    border-radius:10px;
-    background:#fff;
-    font-size:13px;
-    font-weight:900;
-  }
-  body.mode-complete .cancel-pick-row{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    justify-content:flex-end;
-  }
-  .cancel-pick-row label{
-    margin:0;
-    font-size:13px;
-    font-weight:900;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .cancel-pick-row input{ width:auto; padding:0; }
-
-  .edit-row{
-    display:none;
-    margin-top:10px;
-    gap:8px;
-    justify-content:flex-end;
-  }
-  .edit-row button{
-    padding:10px 12px;
-    font-size:13px;
-    border-radius:10px;
-  }
+  .edit-row{ display:none; margin-top:10px; gap:8px; justify-content:flex-end; }
+  .edit-row button{ padding:10px 12px; font-size:13px; border-radius:10px; }
 
   .product.is-locked input{
     background:#f2f2f2 !important;
@@ -363,16 +267,7 @@
     opacity:1 !important;
   }
 
-  /* ✅ 금액 요약: 오른쪽 끝에 금액 */
   .summary{ border-top:1px solid #eee; padding-top:14px; }
-  .summary-line{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    font-size:14px;
-    margin:6px 0;
-  }
-  .summary-line span{ font-weight:900; }
   .summary-total{ font-weight:900; font-size:16px; color:#005FAE; }
 
   body.mode-complete .form-product-controls{ display:none !important; }
@@ -404,8 +299,7 @@
 <h1>싸U 주문서</h1>
 
 <div class="mode-banner" id="modeBanner" tabindex="-1">
-  <div class="banner-title" id="bannerTitle">주문이 완료되었습니다.</div>
-  <div class="banner-sub" id="bannerSub"></div>
+  주문이 완료되었습니다.
 </div>
 
 <div class="section">
@@ -479,9 +373,7 @@
     <div class="account-text" id="accountText">카카오뱅크 3333-09797-1111 유혜정(유세연)</div>
     <button class="copy-btn" type="button" onclick="copyAccount()">복사</button>
   </div>
-  <div class="account-inline-note" id="accountInlineNote">
-    ※ <b>입금이 완료되어야 상품 발송이 가능합니다.</b> 주문 완료 후 위 계좌로 입금 부탁드립니다.
-  </div>
+  <div class="pay-note" id="payNoteBelow">⚠️ 입금 확인 후 상품이 발송됩니다.</div>
 </div>
 
 <div id="formControls">
@@ -511,6 +403,8 @@
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypKfZsjR0uu9Lcc7OirR2tiyjIzzLwREGd3Bw3szXmLVIHHNGhwlmoOdRaInh2xebf/exec";
 
+  const PAY_NOTICE = "⚠️ 입금 확인 후 상품이 발송됩니다.";
+
   let IS_LOADING = false;
   let HIDE_DONE = false;
 
@@ -524,6 +418,25 @@
   let SHIP_EDITING = false;
   let SHIP_SNAPSHOT = null;
 
+  function hasAnyDoneItems_(){
+    return Array.from(document.querySelectorAll(".product")).some(p=>{
+      const st = p.dataset.status || "draft";
+      return (st === "sent" || st === "modified" || st === "canceled");
+    });
+  }
+
+  function setBanner(text){
+    const banner = document.getElementById("modeBanner");
+    if (!banner) return;
+
+    const oid = (ORDER_ID || "").trim();
+    if (oid){
+      banner.textContent = `${text}\n주문번호: ${oid}`;
+    } else {
+      banner.textContent = text;
+    }
+  }
+
   function focusBanner(){
     const banner = document.getElementById("modeBanner");
     if (!banner) return;
@@ -531,47 +444,12 @@
     setTimeout(()=>banner.focus(), 250);
   }
 
-  function _depositMsg_(){
-    return "※ 입금이 완료되어야 상품 발송이 가능합니다.";
-  }
-
-  function copyOrderId(){
-    const oid = ORDER_ID || "";
-    if (!oid){ alert("주문번호가 없습니다."); return; }
-    navigator.clipboard.writeText(oid);
-    alert("주문번호가 복사되었습니다.");
-  }
-
-  /* ✅ 배너: '주문번호'만 표시(입금문구 제거) */
-  function setBanner(titleText){
-    const t = document.getElementById("bannerTitle");
-    const sub = document.getElementById("bannerSub");
-
-    t.innerText = titleText || "주문이 완료되었습니다.";
-
-    const oid = ORDER_ID || "";
-    sub.innerHTML = oid ? `
-      <div class="banner-sub-row">
-        <div>주문번호: <b>${oid}</b></div>
-        <button class="banner-copy" type="button" onclick="copyOrderId()">주문번호 복사</button>
-      </div>
-    ` : "";
-  }
-
-  function countDoneItems(){
-    return Array.from(document.querySelectorAll(".product")).filter(p=>{
-      const st = p.dataset.status || "draft";
-      return (st === "sent" || st === "modified" || st === "canceled");
-    }).length;
-  }
-
-  /* ✅ 첫 화면에서 완료상품 0개면 완료화면 진입 자체를 막음 */
   function goCompletePreview(){
-    if (countDoneItems() === 0){
-      alert("주문완료된 상품이 없습니다.\n먼저 '주문하기'를 눌러 주문을 완료해주세요.");
+    /* ✅ 첫 화면에서 완료된 상품(주문/수정/취소)이 없으면 완료화면 이동 금지 */
+    if (!hasAnyDoneItems_()){
+      alert("주문 완료된 상품이 없습니다.");
       return;
     }
-    if (!ORDER_ID) ORDER_ID = newOrderId_();
     setMode("complete", "주문이 완료되었습니다.", { foldOnEnter:true });
   }
 
@@ -637,22 +515,16 @@
     else div.classList.remove("is-locked");
   }
 
-  function setSectionTitles(){
-    const customerTitle = document.getElementById("customerSectionTitle");
-    const productTitle = document.getElementById("productSectionTitle");
-
-    if (MODE === "complete"){
-      customerTitle.innerText = "배송지";
-      productTitle.innerText = "주문 상품";
-    } else {
-      customerTitle.innerText = "고객 정보";
-      productTitle.innerText = "상품 정보";
-    }
-  }
-
   function setMode(mode, bannerText, opts){
-    MODE = mode;
     opts = opts || {};
+
+    /* ✅ 완료화면 진입 전, 완료된 상품 없으면 막기(로드/직접 호출 포함) */
+    if (mode === "complete" && !opts.allowEmpty && !hasAnyDoneItems_()){
+      alert("주문 완료된 상품이 없습니다.");
+      return;
+    }
+
+    MODE = mode;
 
     document.body.classList.remove("mode-form","mode-complete");
     document.body.classList.add("mode-" + MODE);
@@ -662,18 +534,24 @@
     const completeHalfNew = document.getElementById("completeHalfNew");
     const shipActions = document.getElementById("shipActions");
 
+    const customerTitle = document.getElementById("customerSectionTitle");
+    const productTitle = document.getElementById("productSectionTitle");
+
     if (MODE === "complete"){
       formControls.style.display = "none";
       completeControls.style.display = "flex";
       completeHalfNew.style.display = "flex";
       shipActions.style.display = "flex";
 
+      if (customerTitle) customerTitle.textContent = "배송지";
+      if (productTitle) productTitle.textContent = "주문 상품";
+
+      /* ✅ 주문완료 배너: 입금확인 문구 제거 + 주문번호만 */
+      setBanner(bannerText || "주문이 완료되었습니다.");
+
       if (opts.foldOnEnter === true) HIDE_DONE = true;
 
       exitShipEdit(true);
-
-      setSectionTitles();
-      setBanner(bannerText || "주문이 완료되었습니다.");
 
       renderShippingSummary();
       renderDoneSummary();
@@ -683,7 +561,6 @@
         setBadge(p);
       });
 
-      applyFoldVisibilityComplete();
       calc();
       saveData();
       setTimeout(focusBanner, 50);
@@ -695,10 +572,10 @@
     completeHalfNew.style.display = "none";
     shipActions.style.display = "none";
 
-    exitShipEdit(true);
+    if (customerTitle) customerTitle.textContent = "고객 정보";
+    if (productTitle) productTitle.textContent = "상품 정보";
 
-    setSectionTitles();
-    setBanner("");
+    exitShipEdit(true);
 
     renderDoneSummary();
     document.querySelectorAll(".product").forEach(p=>{
@@ -710,42 +587,8 @@
     saveData();
   }
 
-  function applyFoldVisibilityComplete(){
-    if (MODE !== "complete") return;
-
-    const btn = document.querySelector('button[onclick="toggleFold()"]');
-    if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기 ▼" : "완료목록 접기 ▲";
-
-    document.querySelectorAll(".product").forEach(p=>{
-      const st = p.dataset.status || "draft";
-      const isDoneCard = (st === "sent" || st === "modified" || st === "canceled" || st === "cancel_pending");
-
-      if (HIDE_DONE){
-        p.style.display = "none";
-      } else {
-        p.style.display = (isDoneCard || st === "draft") ? "" : "";
-      }
-
-      const editRow = p.querySelector(".edit-row");
-      if (editRow){
-        const canEdit = (MODE==="complete" && !HIDE_DONE && (st==="sent" || st==="modified") && !p.dataset.editing && !SHIP_EDITING);
-        editRow.style.display = canEdit ? "flex" : "none";
-      }
-
-      const cancelRow = p.querySelector(".cancel-pick-row");
-      if (cancelRow){
-        cancelRow.style.display = (MODE==="complete" && !HIDE_DONE && (st==="sent" || st==="modified" || st==="cancel_pending")) ? "flex" : "none";
-      }
-    });
-
-    saveData();
-  }
-
   function toggleFold(){
-    if (MODE !== "complete") return;
-    HIDE_DONE = !HIDE_DONE;
-    applyFoldVisibilityComplete();
-    saveData();
+    return;
   }
 
   function setBadge(div){
@@ -842,13 +685,6 @@
 
       if (MODE === "complete"){
         if (st === "sent" || st === "modified") sum += amt;
-
-        if (st === "cancel_pending"){
-          const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : snapshotOfProduct(p);
-          const q = Number(snap.qty || 0);
-          const pr = Number(snap.price || 0);
-          sum -= (q * pr);
-        }
         return;
       }
 
@@ -962,181 +798,16 @@
       });
     }
 
-    const chk = div.querySelector(".chk-cancel-pick");
-    chk.addEventListener("change", ()=>{
-      if (MODE !== "complete") return;
-      if (HIDE_DONE) { chk.checked = false; alert("먼저 완료목록을 펼쳐주세요."); return; }
-      if (div.dataset.editing === "1") { chk.checked = false; alert("수정 중에는 취소 선택을 할 수 없습니다."); return; }
-      if (SHIP_EDITING) { chk.checked = false; alert("배송지 수정 중에는 취소 선택을 할 수 없습니다."); return; }
-
-      const st = div.dataset.status || "draft";
-
-      if (chk.checked){
-        if (!(st === "sent" || st === "modified")) { chk.checked = false; return; }
-        if (!div.dataset.snapshot){
-          div.dataset.snapshot = JSON.stringify(snapshotOfProduct(div));
-        }
-        div.dataset.prevDoneStatus = st;
-        div.dataset.status = "cancel_pending";
-      } else {
-        if (st !== "cancel_pending") return;
-        const prev = div.dataset.prevDoneStatus || "sent";
-        div.dataset.status = prev;
-        delete div.dataset.prevDoneStatus;
-      }
-
-      setBadge(div);
-      renderDoneSummary();
-      calc();
-      saveData();
-    });
+    if (MODE === "complete") div.style.display = "none";
 
     const editBtn = div.querySelectorAll(".edit-row button")[0];
     const editControlsRow = div.querySelector('[data-edit-controls="1"]');
     const editDoneBtn = editControlsRow.querySelectorAll("button")[0];
     const editCancelBtn = editControlsRow.querySelectorAll("button")[1];
 
-    editBtn.onclick = () => {
-      if (MODE !== "complete") return;
-      if (HIDE_DONE) { alert("먼저 완료목록을 펼쳐주세요."); return; }
-      if (SHIP_EDITING) { alert("배송지 수정 중에는 상품 수정이 불가합니다."); return; }
-
-      const st = div.dataset.status || "draft";
-      if (!(st === "sent" || st === "modified")) return;
-
-      const chk2 = div.querySelector(".chk-cancel-pick");
-      if (chk2 && chk2.checked){
-        alert("취소 선택을 해제한 후 수정해주세요.");
-        return;
-      }
-
-      div.dataset.snapshot = JSON.stringify(snapshotOfProduct(div));
-      div.dataset.editing = "1";
-
-      lockProductInputs(div, false);
-
-      editBtn.parentElement.style.display = "none";
-      editControlsRow.style.display = "flex";
-
-      if (chk2) chk2.disabled = true;
-
-      setTimeout(()=>{
-        const nameInput = div.querySelector(".product-name");
-        if (nameInput){
-          nameInput.focus();
-          try{
-            const len = nameInput.value.length;
-            nameInput.setSelectionRange(len, len);
-          } catch(e){}
-        }
-        div.scrollIntoView({ behavior:"smooth", block:"center" });
-      }, 20);
-
-      saveData();
-    };
-
-    editCancelBtn.onclick = () => {
-      const snap = div.dataset.snapshot ? JSON.parse(div.dataset.snapshot) : null;
-      if (snap){
-        inputs[0].value = snap.name || "";
-        inputs[1].value = snap.color || "";
-        inputs[2].value = snap.size || "";
-        inputs[3].value = snap.qty || "";
-        inputs[4].value = snap.price || "";
-      }
-
-      delete div.dataset.editing;
-      delete div.dataset.snapshot;
-
-      lockProductInputs(div, true);
-
-      editControlsRow.style.display = "none";
-      editBtn.parentElement.style.display = "flex";
-
-      const chk2 = div.querySelector(".chk-cancel-pick");
-      if (chk2) chk2.disabled = false;
-
-      setBadge(div);
-      renderDoneSummary();
-      calc();
-      saveData();
-
-      setBanner("수정이 취소되었습니다.");
-      focusBanner();
-    };
-
-    editDoneBtn.onclick = async () => {
-      if (MODE !== "complete") return;
-
-      const pName = (inputs[0].value || "").trim();
-      const pColor = (inputs[1].value || "").trim();
-      const pSize = (inputs[2].value || "").trim();
-      const pQty = Number((inputs[3].value || "").trim() || 0);
-      const pPrice = Number((inputs[4].value || "").trim() || 0);
-
-      if (!pName) { alert("상품명을 입력해주세요."); inputs[0].focus(); return; }
-      if (!pColor) { alert("색상을 입력해주세요."); inputs[1].focus(); return; }
-      if (!pSize) { alert("사이즈를 입력해주세요."); inputs[2].focus(); return; }
-      if (!pQty || pQty <= 0) { alert("수량을 입력해주세요."); inputs[3].focus(); return; }
-      if (!pPrice || pPrice <= 0) { alert("가격을 입력해주세요."); inputs[4].focus(); return; }
-
-      if (!confirm("수정을 완료하고 전송할까요?\n\n" + _depositMsg_())) return;
-
-      const snap = div.dataset.snapshot ? JSON.parse(div.dataset.snapshot) : { qty:0, price:0 };
-      const oldAmt = Number(snap.qty || 0) * Number(snap.price || 0);
-      const newAmt = pQty * pPrice;
-      const delta = newAmt - oldAmt;
-
-      const payload = {
-        orderId: ORDER_ID || newOrderId_(),
-        orderTime: kstNowString(),
-        eventType: "modify_item",
-        customer: {
-          nickname: document.getElementById("nickname").value || "",
-          name: document.getElementById("name").value || "",
-          phone: document.getElementById("phone").value || "",
-          address: `${document.getElementById("address").value || ""} ${document.getElementById("addressDetail").value || ""}`.trim()
-        },
-        items: [{
-          productName: `[수정] ${pName}`.trim(),
-          color: pColor,
-          size: pSize,
-          qty: pQty,
-          price: pPrice,
-          amountDelta: delta,
-          statusLabel: "수정완료"
-        }],
-        sum: delta,
-        shipping: 0,
-        total: delta
-      };
-
-      try{
-        await sendPayload(payload);
-
-        div.dataset.status = "modified";
-        delete div.dataset.editing;
-        delete div.dataset.snapshot;
-
-        lockProductInputs(div, true);
-
-        editControlsRow.style.display = "none";
-        editBtn.parentElement.style.display = "flex";
-
-        const chk2 = div.querySelector(".chk-cancel-pick");
-        if (chk2) { chk2.disabled = false; chk2.checked = false; }
-
-        setBadge(div);
-        renderDoneSummary();
-        calc();
-        saveData();
-
-        setBanner("수정이 완료되었습니다.");
-        focusBanner();
-      } catch(e){
-        alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
-      }
-    };
+    editBtn.onclick = () => { return; };
+    editCancelBtn.onclick = () => { return; };
+    editDoneBtn.onclick = async () => { return; };
 
     productsDiv.appendChild(div);
 
@@ -1187,8 +858,7 @@
 
     text += `\n상품합계: ${document.getElementById("sum").innerText}\n`;
     text += `배송비: ${document.getElementById("shipping").innerText}\n`;
-    text += `총 결제금액: ${document.getElementById("total").innerText}\n\n`;
-    text += _depositMsg_();
+    text += `총 결제금액: ${document.getElementById("total").innerText}\n`;
 
     alert(text);
   }
@@ -1224,10 +894,7 @@
       });
     }
 
-    text += `\n총 결제금액(현재 표시): ${document.getElementById("total").innerText}\n\n`;
-    text += `주문번호: ${ORDER_ID || "-"}\n`;
-    text += _depositMsg_();
-
+    text += `\n총 결제금액(현재 표시): ${document.getElementById("total").innerText}\n`;
     alert(text);
   }
 
@@ -1256,15 +923,7 @@
       return;
     }
 
-    const totalText = document.getElementById("total").innerText;
-    const accountTextNow = document.getElementById("accountText").innerText;
-    const confirmMsg =
-      `주문을 완료하시겠습니까?\n` +
-      `총 결제금액: ${totalText}\n\n` +
-      `${_depositMsg_()}\n` +
-      `입금계좌: ${accountTextNow}\n\n` +
-      `확인을 누르면 주문이 전송됩니다.`;
-    if (!confirm(confirmMsg)) return;
+    if (!confirm(`주문을 완료하시겠습니까?\n\n${PAY_NOTICE}`)) return;
 
     const items = [];
     let sum = 0;
@@ -1278,7 +937,7 @@
       const price = Number((i[4].value || "").trim() || 0);
 
       if (!name) { alert("상품명을 입력해주세요."); i[0].focus(); return; }
-      if !color { alert("색상을 입력해주세요."); i[1].focus(); return; }
+      if (!color) { alert("색상을 입력해주세요."); i[1].focus(); return; }
       if (!size) { alert("사이즈를 입력해주세요."); i[2].focus(); return; }
       if (!qty || qty <= 0) { alert("수량을 입력해주세요."); i[3].focus(); return; }
       if (!price || price <= 0) { alert("가격을 입력해주세요."); i[4].focus(); return; }
@@ -1319,110 +978,9 @@
 
       calc();
       renderDoneSummary();
-      applyFoldVisibilityComplete();
       saveData();
 
-      alert(`완료되었습니다.\n주문번호: ${ORDER_ID}\n\n${_depositMsg_()}`);
-    } catch(e){
-      alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
-    }
-  }
-
-  async function submitCancel(){
-    if (MODE !== "complete") return;
-
-    if (HIDE_DONE){
-      alert("취소하려면 먼저 '완료목록 펼치기'를 눌러주세요.");
-      focusBanner();
-      return;
-    }
-
-    if (SHIP_EDITING){
-      alert("배송지 수정 중에는 취소를 진행할 수 없습니다.");
-      return;
-    }
-
-    const editingAny = Array.from(document.querySelectorAll(".product")).some(p => p.dataset.editing === "1");
-    if (editingAny){
-      alert("상품 수정 중에는 취소를 진행할 수 없습니다.");
-      return;
-    }
-
-    const targets = Array.from(document.querySelectorAll(".product")).filter(p => p.dataset.status === "cancel_pending");
-    if (targets.length === 0){
-      alert("취소할 상품을 선택해주세요.");
-      focusBanner();
-      return;
-    }
-    if (!confirm("선택한 상품을 취소하고 전송할까요?\n\n" + _depositMsg_())) return;
-
-    const items = [];
-    let deltaSum = 0;
-
-    targets.forEach(p=>{
-      const i = p.querySelectorAll("input");
-      const curName = (i[0].value || "").trim();
-      const curColor = (i[1].value || "").trim();
-      const curSize = (i[2].value || "").trim();
-
-      const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : snapshotOfProduct(p);
-      const oldAmt = Number(snap.qty || 0) * Number(snap.price || 0);
-      const delta = -oldAmt;
-
-      items.push({
-        productName: `[취소] ${curName}`.trim(),
-        color: curColor,
-        size: curSize,
-        qty: 0,
-        price: 0,
-        amountDelta: delta,
-        statusLabel: "취소완료"
-      });
-
-      deltaSum += delta;
-    });
-
-    const payload = {
-      orderId: ORDER_ID || newOrderId_(),
-      orderTime: kstNowString(),
-      eventType: "cancel_items",
-      customer: {
-        nickname: document.getElementById("nickname").value || "",
-        name: document.getElementById("name").value || "",
-        phone: document.getElementById("phone").value || "",
-        address: `${document.getElementById("address").value || ""} ${document.getElementById("addressDetail").value || ""}`.trim()
-      },
-      items,
-      sum: deltaSum,
-      shipping: 0,
-      total: deltaSum
-    };
-
-    try{
-      await sendPayload(payload);
-
-      targets.forEach(p=>{
-        p.dataset.status = "canceled";
-        delete p.dataset.snapshot;
-
-        const chk = p.querySelector(".chk-cancel-pick");
-        if (chk) chk.checked = false;
-
-        setBadge(p);
-        lockProductInputs(p, true);
-      });
-
-      HIDE_DONE = true;
-      applyFoldVisibilityComplete();
-
-      setBanner("취소가 완료되었습니다.");
-      focusBanner();
-
-      renderDoneSummary();
-      calc();
-      saveData();
-
-      alert(`취소가 완료되었습니다.\n주문번호: ${ORDER_ID}\n\n${_depositMsg_()}`);
+      alert(`주문이 접수되었습니다.\n\n${PAY_NOTICE}`);
     } catch(e){
       alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
     }
@@ -1430,27 +988,15 @@
 
   function goToFormForAdd(){
     if (SHIP_EDITING){ alert("배송지 수정 중에는 추가주문을 진행할 수 없습니다."); return; }
-    const editingAny = Array.from(document.querySelectorAll(".product")).some(p => p.dataset.editing === "1");
-    if (editingAny){ alert("상품 수정 중에는 추가주문을 진행할 수 없습니다."); return; }
-
-    document.querySelectorAll(".product").forEach(p=>{
-      if (p.dataset.status === "cancel_pending"){
-        const prev = p.dataset.prevDoneStatus || "sent";
-        p.dataset.status = prev;
-        delete p.dataset.snapshot;
-        delete p.dataset.prevDoneStatus;
-        const chk = p.querySelector(".chk-cancel-pick");
-        if (chk) chk.checked = false;
-        setBadge(p);
-      }
-    });
 
     setMode("form");
 
-    const newP = addProduct();
-
+    let firstDraft = document.querySelector('.product[data-status="draft"]');
+    if (!firstDraft){
+      firstDraft = addProduct();
+    }
     setTimeout(()=>{
-      const nameInput = newP.querySelector(".product-name");
+      const nameInput = firstDraft.querySelector(".product-name");
       if (nameInput){
         nameInput.focus();
         try{
@@ -1458,7 +1004,7 @@
           nameInput.setSelectionRange(len, len);
         } catch(e){}
       }
-      newP.scrollIntoView({ behavior:"smooth", block:"center" });
+      firstDraft.scrollIntoView({ behavior:"smooth", block:"center" });
     }, 50);
 
     calc();
@@ -1488,20 +1034,15 @@
     setMode("form");
     calc();
     saveData();
+
+    setTimeout(()=>{
+      const first = document.querySelector(".product .product-name");
+      if (first) first.focus();
+    }, 30);
   }
 
   function enterShipEdit(){
     if (MODE !== "complete") return;
-    if (HIDE_DONE === false){
-      HIDE_DONE = true;
-      applyFoldVisibilityComplete();
-    }
-
-    const editingAny = Array.from(document.querySelectorAll(".product")).some(p => p.dataset.editing === "1");
-    if (editingAny){
-      alert("상품 수정 중에는 배송지 수정을 할 수 없습니다.");
-      return;
-    }
 
     SHIP_EDITING = true;
     SHIP_SNAPSHOT = snapshotCustomer();
@@ -1562,7 +1103,7 @@
     if (!SHIP_EDITING) return;
 
     if (!_validateCustomer_()) return;
-    if (!confirm("배송지를 저장할까요?\n\n" + _depositMsg_())) return;
+    if (!confirm("배송지를 저장할까요?")) return;
 
     const payload = {
       orderId: ORDER_ID || newOrderId_(),
@@ -1588,7 +1129,7 @@
 
       setBanner("배송지 수정이 저장되었습니다.");
       focusBanner();
-      alert("배송지 저장 완료\n\n" + _depositMsg_());
+      alert("배송지 저장 완료");
     } catch(e){
       alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
     }
@@ -1651,7 +1192,7 @@
 
     productsDiv.innerHTML = "";
     (data.products || []).forEach(p=>{
-      const div = addProduct({
+      addProduct({
         id: p.id,
         status: p.status,
         snapshot: p.snapshot,
@@ -1661,19 +1202,6 @@
         qty: p.qty,
         price: p.price
       });
-
-      if (p.prevDoneStatus) div.dataset.prevDoneStatus = p.prevDoneStatus;
-
-      if (p.cancelChecked === "1"){
-        const chk = div.querySelector(".chk-cancel-pick");
-        if (chk) chk.checked = true;
-      }
-
-      if (p.editing === "1"){
-        delete div.dataset.editing;
-      }
-
-      setBadge(div);
     });
 
     if (!document.querySelector(".product")) addProduct();
@@ -1685,15 +1213,15 @@
     calc();
 
     const m = data.mode || "form";
+
+    /* ✅ 저장된 모드가 complete여도 완료된 상품 없으면 form으로 */
     if (m === "complete"){
-      /* ✅ 혹시 저장된 모드가 complete라도 완료상품 0개면 form으로 강제 */
-      if (countDoneItems() === 0){
-        setMode("form");
+      if (hasAnyDoneItems_()){
+        setMode("complete", "주문이 완료되었습니다.", { foldOnEnter:true });
       } else {
-        setMode("complete", "주문이 완료되었습니다.", { foldOnEnter: HIDE_DONE });
-        applyFoldVisibilityComplete();
-        calc();
+        setMode("form");
       }
+      calc();
     } else {
       setMode("form");
     }
