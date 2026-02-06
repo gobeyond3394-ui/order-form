@@ -531,17 +531,9 @@
 </div>
 
 <div class="section">
-  <!-- ✅ (수정) 상품 정보 타이틀 오른쪽에 날짜 필터 버튼 -->
+  <!-- ✅ (수정) 날짜 필터 버튼 영역 제거 (요청사항) -->
   <div class="section-title-row">
     <div class="section-title" id="productSectionTitle">상품 정보</div>
-    <div class="day-filter" id="dayFilter">
-      <button type="button" data-day="5">5일전</button>
-      <button type="button" data-day="4">4일전</button>
-      <button type="button" data-day="3">3일전</button>
-      <button type="button" data-day="2">2일전</button>
-      <button type="button" data-day="1">1일전</button>
-      <button type="button" data-day="0">오늘</button>
-    </div>
   </div>
 
   <!-- ✅ 주문입력 화면: 작성 중(입력중/입력완료) 상품 요약 -->
@@ -751,6 +743,25 @@
     return `${m[1]}.${m[2]}.${m[3]}`;
   }
 
+  // ✅ (추가) "선택한 날짜"에 속하는 상품인지 판별
+  // - 주문완료/수정완료/취소완료: doneDate 기준
+  // - 발송완료: shipDate 기준(없으면 doneDate)
+  function _itemDateKey_(p){
+    const st = p.dataset.status || "draft";
+    if (st === "shipped"){
+      return (p.dataset.shipDate || p.dataset.doneDate || "").trim();
+    }
+    return (p.dataset.doneDate || "").trim();
+  }
+
+  function _hasAnyForDate_(targetDate){
+    return Array.from(document.querySelectorAll(".product")).some(p=>{
+      const st = p.dataset.status || "draft";
+      if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return false;
+      return _itemDateKey_(p) === targetDate;
+    });
+  }
+
   // ✅ 1) 완료 배너 문구(순서/문구 변경 + 파란색 강조)
   function setBanner(text){
     const banner = document.getElementById("modeBanner");
@@ -766,9 +777,6 @@
     // ✅ (수정) 주문번호 앞 날짜를 "방송일자(08:00 기준)"로 표시
     const broadcastDateText = formatBroadcastDateText_(getBroadcastSheetNameKST_());
     const line1 = oid ? `${broadcastDateText} 주문번호는 ${oid} 입니다.` : "";
-
-    // ✅ (수정) 배너에서 해당 문구 삭제
-    // const line2 = `방송 종료 전까지 ‘주문상세 보기’에서 수정/취소가 가능합니다.`;
 
     const line3 = `입금 후 확인되면 발송됩니다.`;
 
@@ -885,6 +893,8 @@
   }
 
   function applyProductVisibility_(){
+    const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET);
+
     document.querySelectorAll(".product").forEach(p=>{
       const st = p.dataset.status || "draft";
 
@@ -893,7 +903,14 @@
           p.style.display = "none";
           return;
         }
-        p.style.display = ORDER_DETAIL_OPEN ? "block" : "none";
+
+        // ✅ (추가) 주문상세가 열렸을 때: 선택한 날짜(08:00 기준)에 해당하는 카드만 표시
+        if (ORDER_DETAIL_OPEN){
+          const key = _itemDateKey_(p);
+          p.style.display = (key === targetDate) ? "block" : "none";
+        } else {
+          p.style.display = "none";
+        }
         return;
       }
 
@@ -954,7 +971,7 @@
 
       renderShippingSummary();
 
-      // ✅ (추가) 완료 화면 진입 시 기본은 "오늘"
+      // ✅ 완료 화면 진입 시 기본은 "오늘"
       DONE_FILTER_OFFSET = 0;
       setActiveDayButton_(0);
 
@@ -1070,9 +1087,9 @@
       const st = p.dataset.status || "draft";
       if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return;
 
-      // ✅ 완료요약은 "doneDate(방송일자 기준)"로 필터
-      const doneDate = String(p.dataset.doneDate || "").trim();
-      if (doneDate !== targetDate) return;
+      // ✅ 완료요약은 선택 날짜로 필터 (발송완료는 shipDate 우선)
+      const key = _itemDateKey_(p);
+      if (key !== targetDate) return;
 
       const i = p.querySelectorAll("input");
       const name = (i[0]?.value || "").trim();
@@ -1093,7 +1110,6 @@
       lines.push(`• <b>${tag}</b> ${name} / ${color} / ${size} / ${qtyText} / ${priceText}`);
     });
 
-    // ✅ (요청) 기본값은 항상 "오늘"이지만, 버튼 눌렀는데 없으면 알림
     if (lines.length === 0){
       box.style.display = "none";
       box.innerHTML = "";
@@ -1257,6 +1273,7 @@
       renderDoneSummary();
       renderDraftSummary();
       calc();
+      applyProductVisibility_(); // ✅ (추가) 현재 상세보기/필터 상태에 맞게 카드 반영
       if (!silentSave) saveData();
       else if (!IS_LOADING) saveData();
     }
@@ -1335,7 +1352,7 @@
     div.dataset.orderId = (preset && preset.orderId) ? preset.orderId : "";
     div.dataset.orderTime = (preset && preset.orderTime) ? preset.orderTime : "";
 
-    // ✅ (추가) 완료요약 필터용 방송일자 저장(없으면 빈값)
+    // ✅ (추가) 완료요약/상세 필터용 방송일자 저장(없으면 빈값)
     div.dataset.doneDate = (preset && preset.doneDate) ? preset.doneDate : "";
     div.dataset.shipDate = (preset && preset.shipDate) ? preset.shipDate : "";
 
@@ -1469,7 +1486,7 @@
       const payload = {
         orderId: useOrderId,
         orderTime: kstNowString(),
-        broadcastDate: getBroadcastSheetNameKST_(),  // ✅ (추가) 서버 시트 날짜도 동일 기준
+        broadcastDate: getBroadcastSheetNameKST_(),
         eventType: "modify",
         customer: {
           nickname: document.getElementById("nickname").value || "",
@@ -1487,7 +1504,6 @@
         await sendPayload(payload);
 
         div.dataset.status = "modified";
-        // ✅ (추가) 수정완료 방송일자 기록(요약 필터용)
         div.dataset.doneDate = getBroadcastSheetNameKST_();
 
         exitEdit_(false);
@@ -1530,7 +1546,7 @@
         const payload = {
           orderId: useOrderId,
           orderTime: kstNowString(),
-          broadcastDate: getBroadcastSheetNameKST_(),  // ✅
+          broadcastDate: getBroadcastSheetNameKST_(),
           eventType: "cancel",
           customer: {
             nickname: document.getElementById("nickname").value || "",
@@ -1548,7 +1564,6 @@
           await sendPayload(payload);
 
           div.dataset.status = "canceled";
-          // ✅ (추가) 취소완료 방송일자 기록(요약 필터용)
           div.dataset.doneDate = getBroadcastSheetNameKST_();
 
           lockProductInputs(div, true);
@@ -1560,6 +1575,7 @@
           calc();
           renderDoneSummary();
           renderDraftSummary();
+          applyProductVisibility_(); // ✅ (추가) 필터 반영
           saveData();
           alert("취소가 완료되었습니다.");
         } catch(e){
@@ -1630,7 +1646,7 @@
     text += `배송비: ${document.getElementById("shipping").innerText}\n`;
     text += `총 결제금액: ${document.getElementById("total").innerText}\n`;
 
-    text += `\n내용이 맞으면 아래에서 ‘주문하기’를 눌러주세요.\n주문 후에는 ‘주문상세’에서 수정/취소가 가능합니다.\n`;
+    text += `\n내용이 맞으면 아래에서 ‘주문하기’를 눌러주세요.\n`;
     alert(text);
   }
 
@@ -1721,12 +1737,12 @@
 
     const batchOrderId = ensureDraftOrderId_();
     const orderTimeStr = kstNowString();
-    const broadcastDate = getBroadcastSheetNameKST_(); // ✅ (추가) 방송일자(08:00 기준)
+    const broadcastDate = getBroadcastSheetNameKST_();
 
     const payload = {
       orderId: batchOrderId,
       orderTime: orderTimeStr,
-      broadcastDate, // ✅
+      broadcastDate,
       eventType: "order",
       customer: {
         nickname: document.getElementById("nickname").value || "",
@@ -1750,7 +1766,6 @@
         p.dataset.orderId = batchOrderId;
         p.dataset.orderTime = orderTimeStr;
 
-        // ✅ (추가) 주문완료 방송일자 기록(요약 필터용)
         p.dataset.doneDate = broadcastDate;
 
         setBadge(p);
@@ -1766,7 +1781,7 @@
       renderDraftSummary();
       saveData();
 
-      alert("주문이 접수되었습니다.\n완료 화면에서 ‘주문상세 보기’로 수정/취소가 가능합니다.");
+      alert("주문이 접수되었습니다.");
     } catch(e){
       alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
     }
@@ -1803,7 +1818,7 @@
     const payload = {
       orderId: useOrderId,
       orderTime: kstNowString(),
-      broadcastDate: getBroadcastSheetNameKST_(),  // ✅
+      broadcastDate: getBroadcastSheetNameKST_(),
       eventType: "cancel",
       customer: {
         nickname: document.getElementById("nickname").value || "",
@@ -1820,10 +1835,10 @@
     try{
       await sendPayload(payload);
 
-      const bd = getBroadcastSheetNameKST_(); // ✅
+      const bd = getBroadcastSheetNameKST_();
       targets.forEach(p=>{
         p.dataset.status = "canceled";
-        p.dataset.doneDate = bd; // ✅ (추가) 전체취소도 방송일자 기록
+        p.dataset.doneDate = bd;
         lockProductInputs(p, true);
         setBadge(p);
       });
@@ -1832,6 +1847,7 @@
       focusBanner();
       calc();
       renderDoneSummary();
+      applyProductVisibility_(); // ✅
       saveData();
       alert("취소가 완료되었습니다.");
     } catch(e){
@@ -1935,7 +1951,7 @@
     const payload = {
       orderId: LAST_DONE_ORDER_ID || newOrderId_(),
       orderTime: kstNowString(),
-      broadcastDate: getBroadcastSheetNameKST_(), // ✅
+      broadcastDate: getBroadcastSheetNameKST_(),
       eventType: "ship_update",
       customer: {
         nickname: document.getElementById("nickname").value || "",
@@ -1983,7 +1999,7 @@
       shipEditing: SHIP_EDITING,
       lastDoneOrderId: LAST_DONE_ORDER_ID,
       activeDraftOrderId: ACTIVE_DRAFT_ORDER_ID,
-      doneFilterOffset: DONE_FILTER_OFFSET, // ✅ (추가) 필터 상태 저장
+      doneFilterOffset: DONE_FILTER_OFFSET,
       products: []
     };
 
@@ -1996,8 +2012,8 @@
         editing: p.dataset.editing || "",
         orderId: p.dataset.orderId || "",
         orderTime: p.dataset.orderTime || "",
-        doneDate: p.dataset.doneDate || "",   // ✅
-        shipDate: p.dataset.shipDate || "",   // ✅
+        doneDate: p.dataset.doneDate || "",
+        shipDate: p.dataset.shipDate || "",
         name: i[0]?.value || "",
         color: i[1]?.value || "",
         size: i[2]?.value || "",
@@ -2029,7 +2045,6 @@
       LAST_DONE_ORDER_ID = "";
       ORDER_DETAIL_OPEN = false;
 
-      // ✅ 기본값: 오늘
       DONE_FILTER_OFFSET = 0;
       setActiveDayButton_(0);
 
@@ -2057,7 +2072,6 @@
     LAST_DONE_ORDER_ID = data.lastDoneOrderId || "";
     ACTIVE_DRAFT_ORDER_ID = data.activeDraftOrderId || "";
 
-    // ✅ (추가) 필터 복원 (없으면 오늘)
     DONE_FILTER_OFFSET = (data.doneFilterOffset != null) ? Number(data.doneFilterOffset) : 0;
     if (isNaN(DONE_FILTER_OFFSET)) DONE_FILTER_OFFSET = 0;
     setActiveDayButton_(DONE_FILTER_OFFSET);
@@ -2071,8 +2085,8 @@
         editing: p.editing,
         orderId: p.orderId,
         orderTime: p.orderTime,
-        doneDate: p.doneDate, // ✅
-        shipDate: p.shipDate, // ✅
+        doneDate: p.doneDate,
+        shipDate: p.shipDate,
         name: p.name,
         color: p.color,
         size: p.size,
@@ -2121,7 +2135,7 @@
     saveData();
   });
 
-  // ✅ (추가) 날짜 필터 버튼 이벤트
+  // ✅ (수정/추가) 날짜 필터 버튼 이벤트
   (function initDayFilter_(){
     const wrap = document.getElementById("dayFilter");
     if (!wrap) return;
@@ -2133,31 +2147,26 @@
       const offset = Number(btn.getAttribute("data-day"));
       if (isNaN(offset)) return;
 
-      // ✅ 완료 화면에서만 동작 (요약 표시용)
-      if (MODE !== "complete"){
-        DONE_FILTER_OFFSET = offset;
-        setActiveDayButton_(offset);
-        saveData();
-        return;
-      }
-
-      // 해당 날짜에 완료요약이 있는지 먼저 체크
       const targetDate = getBroadcastSheetNameKSTByOffset_(offset);
-      const hasAny = Array.from(document.querySelectorAll(".product")).some(p=>{
-        const st = p.dataset.status || "draft";
-        if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return false;
-        return String(p.dataset.doneDate || "").trim() === targetDate;
-      });
+      const title = formatBroadcastDateText_(targetDate);
 
-      if (!hasAny){
-        const title = formatBroadcastDateText_(targetDate);
-        alert(`${title} 날짜에 주문완료/수정완료/취소완료 내역이 없습니다.`);
-        return;
+      // ✅ 완료 화면일 때: 해당 날짜 내역 없으면 alert
+      if (MODE === "complete"){
+        if (!_hasAnyForDate_(targetDate)){
+          alert(`${title} 날짜에 주문완료/수정완료/취소완료/발송완료 내역이 없습니다.`);
+          return;
+        }
       }
 
       DONE_FILTER_OFFSET = offset;
       setActiveDayButton_(offset);
+
+      // ✅ 요약도 해당 날짜만
       renderDoneSummary();
+
+      // ✅ 주문상세 보기에서 카드도 해당 날짜만 나오도록 반영
+      applyProductVisibility_();
+
       saveData();
     });
   })();
