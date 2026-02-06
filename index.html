@@ -473,6 +473,10 @@
     border:1px solid #c8ddff;
     color:#005FAE;
   }
+
+  /* ✅ 날짜 필터 버튼: 입력화면에서는 숨김, 완료화면에서는 표시 */
+  body.mode-form #dayFilter{ display:none !important; }
+  body.mode-complete #dayFilter{ display:flex !important; }
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -534,6 +538,15 @@
   <!-- ✅ (수정) 날짜 필터 버튼 영역 제거 (요청사항) -->
   <div class="section-title-row">
     <div class="section-title" id="productSectionTitle">상품 정보</div>
+
+    <!-- ✅ 완료화면에서만 보일 날짜 필터 -->
+    <div class="day-filter" id="dayFilter">
+      <button type="button" data-day="4">4일전</button>
+      <button type="button" data-day="3">3일전</button>
+      <button type="button" data-day="2">2일전</button>
+      <button type="button" data-day="1">1일전</button>
+      <button type="button" data-day="0" class="is-active">오늘</button>
+    </div>
   </div>
 
   <!-- ✅ 주문입력 화면: 작성 중(입력중/입력완료) 상품 요약 -->
@@ -1781,7 +1794,7 @@
       renderDraftSummary();
       saveData();
 
-      alert("주문이 접수되었습니다.");
+      alert("주문이 접수되었습니다.\n완료 화면에서 ‘주문상세 보기’로 수정/취소가 가능합니다.");
     } catch(e){
       alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
     }
