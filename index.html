@@ -1,465 +1,314 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>싸U 셀프 정산 주문서</title>
 
 <style>
-body {
-  margin: 0;
-  padding: 16px;
-  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-  background: #fff;
-  color: #111;
-}
+  body{
+    margin:0; padding:16px;
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+    background:#fff; color:#111;
+  }
+  h1{ text-align:center; font-size:20px; margin:0 0 12px; color:#005FAE; }
 
-h1 {
-  text-align: center;
-  font-size: 20px;
-  margin-bottom: 12px;
-  color: #005FAE;
-}
+  /* ✅ 완료 배너 */
+  .mode-banner{
+    display:none;
+    text-align:center;
+    padding:10px 12px;
+    border-radius:10px;
+    font-weight:800;
+    margin:0 auto 14px;
+    max-width:560px;
+    outline:none;
+  }
+  body.mode-complete .mode-banner{
+    display:block;
+    background:#e8f2ff;
+    border:1px solid #c8ddff;
+    color:#005FAE;
+  }
 
-/* ✅ 상단 모드 배너 */
-.mode-banner{
-  display:none;
-  text-align:center;
-  padding:10px 12px;
-  border-radius:10px;
-  font-weight:800;
-  margin: 0 auto 14px;
-  max-width: 560px;
-}
-body.mode-complete .mode-banner{
-  display:block;
-  background:#e8f2ff;
-  border:1px solid #c8ddff;
-  color:#005FAE;
-}
-body.mode-edit .mode-banner{
-  display:block;
-  background:#fff7e6;
-  border:1px solid #ffe1a6;
-  color:#9a6b00;
-}
-body.mode-cancel .mode-banner{
-  display:block;
-  background:#ffe9e9;
-  border:1px solid #ffc9c9;
-  color:#c0392b;
-}
+  .section{ margin-bottom:28px; }
+  .section-title{ font-size:15px; font-weight:700; margin-bottom:10px; color:#005FAE; }
+  .divider{ border-top:1px solid #eee; margin:12px 0 16px; }
 
-.section {
-  margin-bottom: 28px;
-}
+  .field{ margin-bottom:12px; }
+  label{ display:block; font-size:13px; margin-bottom:4px; }
 
-.section-title {
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 10px;
-  color: #005FAE;
-}
+  input{
+    width:100%;
+    padding:12px;
+    font-size:15px;
+    border:1px solid #ddd;
+    border-radius:6px;
+    box-sizing:border-box;
+  }
+  input::placeholder{ color:#999; }
 
-.divider {
-  border-top: 1px solid #eee;
-  margin: 12px 0 16px;
-}
+  .address-row{ display:flex; gap:8px; }
+  .address-row input{ flex:1; }
+  .addr-btn{
+    background:#005FAE; color:#fff; font-weight:700;
+    border:none; border-radius:6px;
+    padding:12px 14px; cursor:pointer; white-space:nowrap;
+  }
 
-.field {
-  margin-bottom: 12px;
-}
+  /* ✅ 배송지 요약(완료 화면/취소 화면 = 완료 화면) */
+  #shipSummary{
+    display:none;
+    background:#f7f7f7;
+    border:1px solid #e5e5e5;
+    border-radius:10px;
+    padding:12px;
+    font-size:14px;
+    line-height:1.55;
+  }
+  body.mode-complete #shipSummary{ display:block; }
+  body.mode-complete #customerFormFields{ display:none; } /* 완료 화면에서는 입력폼 숨김 */
 
-label {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 4px;
-}
+  .product{
+    border-top:1px solid #eee;
+    padding-top:12px;
+    margin-top:12px;
+  }
 
-input {
-  width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-sizing: border-box;
-}
+  .row{ display:flex; gap:8px; }
+  .row .field{ flex:1; }
 
-input::placeholder {
-  color: #999;
-}
+  button{
+    padding:12px 14px;
+    font-size:14px;
+    font-weight:800;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+  }
 
-.address-row {
-  display: flex;
-  gap: 8px;
-}
+  .button-line-3{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    margin-top:12px;
+  }
+  .button-line-3 button{
+    flex:0 0 calc((100% - 16px)/3);
+    max-width:calc((100% - 16px)/3);
+    white-space:nowrap;
+  }
 
-.address-row input {
-  flex: 1;
-}
+  .button-line-full{
+    display:flex;
+    justify-content:center;
+    margin-top:12px;
+  }
+  .button-line-full button{
+    flex:1 1 100%;
+    max-width:100%;
+  }
 
-.addr-btn {
-  background:#005FAE;
-  color:#fff;
-  font-weight:700;
-  border:none;
-  border-radius:6px;
-  padding:12px 14px;
-  cursor:pointer;
-  white-space: nowrap;
-}
+  /* ✅ 작성 화면 버튼 */
+  .btn-new{ background:#e74c3c; color:#fff; }
+  .btn-check{ background:#E0E0E0; color:#333; }
+  .btn-order{ background:#005FAE; color:#fff; }
 
-.product {
-  border-top: 1px solid #eee;
-  padding-top: 12px;
-  margin-top: 12px;
-}
+  /* ✅ 완료 화면 버튼(새주문/수정하기/취소완료) */
+  .btn-edit-go{ background:#e8f2ff; color:#005FAE; border:1px solid #c8ddff; }
+  .btn-cancel-complete{ background:#e74c3c; color:#fff; }
+  .btn-final-view{ background:#e0e0e0; color:#111; }
 
-.row {
-  display: flex;
-  gap: 8px;
-}
+  /* ✅ 상품추가/삭제 영역 */
+  .button-line-2{
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+  }
+  .button-line-2 button{ flex:1 1 50%; max-width:50%; white-space:nowrap; }
+  .btn-add{ background:#005FAE; color:#fff; }
+  .btn-delete{ background:#e74c3c; color:#fff; }
 
-.row .field {
-  flex: 1;
-}
+  /* ✅ 접기/펼치기(완료 화면에서만) */
+  .small-link-btn{
+    display:none;
+    width:100%;
+    margin-top:10px;
+    padding:10px 12px;
+    background:#f4f7ff;
+    border:1px solid #d6e0ff;
+    border-radius:10px;
+    color:#333;
+    font-size:14px;
+    font-weight:800;
+    text-align:center;
+    cursor:pointer;
+  }
+  body.mode-complete .small-link-btn{ display:block; }
 
-button {
-  padding: 12px 14px;
-  font-size: 14px;
-  font-weight: 700;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-}
+  /* ✅ 완료 화면에서는 상품추가/삭제 숨김 */
+  body.mode-complete .button-line-2{ display:none !important; }
 
-.button-line-3 {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 12px;
-}
+  /* ✅ 금액 요약 */
+  .summary{ border-top:1px solid #eee; padding-top:14px; }
+  .summary-line{ display:flex; justify-content:space-between; font-size:14px; margin:6px 0; }
+  .summary-total{ font-weight:800; font-size:16px; color:#005FAE; }
 
-.button-line-3 button {
-  flex: 0 0 calc((100% - 16px) / 3);
-  max-width: calc((100% - 16px) / 3);
-  white-space: nowrap;
-}
+  /* ✅ 입금계좌 */
+  .account-box{
+    display:flex;
+    align-items:center;
+    background:#f4f7ff;
+    border:1px solid #d6e0ff;
+    border-radius:8px;
+    padding:10px;
+    gap:8px;
+  }
+  .account-text{ font-size:14px; white-space:nowrap; flex:1; }
+  .copy-btn{
+    background:#005FAE;
+    color:#fff;
+    font-size:12px;
+    font-weight:800;
+    padding:6px 10px;
+    border-radius:6px;
+    border:none;
+  }
 
-/* ✅ 버튼 컬러 */
-.btn-add { background:#005FAE; color:#fff; }
-.btn-delete { background:#e74c3c; color:#fff; }
-.btn-clear { background:#E0E0E0; color:#333; }
+  /* ✅ 상태 배지 */
+  .product-title-row{ display:flex; align-items:center; gap:8px; }
+  .product-title-row input{ flex:1; }
 
-.btn-check { background:#E0E0E0; color:#333; }
-.btn-submit { background:#005FAE; color:#fff; }
-.btn-new { background:#e74c3c; color:#fff; }
+  .status-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    font-weight:800;
+    padding:6px 10px;
+    border-radius:6px;
+    white-space:nowrap;
+    user-select:none;
+  }
+  .status-badge .sq{ width:10px; height:10px; border-radius:2px; display:inline-block; }
 
-/* ✅ 주문완료 화면 하단 버튼 */
-.btn-edit-order{ background:#005FAE; color:#fff; }
-.btn-cancel-order{ background:#e74c3c; color:#fff; }
-.btn-back{ background:#E0E0E0; color:#333; }
+  .status-sent{ background:#e8f2ff; color:#005FAE; border:1px solid #c8ddff; }
+  .status-sent .sq{ background:#005FAE; }
 
-.summary {
-  border-top: 1px solid #eee;
-  padding-top: 14px;
-}
+  .status-canceled{ background:#ededed; color:#222; border:1px solid #cfcfcf; }
+  .status-canceled .sq{ background:#111; }
 
-.summary-line {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  margin: 6px 0;
-}
+  /* ✅ 완료 화면에서 취소 선택 표시 */
+  .status-cancel-pick{ background:#ffe9e9; color:#c0392b; border:1px solid #ffc9c9; }
+  .status-cancel-pick .sq{ background:#e74c3c; }
 
-.summary-total {
-  font-weight: 700;
-  font-size: 16px;
-  color: #005FAE;
-}
+  /* ✅ 완료/취소된 상품은 폼 화면에서는 요약으로만 */
+  #doneSummary{
+    display:none;
+    font-size:13px;
+    color:#333;
+    background:#f7f9ff;
+    border:1px solid #d6e0ff;
+    border-radius:10px;
+    padding:10px;
+    margin:6px 0 10px;
+    line-height:1.5;
+  }
+  body.mode-form #doneSummary{ display:block; }
+  body.mode-complete #doneSummary{ display:none; }
 
-.account-box {
-  display: flex;
-  align-items: center;
-  background: #f4f7ff;
-  border: 1px solid #d6e0ff;
-  border-radius: 8px;
-  padding: 10px;
-  gap: 8px;
-}
+  /* ✅ 폼 화면에서는 완료/취소 상품 카드 숨김 */
+  body.mode-form .product[data-status="sent"],
+  body.mode-form .product[data-status="canceled"]{
+    display:none !important;
+  }
 
-.account-text {
-  font-size: 14px;
-  white-space: nowrap;
-  flex: 1;
-}
+  /* ✅ 완료 화면에서는 완료/취소 상품 카드 표시 */
+  body.mode-complete .product[data-status="sent"],
+  body.mode-complete .product[data-status="canceled"],
+  body.mode-complete .product[data-status="cancel_pending"]{
+    display:block;
+  }
 
-.copy-btn {
-  background: #005FAE;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: none;
-}
-
-/* ===== ✅ 상태 배지 + 상품명 오른쪽 ===== */
-.product-title-row{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.product-title-row input{
-  flex:1;
-}
-
-.status-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  font-size:12px;
-  font-weight:700;
-  padding:6px 10px;
-  border-radius:6px;
-  white-space:nowrap;
-  user-select:none;
-}
-.status-badge .sq{
-  width:10px;
-  height:10px;
-  border-radius:2px;
-  display:inline-block;
-}
-
-/* 🩶 전송대기 */
-.status-draft{
-  background:#f2f2f2;
-  color:#555;
-  border:1px solid #d9d9d9;
-}
-.status-draft .sq{ background:#bdbdbd; }
-
-/* 🟦 전송완료 */
-.status-sent{
-  background:#e8f2ff;
-  color:#005FAE;
-  border:1px solid #c8ddff;
-}
-.status-sent .sq{ background:#005FAE; }
-
-/* 🔴 [취소] 전송대기 */
-.status-cancel-pending{
-  background:#ffe9e9;
-  color:#c0392b;
-  border:1px solid #ffc9c9;
-}
-.status-cancel-pending .sq{ background:#e74c3c; }
-
-/* ⚫ 취소완료 */
-.status-canceled{
-  background:#ededed;
-  color:#222;
-  border:1px solid #cfcfcf;
-}
-.status-canceled .sq{ background:#111; }
-
-/* ===== ✅ 전송완료 상품용 버튼 라인 ===== */
-.product-actions{
-  display:flex;
-  gap:8px;
-  margin-top:10px;
-}
-.product-actions button{
-  flex:1;
-  padding:10px 12px;
-  font-size:13px;
-  border-radius:8px;
-}
-.btn-change{ background:#005FAE; color:#fff; }
-.btn-cancel{ background:#e74c3c; color:#fff; }
-
-/* ===== ✅ 미전송(편집/저장) 상품용 버튼 ===== */
-.btn-save{ background:#005FAE; color:#fff; }
-.btn-edit{ background:#E0E0E0; color:#333; }
-.btn-delete-item{ background:#e74c3c; color:#fff; }
-
-/* ===== ✅ 잠금 시 입력칸 회색 처리 ===== */
-.product.is-locked input{
-  background:#f2f2f2 !important;
-  color:#777 !important;
-  border-color:#ddd !important;
-}
-.product.is-locked input::placeholder{
-  color:#aaa !important;
-}
-.product.is-locked input:disabled{
-  background:#f2f2f2 !important;
-  color:#777 !important;
-  -webkit-text-fill-color:#777 !important;
-  opacity:1 !important;
-}
-
-/* ===== ✅ 주문 확정서 버튼(아주 진한 그레이 + 흰글씨) ===== */
-.btn-final{
-  background:#1f1f1f;
-  color:#fff;
-  font-weight:800;
-}
-.button-line-full{
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 12px;
-}
-.button-line-full button{
-  flex: 1 1 100%;
-  max-width: 100%;
-}
-
-/* ✅ 상품추가/상품삭제 2개를 한줄 꽉차게 */
-.button-line-2{
-  display:flex;
-  gap:8px;
-  margin-top:12px;
-}
-.button-line-2 button{
-  flex:1 1 50%;
-  max-width:50%;
-  white-space:nowrap;
-}
-
-/* ✅ 완료목록 접기/펼치기 버튼 */
-.small-link-btn{
-  display:block;
-  width:100%;
-  margin-top:10px;
-  padding:10px 12px;
-  background:#f4f7ff;
-  border:1px solid #d6e0ff;
-  border-radius:10px;
-  color:#333;
-  font-size:14px;
-  font-weight:700;
-  text-align:center;
-  cursor:pointer;
-}
-.small-link-btn:hover{
-  filter: brightness(0.98);
-}
-
-/* ✅ 전송완료 상품 버튼들과 하단 컨트롤 분리 */
-.product-controls{
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px dashed #eee;
-}
-
-/* ✅ 모드별 UI 숨김/표시 */
-body.mode-complete .addr-btn{ display:none; } /* 완료 화면에서는 주소검색 숨김(읽기전용처럼) */
-body.mode-complete .product-actions{ display:none !important; } /* 완료 화면에서는 개별 수정/취소 버튼 숨김 */
-
-body.mode-edit .button-line-2,
-body.mode-cancel .button-line-2{ display:none; } /* 수정/취소 화면에서 상품추가/삭제 제거 */
-
-body.mode-edit #btnNew,
-body.mode-cancel #btnNew{ display:none; } /* 수정/취소 화면에서 새 주문 숨김 */
-
-body.mode-create #orderCompleteControls,
-body.mode-edit #orderCompleteControls,
-body.mode-cancel #orderCompleteControls{ display:none; } /* 기본은 숨김 */
-
-body.mode-complete #createControls,
-body.mode-complete #editControls,
-body.mode-complete #cancelControls{ display:none; }
-
-body.mode-edit #createControls,
-body.mode-edit #cancelControls{ display:none; }
-
-body.mode-cancel #createControls,
-body.mode-cancel #editControls{ display:none; }
-
-/* ✅ 수정/취소 체크박스 토글 UI */
-.mode-toggles{
-  display:none;
-  gap:10px;
-  align-items:center;
-  margin-top:10px;
-}
-.mode-toggles label{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  font-size:13px;
-  font-weight:800;
-  margin:0;
-  padding:8px 10px;
-  border-radius:10px;
-  border:1px solid #eee;
-  background:#fafafa;
-}
-.mode-toggles input{ width:auto; padding:0; }
-
-body.mode-edit .mode-toggles{ display:flex; }
-body.mode-cancel .mode-toggles{ display:flex; }
-
-/* ✅ edit 모드에서는 "취소 체크" 숨기고, cancel 모드에서는 "수정 체크" 숨김 */
-body.mode-edit .toggle-cancel{ display:none; }
-body.mode-cancel .toggle-edit{ display:none; }
+  /* ✅ 완료 화면에서 취소 선택 체크 UI */
+  .cancel-pick-row{
+    display:none;
+    margin-top:10px;
+    padding:10px;
+    border:1px dashed #eee;
+    border-radius:10px;
+    background:#fff;
+    font-size:13px;
+  }
+  body.mode-complete .cancel-pick-row{ display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+  .cancel-pick-row label{ margin:0; font-size:13px; font-weight:800; display:flex; align-items:center; gap:6px; }
+  .cancel-pick-row input{ width:auto; padding:0; }
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 </head>
 
-<body>
+<body class="mode-form">
 
 <h1>싸U 셀프 정산 주문서</h1>
-<div class="mode-banner" id="modeBanner">주문이 완료되었습니다.</div>
+
+<div class="mode-banner" id="modeBanner" tabindex="-1">주문이 완료되었습니다.</div>
 
 <div class="section">
   <div class="section-title" id="customerTitle">고객 정보</div>
   <div class="divider"></div>
 
-  <div class="field">
-    <label>닉네임</label>
-    <input id="nickname" placeholder="예) GO비욘드">
-  </div>
+  <!-- ✅ 완료 화면 배송지 요약 -->
+  <div id="shipSummary"></div>
 
-  <div class="field">
-    <label>이름</label>
-    <input id="name" placeholder="예) 홍길동">
-  </div>
-
-  <div class="field">
-    <label>연락처</label>
-    <input id="phone" placeholder="예) 010-1234-5678">
-  </div>
-
-  <div class="field">
-    <label>주소</label>
-    <div class="address-row">
-      <input id="address" placeholder="주소검색 버튼을 눌러주세요" readonly>
-      <button class="addr-btn" onclick="searchAddress()">주소검색</button>
+  <!-- ✅ 작성/수정 폼 -->
+  <div id="customerFormFields">
+    <div class="field">
+      <label>닉네임</label>
+      <input id="nickname" placeholder="예) GO비욘드">
     </div>
-  </div>
 
-  <div class="field">
-    <label>상세주소</label>
-    <input id="addressDetail" placeholder="예) 101동 1203호">
+    <div class="field">
+      <label>이름</label>
+      <input id="name" placeholder="예) 홍길동">
+    </div>
+
+    <div class="field">
+      <label>연락처</label>
+      <input id="phone" placeholder="예) 010-1234-5678">
+    </div>
+
+    <div class="field">
+      <label>주소</label>
+      <div class="address-row">
+        <input id="address" placeholder="주소검색 버튼을 눌러주세요" readonly>
+        <button class="addr-btn" type="button" onclick="searchAddress()">주소검색</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>상세주소</label>
+      <input id="addressDetail" placeholder="예) 101동 1203호">
+    </div>
   </div>
 </div>
 
 <div class="section">
   <div class="section-title" id="productTitle">상품 정보</div>
-  <div id="foldSummary" style="display:none; font-size:13px; color:#333; background:#f7f9ff; border:1px solid #d6e0ff; border-radius:10px; padding:10px; margin:6px 0 10px; line-height:1.5;"></div>
+
+  <!-- ✅ 폼 화면에서만: 완료/취소 요약 -->
+  <div id="doneSummary"></div>
+
   <div id="products"></div>
 
   <div class="product-controls">
-    <button class="small-link-btn" onclick="toggleFold()">완료목록 접기 ▲</button>
+    <!-- ✅ 완료 화면에서만: 취소완료 접기/펼치기 -->
+    <button class="small-link-btn" type="button" onclick="toggleFold()">취소완료 숨기기 ▲</button>
 
+    <!-- ✅ 폼 화면에서만: 상품추가/삭제 -->
     <div class="button-line-2">
-      <button class="btn-add" onclick="addProduct()">+ 상품 추가</button>
-      <button class="btn-delete" onclick="removeLastProduct()">- 상품 삭제</button>
+      <button class="btn-add" type="button" onclick="addProduct()">+ 상품 추가</button>
+      <button class="btn-delete" type="button" onclick="removeLastProduct()">- 상품 삭제</button>
     </div>
   </div>
 </div>
@@ -473,1215 +322,939 @@ body.mode-cancel .toggle-edit{ display:none; }
 <div class="section">
   <div class="section-title">입금 계좌</div>
   <div class="account-box">
-    <div class="account-text" id="accountText">
-      카카오뱅크 3333-09797-1111 유혜정(유세연)
-    </div>
-    <button class="copy-btn" onclick="copyAccount()">복사</button>
+    <div class="account-text" id="accountText">카카오뱅크 3333-09797-1111 유혜정(유세연)</div>
+    <button class="copy-btn" type="button" onclick="copyAccount()">복사</button>
   </div>
 </div>
 
-<!-- ✅ 작성(주문) 화면 컨트롤 -->
-<div class="button-line-3" id="createControls">
-  <button class="btn-new" id="btnNew" onclick="newOrder()">새 주문</button>
-  <button class="btn-check" onclick="checkOrder()">미리 보기</button>
-  <button class="btn-submit" onclick="orderNow()">주문하기</button>
+<!-- ✅ 폼 화면 버튼(미리보기는 여기만) -->
+<div class="button-line-3" id="formControls">
+  <button class="btn-new" type="button" onclick="newOrder()">새 주문</button>
+  <button class="btn-check" id="btnPreview" type="button" onclick="checkOrder()">미리 보기</button>
+  <button class="btn-order" id="btnPrimary" type="button" onclick="submitOrder()">주문하기</button>
 </div>
 
-<!-- ✅ 주문완료 화면 컨트롤 -->
-<div class="button-line-3" id="orderCompleteControls">
-  <button class="btn-edit-order" onclick="enterEditMode()">수정</button>
-  <button class="btn-cancel-order" onclick="enterCancelMode()">취소</button>
-  <button class="btn-final" onclick="checkFinalOrder()">주문 확정서</button>
+<!-- ✅ 완료 화면 버튼(새 주문 / 수정하기 / 취소완료) -->
+<div class="button-line-3" id="completeControls" style="display:none;">
+  <button class="btn-new" type="button" onclick="newOrder()">새 주문</button>
+  <button class="btn-edit-go" type="button" onclick="goToFormForEdit()">수정하기</button>
+  <button class="btn-cancel-complete" type="button" onclick="submitCancel()">취소완료</button>
 </div>
 
-<!-- ✅ 수정 화면 컨트롤 -->
-<div class="button-line-3" id="editControls">
-  <button class="btn-back" onclick="exitEditMode()">수정취소</button>
-  <button class="btn-check" onclick="checkOrder()">미리 보기</button>
-  <button class="btn-submit" onclick="submitOrder()">수정완료</button>
-</div>
-
-<!-- ✅ 취소 화면 컨트롤 -->
-<div class="button-line-3" id="cancelControls">
-  <button class="btn-back" onclick="exitCancelMode()">돌아가기</button>
-  <button class="btn-check" onclick="checkOrder()">미리 보기</button>
-  <button class="btn-submit" onclick="submitOrder()">취소완료</button>
+<!-- ✅ 완료 화면 하단: 주문 확정서 보기 -->
+<div class="button-line-full" id="finalControls" style="display:none;">
+  <button class="btn-final-view" type="button" onclick="checkFinalOrder()">주문 확정서 보기</button>
 </div>
 
 <script>
-const SHIPPING = 4000;
-const productsDiv = document.getElementById("products");
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypKfZsjR0uu9Lcc7OirR2tiyjIzzLwREGd3Bw3szXmLVIHHNGhwlmoOdRaInh2xebf/exec";
+  const SHIPPING = 4000;
+  const productsDiv = document.getElementById("products");
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypKfZsjR0uu9Lcc7OirR2tiyjIzzLwREGd3Bw3szXmLVIHHNGhwlmoOdRaInh2xebf/exec";
 
-let IS_LOADING = false;
+  let IS_LOADING = false;
 
-/* ✅ 완료목록 숨김 토글 (sent/canceled만 숨김) */
-let HIDE_DONE = false;
+  /* ✅ 취소완료 숨김 토글 (완료 화면에서만 의미) */
+  let HIDE_CANCELED = false;
 
-/* ✅ 주문ID */
-let ORDER_ID = "";
-function newOrderId_(){
-  return "oid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
-}
+  /* ✅ 주문ID */
+  let ORDER_ID = "";
+  function newOrderId_(){
+    return "oid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
 
-/* ✅ 화면 모드: create | complete | edit | cancel */
-let MODE = "create";
+  /* ✅ 모드: form(작성/수정) | complete(완료/취소) */
+  let MODE = "form";
 
-function setMode(mode){
-  MODE = mode;
+  function focusBanner(){
+    const banner = document.getElementById("modeBanner");
+    if (!banner) return;
+    banner.scrollIntoView({ behavior:"smooth", block:"start" });
+    setTimeout(()=>banner.focus(), 250);
+  }
 
-  document.body.classList.remove("mode-create","mode-complete","mode-edit","mode-cancel");
-  document.body.classList.add("mode-" + MODE);
+  function setMode(mode, bannerText){
+    MODE = mode;
+    document.body.classList.remove("mode-form","mode-complete");
+    document.body.classList.add("mode-" + MODE);
 
-  const banner = document.getElementById("modeBanner");
-  const customerTitle = document.getElementById("customerTitle");
-  const productTitle = document.getElementById("productTitle");
+    const formControls = document.getElementById("formControls");
+    const completeControls = document.getElementById("completeControls");
+    const finalControls = document.getElementById("finalControls");
+    const customerTitle = document.getElementById("customerTitle");
+    const productTitle = document.getElementById("productTitle");
 
-  if (MODE === "complete") {
-    banner.innerText = "주문이 완료되었습니다.";
-    customerTitle.innerText = "배송지 정보";
-    productTitle.innerText = "주문 완료 상품";
-  } else if (MODE === "edit") {
-    banner.innerText = "수정 화면입니다. 수정할 상품을 체크하고 수정 후 저장하세요.";
-    customerTitle.innerText = "배송지 정보 (수정 가능)";
-    productTitle.innerText = "주문 상품 (개별 수정 선택)";
-  } else if (MODE === "cancel") {
-    banner.innerText = "취소 화면입니다. 취소할 상품을 체크하세요.";
-    customerTitle.innerText = "배송지 정보";
-    productTitle.innerText = "주문 상품 (개별 취소 선택)";
-  } else {
-    banner.innerText = "";
+    if (MODE === "complete") {
+      formControls.style.display = "none";
+      completeControls.style.display = "flex";
+      finalControls.style.display = "flex";
+      customerTitle.innerText = "배송지 정보";
+      productTitle.innerText = "주문 완료 상품";
+
+      const banner = document.getElementById("modeBanner");
+      banner.innerText = bannerText || "주문이 완료되었습니다.";
+      renderShippingSummary();
+      applyFoldVisibilityComplete();
+      renderDoneSummary();
+      updatePrimaryButtonLabel();
+      saveData();
+      setTimeout(focusBanner, 50);
+      return;
+    }
+
+    // MODE === form
+    formControls.style.display = "flex";
+    completeControls.style.display = "none";
+    finalControls.style.display = "none";
     customerTitle.innerText = "고객 정보";
     productTitle.innerText = "상품 정보";
+
+    renderDoneSummary();
+    updatePrimaryButtonLabel();
+    saveData();
   }
 
-  _lockCustomerByMode_();
-  _syncBottomControls_();
-  _syncProductTogglesByMode_();
+  function _uid(){
+    return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
 
-  saveData();
-}
+  function _amount_(qty, price){
+    return Number(qty || 0) * Number(price || 0);
+  }
 
-/* ✅ 하단 버튼 영역 토글 */
-function _syncBottomControls_(){
-  const createControls = document.getElementById("createControls");
-  const orderCompleteControls = document.getElementById("orderCompleteControls");
-  const editControls = document.getElementById("editControls");
-  const cancelControls = document.getElementById("cancelControls");
+  function copyAccount(){
+    const text = accountText.innerText;
+    const accountNumberOnly = text.replace(/[^0-9]/g, "");
+    navigator.clipboard.writeText(accountNumberOnly);
+    alert("계좌번호만 복사되었습니다.");
+  }
 
-  createControls.style.display = (MODE === "create") ? "flex" : "none";
-  orderCompleteControls.style.display = (MODE === "complete") ? "flex" : "none";
-  editControls.style.display = (MODE === "edit") ? "flex" : "none";
-  cancelControls.style.display = (MODE === "cancel") ? "flex" : "none";
-}
+  function searchAddress(){
+    new daum.Postcode({
+      oncomplete: function(data) {
+        document.getElementById("address").value = data.address;
+        document.getElementById("addressDetail").focus();
+        saveData();
+      }
+    }).open();
+  }
 
-/* ✅ 고객정보 잠금/해제 */
-function _lockCustomer(lock){
-  const ids = ["nickname","name","phone","address","addressDetail"];
-  ids.forEach(id=>{
-    const el = document.getElementById(id);
-    if (!el) return;
+  function renderShippingSummary(){
+    const box = document.getElementById("shipSummary");
+    if (!box) return;
 
-    if (id === "address") {
-      // address는 기본 readonly 유지, 검색 버튼으로만 입력
-      el.readOnly = true;
-    } else {
-      el.readOnly = lock;
+    const nickname = (document.getElementById("nickname").value || "").trim();
+    const name = (document.getElementById("name").value || "").trim();
+    const phone = (document.getElementById("phone").value || "").trim();
+    const addr = (document.getElementById("address").value || "").trim();
+    const addr2 = (document.getElementById("addressDetail").value || "").trim();
+    const fullAddr = `${addr} ${addr2}`.trim();
+
+    box.innerHTML = `
+      <div style="font-weight:900; margin-bottom:6px;">배송지 요약</div>
+      <div>닉네임: <b>${nickname || "-"}</b></div>
+      <div>수령인: <b>${name || "-"}</b></div>
+      <div>연락처: <b>${phone || "-"}</b></div>
+      <div style="margin-top:6px;">주소: <b>${fullAddr || "-"}</b></div>
+    `;
+  }
+
+  /* ✅ 완료/취소(완료) 상품 요약(폼 화면에서만 보여줌) */
+  function renderDoneSummary(){
+    const box = document.getElementById("doneSummary");
+    if (!box) return;
+
+    const lines = [];
+    document.querySelectorAll(".product").forEach(p=>{
+      const st = p.dataset.status || "draft";
+      if (!(st === "sent" || st === "canceled")) return;
+
+      const i = p.querySelectorAll("input");
+      const name = (i[0]?.value || "").trim();
+      const color = (i[1]?.value || "").trim();
+      const size = (i[2]?.value || "").trim();
+      const qty = (i[3]?.value || "").trim();
+      const price = (i[4]?.value || "").trim();
+
+      if (st === "canceled") lines.push(`• [취소완료] ${name} / ${color} / ${size}`);
+      else lines.push(`• [주문완료] ${name} / ${color} / ${size}`);
+    });
+
+    if (MODE !== "form" || lines.length === 0){
+      box.style.display = "none";
+      box.innerHTML = "";
+      return;
     }
-    el.disabled = false;
 
-    if (lock) {
-      el.style.background = "#f2f2f2";
-      el.style.color = "#777";
-      el.style.borderColor = "#ddd";
-    } else {
-      el.style.background = "";
-      el.style.color = "";
-      el.style.borderColor = "";
+    box.style.display = "block";
+    box.innerHTML = lines.join("<br>");
+  }
+
+  /* ✅ 상태배지 (전송대기 문구 제거) */
+  function setBadge(div){
+    const st = div.dataset.status || "draft";
+    const badge = div.querySelector(".status-badge");
+    if (!badge) return;
+
+    badge.className = "status-badge";
+    if (st === "canceled"){
+      badge.classList.add("status-canceled");
+      badge.innerHTML = `<span class="sq"></span>취소완료`;
+      return;
     }
-  });
-}
 
-function _lockCustomerByMode_(){
-  if (MODE === "create") _lockCustomer(false);
-  if (MODE === "complete") _lockCustomer(true);
-  if (MODE === "cancel") _lockCustomer(true);
-  if (MODE === "edit") _lockCustomer(false);
-}
-
-/* ✅ 완료목록 숨김 토글 */
-function toggleFold() {
-  HIDE_DONE = !HIDE_DONE;
-
-  const btn = document.querySelector('button[onclick="toggleFold()"]');
-  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기 ▼" : "완료목록 접기 ▲";
-
-  applyFoldVisibility();
-  renderFoldSummary();
-  saveData();
-}
-
-function _getProductAmount_(p) {
-  const i = p.querySelectorAll("input");
-  const qty = Number(i[3]?.value || 0);
-  const price = Number(i[4]?.value || 0);
-  return qty * price;
-}
-
-function applyFoldVisibility() {
-  document.querySelectorAll(".product").forEach(p => {
-    const st = p.dataset.status || "draft_edit";
-    if (HIDE_DONE && (st === "sent" || st === "canceled")) {
-      p.style.display = "none";
-    } else {
-      p.style.display = "";
+    if (st === "cancel_pending"){
+      badge.classList.add("status-cancel-pick");
+      badge.innerHTML = `<span class="sq"></span>취소선택`;
+      return;
     }
-  });
-}
 
-function renderFoldSummary() {
-  const box = document.getElementById("foldSummary");
-  if (!box) return;
-
-  const lines = [];
-
-  document.querySelectorAll(".product").forEach(p => {
-    const st = p.dataset.status || "draft_edit";
-    if (!(st === "sent" || st === "canceled")) return;
-
-    const i = p.querySelectorAll("input");
-    const name = (i[0]?.value || "").trim();
-    const color = (i[1]?.value || "").trim();
-    const size = (i[2]?.value || "").trim();
-    const qty = (i[3]?.value || "").trim();
-    const price = (i[4]?.value || "").trim();
-
-    if (st === "canceled") {
-      lines.push(`• [취소완료] ${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
-    } else {
-      lines.push(`• [전송완료] ${name} / ${color} / ${size} / ${qty}개 / ${price}원`);
+    if (st === "sent"){
+      badge.classList.add("status-sent");
+      badge.innerHTML = `<span class="sq"></span>주문완료`;
+      return;
     }
-  });
 
-  if (lines.length === 0) {
-    box.style.display = "none";
-    box.innerHTML = "";
-    return;
+    // draft(작성중/수정중)은 뱃지 자체를 감추자(전송대기 문구 노출 방지)
+    badge.style.display = "none";
   }
 
-  box.style.display = "block";
-  box.innerHTML = lines.join("<br>");
-}
+  function applyFoldVisibilityComplete(){
+    if (MODE !== "complete") return;
 
-function _uid() {
-  return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
-}
+    // 버튼 텍스트
+    const btn = document.querySelector('button[onclick="toggleFold()"]');
+    if (btn) btn.innerText = HIDE_CANCELED ? "취소완료 보기 ▼" : "취소완료 숨기기 ▲";
 
-function _isDraftStatus(status) {
-  return (status === "draft" || status === "draft_edit" || status === "draft_saved");
-}
-
-function _setStatusBadge(div, status) {
-  const badge = div.querySelector(".status-badge");
-  if (!badge) return;
-
-  badge.classList.remove("status-draft","status-sent","status-cancel-pending","status-canceled");
-
-  const action = (div.dataset.action || "").trim();
-
-  if (_isDraftStatus(status)) {
-    badge.classList.add("status-draft");
-    if (action === "modify") badge.innerHTML = `<span class="sq"></span>[수정] 전송대기`;
-    else badge.innerHTML = `<span class="sq"></span>전송대기`;
-    return;
+    document.querySelectorAll(".product").forEach(p=>{
+      const st = p.dataset.status || "draft";
+      if (HIDE_CANCELED && st === "canceled") p.style.display = "none";
+      else p.style.display = "";
+    });
   }
 
-  if (status === "sent") {
-    badge.classList.add("status-sent");
-    badge.innerHTML = `<span class="sq"></span>전송완료`;
-    return;
+  function toggleFold(){
+    HIDE_CANCELED = !HIDE_CANCELED;
+    applyFoldVisibilityComplete();
+    saveData();
   }
 
-  if (status === "cancel_pending") {
-    badge.classList.add("status-cancel-pending");
-    badge.innerHTML = `<span class="sq"></span>[취소] 전송대기`;
-    return;
-  }
+  /* ✅ 제품 추가 */
+  function addProduct(preset){
+    const div = document.createElement("div");
+    div.className = "product";
 
-  if (status === "canceled") {
-    badge.classList.add("status-canceled");
-    badge.innerHTML = `<span class="sq"></span>취소완료`;
-    return;
-  }
+    div.dataset.id = (preset && preset.id) ? preset.id : _uid();
+    div.dataset.status = (preset && preset.status) ? preset.status : "draft";
+    if (preset && preset.snapshot) div.dataset.snapshot = preset.snapshot;
 
-  if (status === "sent_edit") {
-    badge.classList.add("status-draft");
-    badge.innerHTML = `<span class="sq"></span>수정중`;
-    return;
-  }
+    div.innerHTML = `
+      <div class="field">
+        <label>상품명</label>
+        <div class="product-title-row">
+          <input class="product-name" placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
+          <div class="status-badge status-sent"><span class="sq"></span>주문완료</div>
+        </div>
+      </div>
 
-  badge.classList.add("status-draft");
-  badge.innerHTML = `<span class="sq"></span>전송대기`;
-}
+      <div class="row">
+        <div class="field">
+          <label>색상</label>
+          <input placeholder="예) 블랙 / 검정">
+        </div>
+        <div class="field">
+          <label>사이즈</label>
+          <input placeholder="예) L / 라지 / 100">
+        </div>
+      </div>
 
-function _lockInputs(div, lock) {
-  const inputs = div.querySelectorAll("input");
-  inputs.forEach((inp, idx) => {
-    if (lock) {
-      if (idx === 3 || idx === 4) inp.disabled = true;
-      else inp.readOnly = true;
-    } else {
-      inp.disabled = false;
-      inp.readOnly = false;
+      <div class="row">
+        <div class="field">
+          <label>수량</label>
+          <input type="number" value="" placeholder="예) 1">
+        </div>
+        <div class="field">
+          <label>가격</label>
+          <input type="number" placeholder="예) 59000">
+        </div>
+      </div>
+
+      <!-- ✅ 완료 화면에서만: 취소 선택 -->
+      <div class="cancel-pick-row">
+        <label><input type="checkbox" class="chk-cancel-pick"> 취소 선택</label>
+      </div>
+    `;
+
+    const inputs = div.querySelectorAll("input");
+    // inputs 순서: 0 상품명,1 색상,2 사이즈,3 수량,4 가격,5(완료화면 체크박스)
+    if (preset){
+      inputs[0].value = preset.name || "";
+      inputs[1].value = preset.color || "";
+      inputs[2].value = preset.size || "";
+      inputs[3].value = preset.qty != null ? preset.qty : "";
+      inputs[4].value = preset.price != null ? preset.price : "";
     }
-  });
-}
 
-function _renderActions(div) {
-  const status = div.dataset.status || "draft_edit";
-  const actions = div.querySelector(".product-actions");
-  if (!actions) return;
-
-  const btnSave = actions.querySelector(".btn-save");
-  const btnEdit = actions.querySelector(".btn-edit");
-  const btnDeleteItem = actions.querySelector(".btn-delete-item");
-  const btnChange = actions.querySelector(".btn-change");
-  const btnCancel = actions.querySelector(".btn-cancel");
-
-  [btnSave, btnEdit, btnDeleteItem, btnChange, btnCancel].forEach(b => {
-    if (b) b.style.display = "none";
-  });
-
-  // ✅ complete 모드에서는 개별 버튼 숨김(상단에서 이미 숨기지만 안전)
-  if (MODE === "complete") { actions.style.display = "none"; return; }
-
-  if (status === "sent") {
-    actions.style.display = "flex";
-    if (btnChange) { btnChange.style.display = "block"; btnChange.innerText = "수정"; }
-    if (btnCancel) { btnCancel.style.display = "block"; btnCancel.innerText = "취소"; }
-    return;
-  }
-
-  if (status === "sent_edit") {
-    actions.style.display = "flex";
-    if (btnSave) { btnSave.style.display = "block"; btnSave.innerText = "저장"; }
-    if (btnEdit) { btnEdit.style.display = "block"; btnEdit.innerText = "수정 취소"; }
-    return;
-  }
-
-  const origin = div.dataset.origin || "";
-  const isChangeDraft = (origin === "change");
-  if (!isChangeDraft) { actions.style.display = "none"; return; }
-
-  if (status === "draft" || status === "draft_edit") {
-    actions.style.display = "flex";
-    if (btnSave) { btnSave.style.display = "block"; btnSave.innerText = "저장"; }
-    if (btnDeleteItem) btnDeleteItem.style.display = "block";
-    return;
-  }
-
-  if (status === "draft_saved") {
-    actions.style.display = "flex";
-    if (btnEdit) { btnEdit.style.display = "block"; btnEdit.innerText = "수정"; }
-    if (btnDeleteItem) btnDeleteItem.style.display = "block";
-    return;
-  }
-
-  actions.style.display = "none";
-}
-
-function _applyProductUI(div) {
-  const status = div.dataset.status || "draft_edit";
-  _setStatusBadge(div, status);
-
-  if (status === "draft_saved" || status === "sent" || status === "cancel_pending" || status === "canceled") {
-    _lockInputs(div, true);
-    div.classList.add("is-locked");
-  } else {
-    _lockInputs(div, false);
-    div.classList.remove("is-locked");
-  }
-
-  if (status === "sent_edit") {
-    _lockInputs(div, false);
-    div.classList.remove("is-locked");
-  }
-
-  // ✅ cancel 모드에서는 입력칸은 계속 잠금(회색) 유지
-  if (MODE === "cancel") {
-    _lockInputs(div, true);
-    div.classList.add("is-locked");
-  }
-
-  _renderActions(div);
-
-  applyFoldVisibility();
-  renderFoldSummary();
-
-  _syncOneProductToggleUI_(div);
-}
-
-/* ✅ 체크박스 표시/상태 동기화 */
-function _syncProductTogglesByMode_(){
-  document.querySelectorAll(".product").forEach(p => _syncOneProductToggleUI_(p));
-}
-
-function _syncOneProductToggleUI_(div){
-  const st = div.dataset.status || "draft_edit";
-  const chkEdit = div.querySelector(".chk-edit");
-  const chkCancel = div.querySelector(".chk-cancel");
-
-  if (chkEdit) {
-    chkEdit.disabled = (st === "canceled"); // 취소완료는 수정 불가
-    chkEdit.checked = (st === "sent_edit");
-  }
-
-  if (chkCancel) {
-    chkCancel.disabled = (st === "canceled"); // 이미 취소완료면 선택 불가
-    chkCancel.checked = (st === "cancel_pending");
-  }
-}
-
-function _copyProductValues(fromDiv) {
-  const i = fromDiv.querySelectorAll("input");
-  return {
-    name: i[0].value || "",
-    color: i[1].value || "",
-    size: i[2].value || "",
-    qty: i[3].value || "",
-    price: i[4].value || ""
-  };
-}
-
-function _attachActionHandlers(div) {
-  const actions = div.querySelector(".product-actions");
-  const btnSave = actions ? actions.querySelector(".btn-save") : null;
-  const btnEdit = actions ? actions.querySelector(".btn-edit") : null;
-  const btnDeleteItem = actions ? actions.querySelector(".btn-delete-item") : null;
-  const btnChange = actions ? actions.querySelector(".btn-change") : null;
-  const btnCancel = actions ? actions.querySelector(".btn-cancel") : null;
-
-  if (btnSave) {
-    btnSave.onclick = () => {
-      const status = div.dataset.status || "draft_edit";
-
-      if (status === "sent_edit") {
-        div.dataset.status = "draft_saved";
-        div.dataset.action = "modify";
-        div.dataset.modifiedFrom = "sent";
-
-        alert("수정 요청이 저장되었습니다.\n'수정완료' 버튼을 눌러 전송을 완료해주세요.");
-
-        _applyProductUI(div);
+    // ✅ 입력 이벤트
+    for (let k=0;k<5;k++){
+      inputs[k].addEventListener("input", ()=>{
+        // 폼 화면에서 "주문완료(sent)" 상품을 건드리면 자동으로 "수정 대상"으로 마킹
+        if (MODE === "form" && div.dataset.status === "sent") {
+          if (!div.dataset.snapshot){
+            const snap = snapshotOf(div);
+            div.dataset.snapshot = JSON.stringify(snap);
+          }
+          div.dataset.status = "draft"; // 내부적으로는 draft로 보내서 '수정 전송' 대상으로 포함
+          div.dataset.action = "modify"; // 수정 전송
+          // 전송대기 문구는 노출하지 않음(뱃지 숨김)
+        }
         calc();
         saveData();
-        return;
-      }
+      });
+    }
 
-      if (status !== "draft" && status !== "draft_edit") return;
+    // ✅ 완료 화면 취소 체크
+    const chk = div.querySelector(".chk-cancel-pick");
+    if (chk){
+      chk.addEventListener("change", ()=>{
+        if (MODE !== "complete") return;
 
-      div.dataset.status = "draft_saved";
-      _applyProductUI(div);
-      calc();
-      saveData();
-    };
-  }
-
-  if (btnEdit) {
-    btnEdit.onclick = () => {
-      const status = div.dataset.status || "draft_edit";
-
-      if (status === "sent_edit") {
-        const snap = div.dataset.snapshot ? JSON.parse(div.dataset.snapshot) : null;
-        if (snap) {
-          const i = div.querySelectorAll("input");
-          i[0].value = snap.name || "";
-          i[1].value = snap.color || "";
-          i[2].value = snap.size || "";
-          i[3].value = snap.qty != null ? snap.qty : "";
-          i[4].value = snap.price != null ? snap.price : "";
-        }
-        div.dataset.status = "sent";
-        delete div.dataset.snapshot;
-        _applyProductUI(div);
-        calc();
-        saveData();
-        return;
-      }
-
-      if (status !== "draft_saved") return;
-
-      div.dataset.status = "draft_edit";
-      _applyProductUI(div);
-
-      const firstInput = div.querySelectorAll("input")[0];
-      if (firstInput) firstInput.focus();
-
-      calc();
-      saveData();
-    };
-  }
-
-  if (btnDeleteItem) {
-    btnDeleteItem.onclick = () => {
-      const status = div.dataset.status || "draft_edit";
-      if (!_isDraftStatus(status)) return;
-      if (!confirm("해당 상품을 삭제할까요?")) return;
-
-      div.remove();
-      if (!document.querySelector(".product")) addProduct();
-
-      calc();
-      saveData();
-    };
-  }
-
-  if (btnChange) {
-    btnChange.onclick = () => {
-      const status = div.dataset.status || "draft_edit";
-      if (status !== "sent") return;
-
-      const snap = _copyProductValues(div);
-      div.dataset.snapshot = JSON.stringify(snap);
-
-      div.dataset.status = "sent_edit";
-      _applyProductUI(div);
-
-      const firstInput = div.querySelectorAll("input")[0];
-      if (firstInput) firstInput.focus();
-
-      saveData();
-      applyFoldVisibility();
-      renderFoldSummary();
-    };
-  }
-
-  if (btnCancel) {
-    btnCancel.onclick = () => {
-      const status = div.dataset.status || "draft_edit";
-      if (status !== "sent") return;
-
-      if (!div.dataset.snapshot) {
-        const snap = _copyProductValues(div);
-        div.dataset.snapshot = JSON.stringify(snap);
-      }
-
-      div.dataset.status = "cancel_pending";
-      _applyProductUI(div);
-      calc();
-      saveData();
-    };
-  }
-
-  /* ✅ 모드별 체크박스 핸들러 */
-  const chkEdit = div.querySelector(".chk-edit");
-  const chkCancel = div.querySelector(".chk-cancel");
-
-  if (chkEdit) {
-    chkEdit.onchange = () => {
-      const st = div.dataset.status || "draft_edit";
-      if (MODE !== "edit") return;
-
-      // 체크 ON: sent -> sent_edit 진입
-      if (chkEdit.checked) {
-        if (st === "sent") {
-          if (btnChange) btnChange.onclick();
-        }
-      } else {
-        // 체크 OFF: sent_edit면 원복
-        if (st === "sent_edit") {
-          if (btnEdit) btnEdit.onclick();
-        }
-      }
-    };
-  }
-
-  if (chkCancel) {
-    chkCancel.onchange = () => {
-      const st = div.dataset.status || "draft_edit";
-      if (MODE !== "cancel") return;
-
-      // 체크 ON: sent -> cancel_pending
-      if (chkCancel.checked) {
-        if (st === "sent") {
-          if (btnCancel) btnCancel.onclick();
-        }
-      } else {
-        // 체크 OFF: cancel_pending -> sent (취소 복원)
-        if (st === "cancel_pending") {
+        const st = div.dataset.status || "draft";
+        if (chk.checked){
+          if (st !== "sent") return;
+          if (!div.dataset.snapshot){
+            div.dataset.snapshot = JSON.stringify(snapshotOf(div));
+          }
+          div.dataset.status = "cancel_pending";
+        } else {
+          if (st !== "cancel_pending") return;
           div.dataset.status = "sent";
           delete div.dataset.snapshot;
-          _applyProductUI(div);
-          calc();
-          saveData();
         }
-      }
+        setBadge(div);
+        calc();
+        saveData();
+        applyFoldVisibilityComplete();
+      });
+    }
+
+    productsDiv.appendChild(div);
+    setBadge(div);
+
+    calc();
+    renderDoneSummary();
+    if (!IS_LOADING) saveData();
+    return div;
+  }
+
+  function snapshotOf(div){
+    const i = div.querySelectorAll("input");
+    return {
+      name: i[0]?.value || "",
+      color: i[1]?.value || "",
+      size: i[2]?.value || "",
+      qty: i[3]?.value || "",
+      price: i[4]?.value || ""
     };
   }
-}
 
-function addProduct(preset, insertAfterRef) {
-  const div = document.createElement("div");
-  div.className = "product";
+  function removeLastProduct(){
+    if (MODE !== "form") return;
 
-  const pid = (preset && preset.id) ? preset.id : _uid();
-  const pstatus = (preset && preset.status) ? preset.status : "draft_edit";
-
-  div.dataset.id = pid;
-  div.dataset.status = pstatus;
-
-  if (preset && preset.origin) div.dataset.origin = preset.origin;
-  if (preset && preset.action) div.dataset.action = preset.action;
-  if (preset && preset.modifiedFrom) div.dataset.modifiedFrom = preset.modifiedFrom;
-
-  if (preset && preset.snapshot) div.dataset.snapshot = preset.snapshot;
-
-  div.innerHTML = `
-    <div class="field">
-      <label>상품명</label>
-      <div class="product-title-row">
-        <input class="product-name" placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
-        <div class="status-badge status-draft"><span class="sq"></span>전송대기</div>
-      </div>
-
-      <div class="mode-toggles">
-        <label class="toggle toggle-edit"><input type="checkbox" class="chk-edit"> 수정 선택</label>
-        <label class="toggle toggle-cancel"><input type="checkbox" class="chk-cancel"> 취소 선택</label>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>색상</label>
-        <input placeholder="예) 블랙 / 검정">
-      </div>
-      <div class="field">
-        <label>사이즈</label>
-        <input placeholder="예) L / 라지 / 100">
-      </div>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label>수량</label>
-        <input type="number" value="" placeholder="예) 1">
-      </div>
-      <div class="field">
-        <label>가격</label>
-        <input type="number" placeholder="예) 59000">
-      </div>
-    </div>
-    <div class="product-actions" style="display:none;">
-      <button class="btn-save" type="button">저장</button>
-      <button class="btn-edit" type="button">수정</button>
-      <button class="btn-delete-item" type="button">삭제</button>
-      <button class="btn-change" type="button">수정</button>
-      <button class="btn-cancel" type="button">취소</button>
-    </div>
-  `;
-
-  const inputs = div.querySelectorAll("input");
-  inputs.forEach(i => {
-    i.addEventListener("input", calc);
-    i.addEventListener("input", saveData);
-  });
-
-  if (preset) {
-    inputs[0].value = preset.name || "";
-    inputs[1].value = preset.color || "";
-    inputs[2].value = preset.size || "";
-    inputs[3].value = preset.qty != null ? preset.qty : "";
-    inputs[4].value = preset.price != null ? preset.price : "";
+    const items = Array.from(document.querySelectorAll(".product"));
+    // draft만 삭제(작성중)
+    for (let idx = items.length - 1; idx >= 0; idx--){
+      const st = items[idx].dataset.status || "draft";
+      const action = (items[idx].dataset.action || "").trim();
+      if (st === "draft" && action !== "modify"){ // 새 상품만 삭제
+        items[idx].remove();
+        break;
+      }
+    }
+    if (!document.querySelector(".product")) addProduct();
+    calc();
+    saveData();
+    renderDoneSummary();
   }
 
-  if (insertAfterRef && typeof insertAfterRef !== "boolean" && insertAfterRef.nodeType === 1 && insertAfterRef.parentNode) {
-    insertAfterRef.insertAdjacentElement("afterend", div);
-  } else {
-    productsDiv.appendChild(div);
-  }
+  function calc(){
+    let sum = 0;
 
-  _attachActionHandlers(div);
-  _applyProductUI(div);
-
-  calc();
-  applyFoldVisibility();
-  renderFoldSummary();
-  if (!IS_LOADING) saveData();
-  return div;
-}
-
-function removeLastProduct() {
-  const items = document.querySelectorAll(".product");
-  if (items.length === 0) return;
-
-  for (let idx = items.length - 1; idx >= 0; idx--) {
-    const st = items[idx].dataset.status || "draft_edit";
-    if (_isDraftStatus(st)) {
-      items[idx].remove();
-      break;
-    }
-  }
-
-  calc();
-  saveData();
-  applyFoldVisibility();
-  renderFoldSummary();
-}
-
-/* ✅ 상태별 최종합계 계산 */
-function calc() {
-  let sum = 0;
-
-  document.querySelectorAll(".product").forEach(p => {
-    const st = p.dataset.status || "draft_edit";
-    const action = (p.dataset.action || "").trim();
-    const i = p.querySelectorAll("input");
-
-    const curQty = Number((i[3]?.value || "").trim() || 0);
-    const curPrice = Number((i[4]?.value || "").trim() || 0);
-    const curAmt = curQty * curPrice;
-
-    const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : null;
-    const snapQty = snap ? Number(String(snap.qty || "").trim() || 0) : 0;
-    const snapPrice = snap ? Number(String(snap.price || "").trim() || 0) : 0;
-    const snapAmt = snapQty * snapPrice;
-
-    if (st === "sent") {
-      sum += curAmt;
-      return;
-    }
-
-    if (_isDraftStatus(st) && action !== "modify") {
-      sum += curAmt;
-      return;
-    }
-
-    if (_isDraftStatus(st) && action === "modify") {
-      const delta = snap ? (curAmt - snapAmt) : 0;
-      sum += delta;
-      return;
-    }
-
-    if (st === "cancel_pending") {
-      const cancelAmt = snap ? snapAmt : curAmt;
-      sum -= cancelAmt;
-      return;
-    }
-  });
-
-  let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
-
-  sumEl.innerText = sum.toLocaleString() + "원";
-  shippingEl.innerText = shipping.toLocaleString() + "원";
-  totalEl.innerText = (sum + shipping).toLocaleString() + "원";
-
-  applyFoldVisibility();
-  renderFoldSummary();
-}
-
-const sumEl = document.getElementById("sum");
-const shippingEl = document.getElementById("shipping");
-const totalEl = document.getElementById("total");
-
-function copyAccount() {
-  const text = accountText.innerText;
-  const accountNumberOnly = text.replace(/[^0-9]/g, "");
-  navigator.clipboard.writeText(accountNumberOnly);
-  alert("계좌번호만 복사되었습니다.");
-}
-
-function searchAddress() {
-  if (MODE === "complete" || MODE === "cancel") return; // 완료/취소 화면에서는 검색 막음
-  new daum.Postcode({
-    oncomplete: function(data) {
-      document.getElementById("address").value = data.address;
-      document.getElementById("addressDetail").focus();
-      saveData();
-    }
-  }).open();
-}
-
-function checkOrder() {
-  let text = "[고객 정보]\n";
-  text += `닉네임: ${document.getElementById("nickname").value}\n`;
-  text += `이름: ${document.getElementById("name").value}\n`;
-  text += `연락처: ${document.getElementById("phone").value}\n`;
-  text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
-
-  text += "[상품 정보]\n";
-
-  const pendingItems = [];
-  document.querySelectorAll(".product").forEach(p => {
-    const st = p.dataset.status || "draft_edit";
-    if (_isDraftStatus(st) || st === "cancel_pending") pendingItems.push(p);
-  });
-
-  if (pendingItems.length === 0) {
-    text += "전송 대기 / 취소 요청 / 수정 요청 상품이 없습니다.\n";
-  } else {
-    pendingItems.forEach((p, idx) => {
-      const inputs = p.querySelectorAll("input");
-      const st = p.dataset.status || "draft_edit";
+    document.querySelectorAll(".product").forEach(p=>{
+      const st = p.dataset.status || "draft";
       const action = (p.dataset.action || "").trim();
 
-      if (_isDraftStatus(st)) {
-        const prefix = (action === "modify") ? "[수정요청] " : "";
-        text += `${idx+1}. ${prefix}${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
-      } else if (st === "cancel_pending") {
+      const i = p.querySelectorAll("input");
+      const curQty = Number((i[3]?.value || "").trim() || 0);
+      const curPrice = Number((i[4]?.value || "").trim() || 0);
+      const curAmt = curQty * curPrice;
+
+      // 완료 화면 취소 선택은 합계에서 빠지게
+      if (MODE === "complete"){
+        if (st === "sent") sum += curAmt;
+        if (st === "cancel_pending"){
+          const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : null;
+          const q = snap ? Number(snap.qty || 0) : curQty;
+          const pr = snap ? Number(snap.price || 0) : curPrice;
+          sum -= (q*pr);
+        }
+        return;
+      }
+
+      // 폼 화면: 새 상품은 합계 포함
+      if (st === "draft" && action !== "modify"){
+        sum += curAmt;
+        return;
+      }
+
+      // 폼 화면: 수정은 차액만 반영
+      if (st === "draft" && action === "modify"){
         const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : null;
-        const q = snap ? (snap.qty || "") : (inputs[3].value || "");
-        const pr = snap ? (snap.price || "") : (inputs[4].value || "");
-        text += `${idx+1}. [취소요청] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${q}개 / ${pr}원\n`;
+        const snapAmt = snap ? _amount_(snap.qty, snap.price) : 0;
+        sum += (curAmt - snapAmt);
+        return;
       }
     });
+
+    const shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+    document.getElementById("sum").innerText = sum.toLocaleString() + "원";
+    document.getElementById("shipping").innerText = shipping.toLocaleString() + "원";
+    document.getElementById("total").innerText = (sum + shipping).toLocaleString() + "원";
+
+    if (MODE === "complete") applyFoldVisibilityComplete();
   }
 
-  text += `\n상품합계: ${sumEl.innerText}\n`;
-  text += `배송비: ${shippingEl.innerText}\n`;
-  text += `총 결제금액: ${totalEl.innerText}\n\n`;
-  text += "위 내용이 맞으면 완료 버튼을 눌러주세요.";
+  function updatePrimaryButtonLabel(){
+    const btn = document.getElementById("btnPrimary");
+    if (!btn) return;
 
-  alert(text);
-}
+    // 주문완료 상품이 하나라도 있으면 "수정완료"로 표기(수정 화면 역할)
+    const hasSent = Array.from(document.querySelectorAll(".product")).some(p => (p.dataset.status === "sent"));
+    btn.innerText = hasSent ? "수정완료" : "주문하기";
+  }
 
-function checkFinalOrder() {
-  let text = "[고객 정보]\n";
-  text += `닉네임: ${document.getElementById("nickname").value}\n`;
-  text += `이름: ${document.getElementById("name").value}\n`;
-  text += `연락처: ${document.getElementById("phone").value}\n`;
-  text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
+  function _validateCustomer_(){
+    const nickname = document.getElementById("nickname");
+    const name = document.getElementById("name");
+    const phone = document.getElementById("phone");
+    const address = document.getElementById("address");
+    const addressDetail = document.getElementById("addressDetail");
 
-  text += "[상품 정보]\n";
+    if (!nickname.value.trim()) { alert("닉네임을 입력해주세요."); nickname.focus(); return false; }
+    if (!name.value.trim()) { alert("이름을 입력해주세요."); name.focus(); return false; }
+    if (!phone.value.trim()) { alert("연락처를 입력해주세요."); phone.focus(); return false; }
+    if (!address.value.trim()) { alert("주소검색으로 주소를 입력해주세요."); return false; }
+    if (!addressDetail.value.trim()) { alert("상세주소를 입력해주세요."); addressDetail.focus(); return false; }
+    return true;
+  }
 
-  const finalItems = [];
-  document.querySelectorAll(".product").forEach(p => {
-    const st = p.dataset.status || "draft_edit";
-    if (st === "sent" || st === "canceled") finalItems.push(p);
-  });
+  function checkOrder(){
+    let text = "[고객 정보]\n";
+    text += `닉네임: ${document.getElementById("nickname").value}\n`;
+    text += `이름: ${document.getElementById("name").value}\n`;
+    text += `연락처: ${document.getElementById("phone").value}\n`;
+    text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
 
-  let sum = 0;
+    text += "[상품 정보]\n";
+    const targets = [];
 
-  if (finalItems.length === 0) {
-    text += "(전송 완료/취소 완료 상품이 없습니다.)\n";
-  } else {
-    finalItems.forEach((p, i) => {
-      const inputs = p.querySelectorAll("input");
-      const st = p.dataset.status || "draft_edit";
-
-      if (st === "sent") {
-        const qty = Number(inputs[3].value || 0);
-        const price = Number(inputs[4].value || 0);
-        sum += qty * price;
-        text += `${i+1}. ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${inputs[3].value}개 / ${inputs[4].value}원\n`;
-      } else if (st === "canceled") {
-        const qtyText = (inputs[3].value || "").trim();
-        const priceText = (inputs[4].value || "").trim();
-        const q = qtyText ? `${qtyText}개` : "0개";
-        const pr = priceText ? `${priceText}원` : "0원";
-        text += `${i+1}. [취소완료] ${inputs[0].value} / ${inputs[1].value} / ${inputs[2].value} / ${q} / ${pr}\n`;
+    document.querySelectorAll(".product").forEach(p=>{
+      const st = p.dataset.status || "draft";
+      const action = (p.dataset.action || "").trim();
+      if (MODE === "form"){
+        // 폼 화면 미리보기: 새 상품 + 수정 상품만
+        if (st === "draft") targets.push(p);
+      } else {
+        // 완료 화면에서는 미리보기 버튼이 없지만 혹시 호출되면 주문완료 기준
+        if (st === "sent" || st === "canceled") targets.push(p);
       }
     });
-  }
 
-  let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
-
-  text += `\n상품합계: ${sum.toLocaleString()}원\n`;
-  text += `배송비: ${shipping.toLocaleString()}원\n`;
-  text += `총 결제금액: ${(sum + shipping).toLocaleString()}원\n`;
-
-  alert(text);
-}
-
-function _validateBeforeSubmit_() {
-  const nickname = document.getElementById("nickname");
-  const name = document.getElementById("name");
-  const phone = document.getElementById("phone");
-  const address = document.getElementById("address");
-  const addressDetail = document.getElementById("addressDetail");
-
-  if (!nickname.value.trim()) { alert("닉네임을 입력해주세요."); nickname.focus(); return false; }
-  if (!name.value.trim()) { alert("이름을 입력해주세요."); name.focus(); return false; }
-  if (!phone.value.trim()) { alert("연락처를 입력해주세요."); phone.focus(); return false; }
-  if (!address.value.trim()) { alert("주소검색으로 주소를 입력해주세요."); return false; }
-  if (!addressDetail.value.trim()) { alert("상세주소를 입력해주세요."); addressDetail.focus(); return false; }
-
-  let hasSendTarget = false;
-
-  const products = document.querySelectorAll(".product");
-  for (let idx = 0; idx < products.length; idx++) {
-    const p = products[idx];
-    const st = p.dataset.status || "draft_edit";
-    const i = p.querySelectorAll("input");
-
-    const pName = (i[0]?.value || "").trim();
-    const pColor = (i[1]?.value || "").trim();
-    const pSize = (i[2]?.value || "").trim();
-    const pQty = (i[3]?.value || "").trim();
-    const pPrice = (i[4]?.value || "").trim();
-
-    if (_isDraftStatus(st) || st === "cancel_pending") {
-      hasSendTarget = true;
-
-      if (!pName) { alert("상품명을 입력해주세요."); i[0].focus(); return false; }
-      if (!pColor) { alert("색상을 입력해주세요."); i[1].focus(); return false; }
-      if (!pSize) { alert("사이즈를 입력해주세요."); i[2].focus(); return false; }
-
-      if (_isDraftStatus(st)) {
-        const nQty = Number(pQty || 0);
-        const nPrice = Number(pPrice || 0);
-        if (!pQty || nQty <= 0) { alert("수량을 입력해주세요."); i[3].focus(); return false; }
-        if (!pPrice || nPrice <= 0) { alert("가격을 입력해주세요."); i[4].focus(); return false; }
-      }
+    if (targets.length === 0){
+      text += "(표시할 상품이 없습니다.)\n";
+    } else {
+      targets.forEach((p, idx)=>{
+        const i = p.querySelectorAll("input");
+        const st = p.dataset.status || "draft";
+        const action = (p.dataset.action || "").trim();
+        const prefix = (MODE==="form" && action==="modify") ? "[수정] " : "";
+        text += `${idx+1}. ${prefix}${i[0].value} / ${i[1].value} / ${i[2].value} / ${i[3].value}개 / ${i[4].value}원\n`;
+      });
     }
+
+    text += `\n상품합계: ${document.getElementById("sum").innerText}\n`;
+    text += `배송비: ${document.getElementById("shipping").innerText}\n`;
+    text += `총 결제금액: ${document.getElementById("total").innerText}\n`;
+
+    alert(text);
   }
 
-  if (!hasSendTarget) {
-    alert("전송 대기 / 취소 요청 / 수정 요청 상품이 없습니다.");
-    return false;
+  function checkFinalOrder(){
+    let text = "[배송지 정보]\n";
+    text += `닉네임: ${document.getElementById("nickname").value}\n`;
+    text += `이름: ${document.getElementById("name").value}\n`;
+    text += `연락처: ${document.getElementById("phone").value}\n`;
+    text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
+
+    text += "[상품 정보]\n";
+
+    let sum = 0;
+    const items = Array.from(document.querySelectorAll(".product")).filter(p=>{
+      const st = p.dataset.status || "draft";
+      return (st === "sent" || st === "canceled");
+    });
+
+    if (items.length === 0){
+      text += "(주문완료/취소완료 상품이 없습니다.)\n";
+    } else {
+      items.forEach((p, idx)=>{
+        const st = p.dataset.status;
+        const i = p.querySelectorAll("input");
+        const qty = Number(i[3].value || 0);
+        const price = Number(i[4].value || 0);
+
+        if (st === "sent"){
+          sum += qty * price;
+          text += `${idx+1}. ${i[0].value} / ${i[1].value} / ${i[2].value} / ${qty}개 / ${price}원\n`;
+        } else {
+          text += `${idx+1}. [취소완료] ${i[0].value} / ${i[1].value} / ${i[2].value}\n`;
+        }
+      });
+    }
+
+    const shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+    text += `\n상품합계: ${sum.toLocaleString()}원\n`;
+    text += `배송비: ${shipping.toLocaleString()}원\n`;
+    text += `총 결제금액: ${(sum + shipping).toLocaleString()}원\n`;
+
+    alert(text);
   }
 
-  return true;
-}
+  async function submitOrder(){
+    if (MODE !== "form") return;
+    if (!_validateCustomer_()) return;
 
-function _amountOf_(obj) {
-  const q = Number(obj.qty || 0);
-  const p = Number(obj.price || 0);
-  return q * p;
-}
+    // 전송 대상: 새 상품(draft, action 없음) + 수정 상품(draft, action=modify)
+    const targets = [];
+    document.querySelectorAll(".product").forEach(p=>{
+      const st = p.dataset.status || "draft";
+      if (st !== "draft") return;
+      targets.push(p);
+    });
 
-async function submitOrder() {
-  if (!_validateBeforeSubmit_()) return;
+    if (targets.length === 0){
+      alert("전송할 내용이 없습니다.");
+      return;
+    }
 
-  // ✅ 모드에 따라 확인문구 변경
-  let confirmText = "주문을 완료하시겠습니까?";
-  if (MODE === "edit") confirmText = "수정을 완료하고 전송할까요?";
-  if (MODE === "cancel") confirmText = "선택한 취소를 완료하고 전송할까요?";
-  if (!confirm(confirmText)) return;
+    const hasSent = Array.from(document.querySelectorAll(".product")).some(p => p.dataset.status === "sent");
+    const confirmText = hasSent ? "수정을 완료하고 전송할까요?" : "주문을 완료하시겠습니까?";
+    if (!confirm(confirmText)) return;
 
-  saveData();
+    saveData();
 
-  const kstNowString = () => {
-    const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
-    const yyyy = d.getUTCFullYear();
-    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(d.getUTCDate()).padStart(2, "0");
-    const hh = String(d.getUTCHours()).padStart(2, "0");
-    const mi = String(d.getUTCMinutes()).padStart(2, "0");
-    const ss = String(d.getUTCSeconds()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
-  };
-
-  const items = [];
-  const toFinalize = [];
-
-  let deltaSum = 0;
-  let hasNewItem = false;
-
-  document.querySelectorAll(".product").forEach(p => {
-    const st = p.dataset.status || "draft_edit";
-    const i = p.querySelectorAll("input");
-    const action = (p.dataset.action || "").trim();
-
-    const cur = {
-      name: (i[0].value || "").trim(),
-      color: (i[1].value || "").trim(),
-      size: (i[2].value || "").trim(),
-      qty: Number(i[3].value || 0),
-      price: Number(i[4].value || 0)
+    const kstNowString = () => {
+      const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
+      const yyyy = d.getUTCFullYear();
+      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(d.getUTCDate()).padStart(2, "0");
+      const hh = String(d.getUTCHours()).padStart(2, "0");
+      const mi = String(d.getUTCMinutes()).padStart(2, "0");
+      const ss = String(d.getUTCSeconds()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
     };
 
-    if (_isDraftStatus(st) && action === "modify") {
-      const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : { qty: 0, price: 0 };
-      const oldAmt = _amountOf_(snap);
-      const newAmt = _amountOf_(cur);
-      const delta = newAmt - oldAmt;
+    const items = [];
+    let deltaSum = 0;
+    let hasNewItem = false;
 
-      items.push({
-        productName: `[수정] ${cur.name}`.trim(),
-        color: cur.color,
-        size: cur.size,
-        qty: cur.qty,
-        price: cur.price,
-        amountDelta: delta
-      });
+    targets.forEach(p=>{
+      const i = p.querySelectorAll("input");
+      const cur = {
+        name: (i[0].value || "").trim(),
+        color: (i[1].value || "").trim(),
+        size: (i[2].value || "").trim(),
+        qty: Number(i[3].value || 0),
+        price: Number(i[4].value || 0)
+      };
 
-      deltaSum += delta;
-      toFinalize.push({ el: p, nextStatus: "sent", clearAction: true, clearSnapshot: true });
-      return;
+      if (!cur.name || !cur.color || !cur.size || cur.qty <= 0 || cur.price <= 0){
+        // 최소 검증
+        throw new Error("invalid");
+      }
+
+      const action = (p.dataset.action || "").trim();
+
+      if (action === "modify"){
+        const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : { qty:0, price:0 };
+        const oldAmt = _amount_(snap.qty, snap.price);
+        const newAmt = _amount_(cur.qty, cur.price);
+        const delta = newAmt - oldAmt;
+
+        items.push({
+          productName: `[수정] ${cur.name}`.trim(),
+          color: cur.color,
+          size: cur.size,
+          qty: cur.qty,
+          price: cur.price,
+          amountDelta: delta
+        });
+
+        deltaSum += delta;
+      } else {
+        items.push({
+          productName: cur.name,
+          color: cur.color,
+          size: cur.size,
+          qty: cur.qty,
+          price: cur.price
+        });
+
+        deltaSum += _amount_(cur.qty, cur.price);
+        hasNewItem = true;
+      }
+    });
+
+    // 배송비 규칙: 새 상품이 포함될 때만 적용
+    let shipping = 0;
+    if (hasNewItem){
+      shipping = (deltaSum > 0 && deltaSum < 100000) ? SHIPPING : 0;
     }
 
-    if (_isDraftStatus(st) && action !== "modify") {
-      items.push({
-        productName: `${cur.name}`.trim(),
-        color: cur.color,
-        size: cur.size,
-        qty: cur.qty,
-        price: cur.price
+    const payload = {
+      orderId: ORDER_ID || newOrderId_(),
+      orderTime: kstNowString(),
+      customer: {
+        nickname: document.getElementById("nickname").value || "",
+        name: document.getElementById("name").value || "",
+        phone: document.getElementById("phone").value || "",
+        address: `${document.getElementById("address").value || ""} ${document.getElementById("addressDetail").value || ""}`.trim()
+      },
+      items,
+      sum: deltaSum,
+      shipping,
+      total: deltaSum + shipping
+    };
+
+    try{
+      const body = JSON.stringify(payload);
+      let sent = false;
+
+      if (navigator.sendBeacon){
+        const blob = new Blob([body], { type:"text/plain;charset=UTF-8" });
+        sent = navigator.sendBeacon(SCRIPT_URL, blob);
+      }
+
+      if (!sent){
+        await fetch(SCRIPT_URL, {
+          method:"POST",
+          mode:"no-cors",
+          headers:{ "Content-Type":"text/plain;charset=UTF-8" },
+          body,
+          keepalive:true
+        });
+      }
+
+      // ✅ 전송 성공: draft → sent 로 확정
+      targets.forEach(p=>{
+        p.dataset.status = "sent";
+        delete p.dataset.action;
+        delete p.dataset.snapshot;
+        setBadge(p);
       });
 
-      deltaSum += _amountOf_(cur);
-      hasNewItem = true;
-      toFinalize.push({ el: p, nextStatus: "sent", clearAction: true, clearSnapshot: true });
+      calc();
+      renderDoneSummary();
+      updatePrimaryButtonLabel();
+      saveData();
+
+      setMode("complete", "주문이 완료되었습니다.");
+      alert("완료되었습니다.");
+    } catch(e){
+      alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
+    }
+  }
+
+  async function submitCancel(){
+    if (MODE !== "complete") return;
+
+    // 취소 대상: cancel_pending
+    const targets = Array.from(document.querySelectorAll(".product")).filter(p => p.dataset.status === "cancel_pending");
+    if (targets.length === 0){
+      alert("취소할 상품을 선택해주세요.");
+      focusBanner();
       return;
     }
+    if (!confirm("선택한 상품을 취소하고 전송할까요?")) return;
 
-    if (st === "cancel_pending") {
-      const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : cur;
-      const oldAmt = _amountOf_(snap);
+    const kstNowString = () => {
+      const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
+      const yyyy = d.getUTCFullYear();
+      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(d.getUTCDate()).padStart(2, "0");
+      const hh = String(d.getUTCHours()).padStart(2, "0");
+      const mi = String(d.getUTCMinutes()).padStart(2, "0");
+      const ss = String(d.getUTCSeconds()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+    };
+
+    const items = [];
+    let deltaSum = 0;
+
+    targets.forEach(p=>{
+      const i = p.querySelectorAll("input");
+      const curName = (i[0].value || "").trim();
+      const curColor = (i[1].value || "").trim();
+      const curSize = (i[2].value || "").trim();
+
+      const snap = p.dataset.snapshot ? JSON.parse(p.dataset.snapshot) : snapshotOf(p);
+      const oldAmt = _amount_(snap.qty, snap.price);
       const delta = -oldAmt;
 
       items.push({
-        productName: `[취소] ${cur.name}`.trim(),
-        color: cur.color,
-        size: cur.size,
+        productName: `[취소] ${curName}`.trim(),
+        color: curColor,
+        size: curSize,
         qty: 0,
         price: 0,
         amountDelta: delta
       });
 
       deltaSum += delta;
-      toFinalize.push({ el: p, nextStatus: "canceled", clearAction: true, clearSnapshot: true });
-      return;
-    }
-  });
+    });
 
-  if (items.length === 0) {
-    alert("전송 대기 / 취소 요청 / 수정 요청 상품이 없습니다.");
-    return;
-  }
+    const payload = {
+      orderId: ORDER_ID || newOrderId_(),
+      orderTime: kstNowString(),
+      customer: {
+        nickname: document.getElementById("nickname").value || "",
+        name: document.getElementById("name").value || "",
+        phone: document.getElementById("phone").value || "",
+        address: `${document.getElementById("address").value || ""} ${document.getElementById("addressDetail").value || ""}`.trim()
+      },
+      items,
+      sum: deltaSum,
+      shipping: 0,
+      total: deltaSum
+    };
 
-  let shipping = 0;
-  if (hasNewItem) {
-    shipping = (deltaSum > 0 && deltaSum < 100000) ? SHIPPING : 0;
-  } else {
-    shipping = 0;
-  }
+    try{
+      const body = JSON.stringify(payload);
+      let sent = false;
 
-  const payload = {
-    orderId: ORDER_ID || newOrderId_(),
-    orderTime: kstNowString(),
-    customer: {
-      nickname: document.getElementById("nickname").value || "",
-      name: document.getElementById("name").value || "",
-      phone: document.getElementById("phone").value || "",
-      address: `${document.getElementById("address").value || ""} ${document.getElementById("addressDetail").value || ""}`.trim()
-    },
-    items: items,
-    sum: deltaSum,
-    shipping: shipping,
-    total: deltaSum + shipping
-  };
+      if (navigator.sendBeacon){
+        const blob = new Blob([body], { type:"text/plain;charset=UTF-8" });
+        sent = navigator.sendBeacon(SCRIPT_URL, blob);
+      }
 
-  try {
-    const body = JSON.stringify(payload);
+      if (!sent){
+        await fetch(SCRIPT_URL, {
+          method:"POST",
+          mode:"no-cors",
+          headers:{ "Content-Type":"text/plain;charset=UTF-8" },
+          body,
+          keepalive:true
+        });
+      }
 
-    let sent = false;
-
-    if (navigator.sendBeacon) {
-      const blob = new Blob([body], { type: "text/plain;charset=UTF-8" });
-      sent = navigator.sendBeacon(SCRIPT_URL, blob);
-    }
-
-    if (!sent) {
-      await fetch(SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=UTF-8" },
-        body: body,
-        keepalive: true
+      // ✅ 취소 확정: cancel_pending → canceled
+      targets.forEach(p=>{
+        p.dataset.status = "canceled";
+        delete p.dataset.snapshot;
+        const chk = p.querySelector(".chk-cancel-pick");
+        if (chk) chk.checked = false;
+        setBadge(p);
       });
-    }
 
-    toFinalize.forEach(x => {
-      x.el.dataset.status = x.nextStatus;
-      if (x.clearAction) {
-        delete x.el.dataset.action;
-        delete x.el.dataset.modifiedFrom;
+      calc();
+      renderDoneSummary();
+      saveData();
+
+      setMode("complete", "취소가 완료되었습니다.");
+      alert("취소가 완료되었습니다.");
+    } catch(e){
+      alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
+    }
+  }
+
+  function goToFormForEdit(){
+    // 완료 화면 → 폼 화면(수정)
+    // 취소 선택중(cancel_pending)이 있으면 되돌림
+    document.querySelectorAll(".product").forEach(p=>{
+      if (p.dataset.status === "cancel_pending"){
+        p.dataset.status = "sent";
+        delete p.dataset.snapshot;
+        const chk = p.querySelector(".chk-cancel-pick");
+        if (chk) chk.checked = false;
+        setBadge(p);
       }
-      if (x.clearSnapshot) {
-        delete x.el.dataset.snapshot;
-      }
-      _applyProductUI(x.el);
+    });
+
+    // 폼 화면에서는 sent/canceled가 요약으로만 보이기 때문에,
+    // 사용자가 "기존 주문 상품을 수정"하려면: 해당 상품을 먼저 편집 대상으로 만들어야 함.
+    // 👉 방법: 완료 화면에서 수정하기 누르고 폼으로 오면,
+    // 사용자가 수정할 상품은 "새로 추가"하거나,
+    // 또는 기존 주문 상품을 수정하려면 아래처럼 '편집용 복제'를 자동 생성해줄 수도 있음.
+    // 여기서는 간단하게: 기존 주문 상품을 수정하고 싶으면 "복제해서 수정" 방식으로 자동 생성.
+    const sentItems = Array.from(document.querySelectorAll(".product")).filter(p => p.dataset.status === "sent");
+    sentItems.forEach(p=>{
+      const snap = snapshotOf(p);
+      // 동일 상품 편집용 복제(수정 전송으로 처리)
+      const clonePreset = {
+        id: _uid(),
+        status: "draft",
+        snapshot: JSON.stringify(snap),
+        name: snap.name,
+        color: snap.color,
+        size: snap.size,
+        qty: snap.qty,
+        price: snap.price
+      };
+      const newDiv = addProduct(clonePreset);
+      newDiv.dataset.action = "modify";
     });
 
     calc();
-    saveData();
-
-    // ✅ 전송 후 모드 이동
-    setMode("complete");
-
-    alert("완료되었습니다.");
-  } catch (e) {
-    alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
+    renderDoneSummary();
+    updatePrimaryButtonLabel();
+    setMode("form");
+    window.scrollTo({ top:0, behavior:"smooth" });
   }
-}
 
-/* ✅ 주문하기 버튼: 전송 + 주문완료 화면으로 이동 */
-function orderNow(){
-  submitOrder(); // 전송 성공 시 setMode("complete")로 이동
-}
+  function newOrder(){
+    if (!confirm("새로 주문을 시작할까요?")) return;
 
-/* ✅ 완료 화면 -> 수정/취소 진입 */
-function enterEditMode(){
-  setMode("edit");
-}
-function exitEditMode(){
-  // 수정 화면에서 나가기: 체크된 sent_edit는 원복 처리(안전)
-  document.querySelectorAll(".product").forEach(p=>{
-    const st = p.dataset.status || "draft_edit";
-    if (st === "sent_edit") {
-      p.dataset.status = "sent";
-      delete p.dataset.snapshot;
-      _applyProductUI(p);
-    }
-  });
-  calc();
-  setMode("complete");
-}
+    // 데이터 초기화(고객정보는 유지)
+    const data = JSON.parse(localStorage.getItem("orderData") || "{}");
 
-function enterCancelMode(){
-  setMode("cancel");
-}
-function exitCancelMode(){
-  // 취소 화면에서 나가기: cancel_pending 원복
-  document.querySelectorAll(".product").forEach(p=>{
-    const st = p.dataset.status || "draft_edit";
-    if (st === "cancel_pending") {
-      p.dataset.status = "sent";
-      delete p.dataset.snapshot;
-      _applyProductUI(p);
-    }
-  });
-  calc();
-  setMode("complete");
-}
-
-function newOrder() {
-  if (!confirm("새로 주문을 시작할까요?")) return;
-
-  const data = JSON.parse(localStorage.getItem("orderData") || "{}");
-
-  data.customer = data.customer || {
-    nickname: document.getElementById("nickname").value,
-    name: document.getElementById("name").value,
-    phone: document.getElementById("phone").value,
-    address: document.getElementById("address").value,
-    addressDetail: document.getElementById("addressDetail").value
-  };
-
-  ORDER_ID = newOrderId_();
-  data.orderId = ORDER_ID;
-
-  data.products = [];
-  data.mode = "create";
-  localStorage.setItem("orderData", JSON.stringify(data));
-
-  document.querySelectorAll(".product").forEach(p => p.remove());
-
-  addProduct();
-  calc();
-  saveData();
-
-  applyFoldVisibility();
-  renderFoldSummary();
-
-  setMode("create");
-}
-
-function saveData() {
-  const data = {
-    orderId: ORDER_ID,
-    mode: MODE,
-    customer: {
+    data.customer = data.customer || {
       nickname: document.getElementById("nickname").value,
       name: document.getElementById("name").value,
       phone: document.getElementById("phone").value,
       address: document.getElementById("address").value,
       addressDetail: document.getElementById("addressDetail").value
-    },
-    products: [],
-    hideDone: HIDE_DONE
-  };
+    };
 
-  document.querySelectorAll(".product").forEach(p => {
-    const i = p.querySelectorAll("input");
-    data.products.push({
-      id: p.dataset.id || _uid(),
-      status: p.dataset.status || "draft_edit",
-      origin: p.dataset.origin || "",
-      action: p.dataset.action || "",
-      modifiedFrom: p.dataset.modifiedFrom || "",
-      snapshot: p.dataset.snapshot || "",
-      name: i[0].value,
-      color: i[1].value,
-      size: i[2].value,
-      qty: i[3].value,
-      price: i[4].value
+    ORDER_ID = newOrderId_();
+    data.orderId = ORDER_ID;
+    data.mode = "form";
+    data.products = [];
+    data.hideCanceled = false;
+
+    localStorage.setItem("orderData", JSON.stringify(data));
+
+    document.querySelectorAll(".product").forEach(p => p.remove());
+
+    HIDE_CANCELED = false;
+    addProduct();
+    calc();
+    renderDoneSummary();
+    updatePrimaryButtonLabel();
+
+    setMode("form");
+    saveData();
+  }
+
+  function saveData(){
+    const data = {
+      orderId: ORDER_ID,
+      mode: MODE,
+      hideCanceled: HIDE_CANCELED,
+      customer: {
+        nickname: document.getElementById("nickname").value,
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        address: document.getElementById("address").value,
+        addressDetail: document.getElementById("addressDetail").value
+      },
+      products: []
+    };
+
+    document.querySelectorAll(".product").forEach(p=>{
+      const i = p.querySelectorAll("input");
+      data.products.push({
+        id: p.dataset.id || _uid(),
+        status: p.dataset.status || "draft",
+        action: p.dataset.action || "",
+        snapshot: p.dataset.snapshot || "",
+        name: i[0]?.value || "",
+        color: i[1]?.value || "",
+        size: i[2]?.value || "",
+        qty: i[3]?.value || "",
+        price: i[4]?.value || ""
+      });
+    });
+
+    localStorage.setItem("orderData", JSON.stringify(data));
+  }
+
+  function loadData(){
+    const data = JSON.parse(localStorage.getItem("orderData") || "null");
+    if (!data){
+      ORDER_ID = newOrderId_();
+      saveData();
+      setMode("form");
+      return;
+    }
+
+    IS_LOADING = true;
+
+    ORDER_ID = data.orderId || newOrderId_();
+    HIDE_CANCELED = !!data.hideCanceled;
+
+    document.getElementById("nickname").value = data.customer?.nickname || "";
+    document.getElementById("name").value = data.customer?.name || "";
+    document.getElementById("phone").value = data.customer?.phone || "";
+    document.getElementById("address").value = data.customer?.address || "";
+    document.getElementById("addressDetail").value = data.customer?.addressDetail || "";
+
+    productsDiv.innerHTML = "";
+    (data.products || []).forEach(p=>{
+      const preset = {
+        id: p.id,
+        status: p.status,
+        snapshot: p.snapshot,
+        name: p.name,
+        color: p.color,
+        size: p.size,
+        qty: p.qty,
+        price: p.price
+      };
+      const div = addProduct(preset);
+      if (p.action) div.dataset.action = p.action;
+      setBadge(div);
+
+      // 완료 화면 체크박스 반영
+      const chk = div.querySelector(".chk-cancel-pick");
+      if (chk) chk.checked = (div.dataset.status === "cancel_pending");
+    });
+
+    if (!document.querySelector(".product")) addProduct();
+
+    calc();
+    renderShippingSummary();
+    renderDoneSummary();
+    updatePrimaryButtonLabel();
+
+    IS_LOADING = false;
+
+    const m = data.mode || "form";
+    if (m === "complete") {
+      setMode("complete", "주문이 완료되었습니다.");
+    } else {
+      setMode("form");
+    }
+
+    saveData();
+  }
+
+  ["nickname","name","phone","addressDetail"].forEach(id=>{
+    document.getElementById(id).addEventListener("input", ()=>{
+      renderShippingSummary();
+      saveData();
     });
   });
 
-  localStorage.setItem("orderData", JSON.stringify(data));
-}
-
-function loadData() {
-  const data = JSON.parse(localStorage.getItem("orderData") || "null");
-  if (!data) {
-    ORDER_ID = newOrderId_();
-    saveData();
-    setMode("create");
-    return;
-  }
-
-  IS_LOADING = true;
-
-  ORDER_ID = data.orderId || newOrderId_();
-
-  document.getElementById("nickname").value = (data.customer && data.customer.nickname) ? data.customer.nickname : "";
-  document.getElementById("name").value = (data.customer && data.customer.name) ? data.customer.name : "";
-  document.getElementById("phone").value = (data.customer && data.customer.phone) ? data.customer.phone : "";
-  document.getElementById("address").value = (data.customer && data.customer.address) ? data.customer.address : "";
-  document.getElementById("addressDetail").value = (data.customer && data.customer.addressDetail) ? data.customer.addressDetail : "";
-
-  productsDiv.innerHTML = "";
-
-  (data.products || []).forEach(p => {
-    const preset = {
-      id: p.id || _uid(),
-      status: p.status || "draft_edit",
-      origin: p.origin || "",
-      action: p.action || "",
-      modifiedFrom: p.modifiedFrom || "",
-      snapshot: p.snapshot || "",
-      name: p.name,
-      color: p.color,
-      size: p.size,
-      qty: p.qty,
-      price: p.price
-    };
-    addProduct(preset, true);
-  });
-
-  HIDE_DONE = !!data.hideDone;
-  const btn = document.querySelector('button[onclick="toggleFold()"]');
-  if (btn) btn.innerText = HIDE_DONE ? "완료목록 펼치기 ▼" : "완료목록 접기 ▲";
-
-  calc();
-  applyFoldVisibility();
-  renderFoldSummary();
-
-  IS_LOADING = false;
-
-  // ✅ 모드 복구
-  const m = data.mode || "create";
-  setMode(m);
-
-  saveData();
-}
-
-["nickname","name","phone","addressDetail"].forEach(id=>{
-  document.getElementById(id).addEventListener("input", saveData);
-});
-
-loadData();
-if (!document.querySelector(".product")) addProduct();
+  loadData();
 </script>
 
 </body>
