@@ -439,6 +439,40 @@
     pointer-events:none;
     user-select:none;
   }
+
+  /* ✅ (추가) 상품 정보 타이틀 + 날짜 필터 버튼(5일전~오늘) */
+  .section-title-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .section-title-row .section-title{
+    margin-bottom:0;
+    white-space:nowrap;
+  }
+  .day-filter{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+  .day-filter button{
+    padding:6px 8px;
+    font-size:12px;
+    font-weight:900;
+    border-radius:10px;
+    background:#f2f2f2;
+    border:1px solid #d7d7d7;
+    color:#333;
+    cursor:pointer;
+  }
+  .day-filter button.is-active{
+    background:#e8f2ff;
+    border:1px solid #c8ddff;
+    color:#005FAE;
+  }
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -497,7 +531,18 @@
 </div>
 
 <div class="section">
-  <div class="section-title" id="productSectionTitle">상품 정보</div>
+  <!-- ✅ (수정) 상품 정보 타이틀 오른쪽에 날짜 필터 버튼 -->
+  <div class="section-title-row">
+    <div class="section-title" id="productSectionTitle">상품 정보</div>
+    <div class="day-filter" id="dayFilter">
+      <button type="button" data-day="5">5일전</button>
+      <button type="button" data-day="4">4일전</button>
+      <button type="button" data-day="3">3일전</button>
+      <button type="button" data-day="2">2일전</button>
+      <button type="button" data-day="1">1일전</button>
+      <button type="button" data-day="0">오늘</button>
+    </div>
+  </div>
 
   <!-- ✅ 주문입력 화면: 작성 중(입력중/입력완료) 상품 요약 -->
   <div id="draftSummary"></div>
@@ -508,7 +553,8 @@
   <!-- ✅ 완료화면에서만: 주문상세 보기/닫기 -->
   <div id="detailToggleWrap">
     <button class="small-link-btn" id="detailToggleBtn" type="button" onclick="toggleOrderDetail()">주문상세 보기 ▼</button>
-    <div class="detail-note">※ 주문 상세에서 수정 / 취소가 가능합니다.</div>
+    <!-- ✅ (수정) 문구 변경 -->
+    <div class="detail-note">※ 방송종료 전까지만 ‘주문상세 보기’에서 수정 / 취소가 가능합니다.</div>
   </div>
 
   <div id="products"></div>
@@ -596,6 +642,9 @@
   let ACTIVE_DRAFT_ORDER_ID = "";
   let LAST_DONE_ORDER_ID = "";
 
+  // ✅ (추가) 완료 요약 날짜 필터(기본: 오늘=0)
+  let DONE_FILTER_OFFSET = 0;
+
   function newOrderId_(){
     return "oid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
   }
@@ -617,11 +666,89 @@
   }
 
   function pad2_(n){ return String(n).padStart(2,"0"); }
+
   function formatKstDateOnly_(d){
     const yyyy = d.getUTCFullYear();
     const mm = pad2_(d.getUTCMonth()+1);
     const dd = pad2_(d.getUTCDate());
     return `${yyyy}.${mm}.${dd}`;
+  }
+
+  /* ==================================================
+     ✅ (추가/수정) KST 고정 + 방송 시트 날짜 규칙
+     - 08:00~23:59 => 오늘 날짜
+     - 00:00~07:59 => 전날 날짜
+     ================================================== */
+  function _kstPartsNow_(){
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Seoul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    }).formatToParts(new Date());
+    const get = (t)=> parts.find(p=>p.type===t)?.value;
+    return {
+      yyyy: Number(get("year")),
+      mm: Number(get("month")),
+      dd: Number(get("day")),
+      hh: Number(get("hour")),
+      mi: Number(get("minute")),
+      ss: Number(get("second"))
+    };
+  }
+
+  // ✅ "현재 KST"를 Date(UTC기반)로 반환 (해외에서도 동일)
+  function kstNowDate_(){
+    const p = _kstPartsNow_();
+    return new Date(Date.UTC(p.yyyy, p.mm-1, p.dd, p.hh, p.mi, p.ss));
+  }
+
+  // ✅ KST 문자열 (yyyy-MM-dd HH:mm:ss)
+  function kstNowString(){
+    const p = _kstPartsNow_();
+    const yyyy = String(p.yyyy);
+    const mm = pad2_(p.mm);
+    const dd = pad2_(p.dd);
+    const hh = pad2_(p.hh);
+    const mi = pad2_(p.mi);
+    const ss = pad2_(p.ss);
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+  }
+
+  // ✅ 방송 시트명 (yyyy-MM-dd) / 완료 요약 날짜 기준도 동일 사용
+  function getBroadcastSheetNameKST_(){
+    const p = _kstPartsNow_(); // KST
+    const baseUtc = new Date(Date.UTC(p.yyyy, p.mm-1, p.dd, 0, 0, 0)); // KST 자정(표현은 UTC기반)
+    if (p.hh < 8) baseUtc.setUTCDate(baseUtc.getUTCDate() - 1);
+
+    const y = baseUtc.getUTCFullYear();
+    const m = pad2_(baseUtc.getUTCMonth()+1);
+    const d = pad2_(baseUtc.getUTCDate());
+    return `${y}-${m}-${d}`;
+  }
+
+  // ✅ offset일 전(0=오늘) 방송일자 yyyy-MM-dd
+  function getBroadcastSheetNameKSTByOffset_(offsetDays){
+    const today = getBroadcastSheetNameKST_(); // yyyy-MM-dd
+    const m = String(today).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return today;
+    const y = Number(m[1]), mo = Number(m[2]), da = Number(m[3]);
+    const d0 = new Date(Date.UTC(y, mo-1, da, 0, 0, 0));
+    d0.setUTCDate(d0.getUTCDate() - Number(offsetDays || 0));
+    const yy = d0.getUTCFullYear();
+    const mm = pad2_(d0.getUTCMonth()+1);
+    const dd = pad2_(d0.getUTCDate());
+    return `${yy}-${mm}-${dd}`;
+  }
+
+  function formatBroadcastDateText_(yyyy_mm_dd){
+    const m = String(yyyy_mm_dd||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return "";
+    return `${m[1]}.${m[2]}.${m[3]}`;
   }
 
   // ✅ 1) 완료 배너 문구(순서/문구 변경 + 파란색 강조)
@@ -635,15 +762,19 @@
     if (main) main.textContent = text || "";
 
     const oid = (LAST_DONE_ORDER_ID || "").trim();
-    const line1 = oid ? `${formatKstDateOnly_(kstNowDate_())} 주문번호는 ${oid} 입니다.` : "";
 
-    const line2 = `방송 종료 전까지 ‘주문상세 보기’에서 수정/취소가 가능합니다.`;
+    // ✅ (수정) 주문번호 앞 날짜를 "방송일자(08:00 기준)"로 표시
+    const broadcastDateText = formatBroadcastDateText_(getBroadcastSheetNameKST_());
+    const line1 = oid ? `${broadcastDateText} 주문번호는 ${oid} 입니다.` : "";
+
+    // ✅ (수정) 배너에서 해당 문구 삭제
+    // const line2 = `방송 종료 전까지 ‘주문상세 보기’에서 수정/취소가 가능합니다.`;
+
     const line3 = `입금 후 확인되면 발송됩니다.`;
 
     if (oidBox){
       oidBox.innerHTML = `
         ${line1 ? `<div>${line1}</div>` : ""}
-        <div>${line2}</div>
         <div style="color:#005FAE; font-weight:900;">${line3}</div>
       `;
     }
@@ -822,6 +953,11 @@
       exitShipEdit(true);
 
       renderShippingSummary();
+
+      // ✅ (추가) 완료 화면 진입 시 기본은 "오늘"
+      DONE_FILTER_OFFSET = 0;
+      setActiveDayButton_(0);
+
       renderDoneSummary();
       renderDraftSummary();
 
@@ -902,6 +1038,18 @@
     badge.style.display = "none";
   }
 
+  // ✅ (추가) 완료 요약 날짜 필터 버튼 활성 표시
+  function setActiveDayButton_(offset){
+    const wrap = document.getElementById("dayFilter");
+    if (!wrap) return;
+    wrap.querySelectorAll("button").forEach(b=>{
+      const v = Number(b.getAttribute("data-day"));
+      if (v === Number(offset)) b.classList.add("is-active");
+      else b.classList.remove("is-active");
+    });
+  }
+
+  // ✅ (수정) 완료 요약: 선택한 날짜(방송일자 기준)만 표시 + 날짜 1회만 출력
   function renderDoneSummary(){
     const box = document.getElementById("doneSummary");
     if (!box) return;
@@ -913,11 +1061,18 @@
       return;
     }
 
+    const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET); // yyyy-MM-dd
+    const dateTitle = formatBroadcastDateText_(targetDate);
+
     const lines = [];
 
     document.querySelectorAll(".product").forEach(p=>{
       const st = p.dataset.status || "draft";
       if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return;
+
+      // ✅ 완료요약은 "doneDate(방송일자 기준)"로 필터
+      const doneDate = String(p.dataset.doneDate || "").trim();
+      if (doneDate !== targetDate) return;
 
       const i = p.querySelectorAll("input");
       const name = (i[0]?.value || "").trim();
@@ -938,6 +1093,7 @@
       lines.push(`• <b>${tag}</b> ${name} / ${color} / ${size} / ${qtyText} / ${priceText}`);
     });
 
+    // ✅ (요청) 기본값은 항상 "오늘"이지만, 버튼 눌렀는데 없으면 알림
     if (lines.length === 0){
       box.style.display = "none";
       box.innerHTML = "";
@@ -945,7 +1101,10 @@
     }
 
     box.style.display = "block";
-    box.innerHTML = lines.join("<br>");
+    box.innerHTML = `
+      <div style="margin-bottom:8px; font-weight:900; color:#005FAE;">${dateTitle}</div>
+      ${lines.join("<br>")}
+    `;
   }
 
   // ✅ 주문입력 화면: 작성 중 상품 요약(입력중/입력완료)
@@ -1039,20 +1198,6 @@
     }
   }
 
-  function kstNowDate_(){
-    return new Date(Date.now() + 9 * 60 * 60 * 1000);
-  }
-  function kstNowString(){
-    const d = kstNowDate_();
-    const yyyy = d.getUTCFullYear();
-    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(d.getUTCDate()).padStart(2, "0");
-    const hh = String(d.getUTCHours()).padStart(2, "0");
-    const mi = String(d.getUTCMinutes()).padStart(2, "0");
-    const ss = String(d.getUTCSeconds()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
-  }
-
   function parseKstStringToDate_(s){
     try{
       const m = String(s||"").match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
@@ -1086,8 +1231,9 @@
     return nextMondayNoonKst_(d);
   }
 
+  // ✅ (수정) 발송완료 배지도 KST 고정(now = kstNowDate_ 사용)
   function updateShippingStatuses_(silentSave){
-    const now = kstNowDate_();
+    const now = kstNowDate_(); // ✅ 해외에서도 KST 기준 동일
     let changed = false;
 
     document.querySelectorAll(".product").forEach(p=>{
@@ -1100,6 +1246,8 @@
 
       if (now.getTime() >= due.getTime()){
         p.dataset.status = "shipped";
+        // ✅ 발송완료로 바뀐 시점의 방송일자(요청 1번 기준) 저장
+        if (!p.dataset.shipDate) p.dataset.shipDate = getBroadcastSheetNameKST_();
         setBadge(p);
         changed = true;
       }
@@ -1186,6 +1334,10 @@
 
     div.dataset.orderId = (preset && preset.orderId) ? preset.orderId : "";
     div.dataset.orderTime = (preset && preset.orderTime) ? preset.orderTime : "";
+
+    // ✅ (추가) 완료요약 필터용 방송일자 저장(없으면 빈값)
+    div.dataset.doneDate = (preset && preset.doneDate) ? preset.doneDate : "";
+    div.dataset.shipDate = (preset && preset.shipDate) ? preset.shipDate : "";
 
     div.innerHTML = `
       <div class="field">
@@ -1317,6 +1469,7 @@
       const payload = {
         orderId: useOrderId,
         orderTime: kstNowString(),
+        broadcastDate: getBroadcastSheetNameKST_(),  // ✅ (추가) 서버 시트 날짜도 동일 기준
         eventType: "modify",
         customer: {
           nickname: document.getElementById("nickname").value || "",
@@ -1334,6 +1487,9 @@
         await sendPayload(payload);
 
         div.dataset.status = "modified";
+        // ✅ (추가) 수정완료 방송일자 기록(요약 필터용)
+        div.dataset.doneDate = getBroadcastSheetNameKST_();
+
         exitEdit_(false);
 
         setBanner("수정이 완료되었습니다.");
@@ -1374,6 +1530,7 @@
         const payload = {
           orderId: useOrderId,
           orderTime: kstNowString(),
+          broadcastDate: getBroadcastSheetNameKST_(),  // ✅
           eventType: "cancel",
           customer: {
             nickname: document.getElementById("nickname").value || "",
@@ -1391,6 +1548,8 @@
           await sendPayload(payload);
 
           div.dataset.status = "canceled";
+          // ✅ (추가) 취소완료 방송일자 기록(요약 필터용)
+          div.dataset.doneDate = getBroadcastSheetNameKST_();
 
           lockProductInputs(div, true);
           setBadge(div);
@@ -1562,10 +1721,12 @@
 
     const batchOrderId = ensureDraftOrderId_();
     const orderTimeStr = kstNowString();
+    const broadcastDate = getBroadcastSheetNameKST_(); // ✅ (추가) 방송일자(08:00 기준)
 
     const payload = {
       orderId: batchOrderId,
       orderTime: orderTimeStr,
+      broadcastDate, // ✅
       eventType: "order",
       customer: {
         nickname: document.getElementById("nickname").value || "",
@@ -1588,6 +1749,9 @@
         p.dataset.snapshot = "";
         p.dataset.orderId = batchOrderId;
         p.dataset.orderTime = orderTimeStr;
+
+        // ✅ (추가) 주문완료 방송일자 기록(요약 필터용)
+        p.dataset.doneDate = broadcastDate;
 
         setBadge(p);
       });
@@ -1639,6 +1803,7 @@
     const payload = {
       orderId: useOrderId,
       orderTime: kstNowString(),
+      broadcastDate: getBroadcastSheetNameKST_(),  // ✅
       eventType: "cancel",
       customer: {
         nickname: document.getElementById("nickname").value || "",
@@ -1655,8 +1820,10 @@
     try{
       await sendPayload(payload);
 
+      const bd = getBroadcastSheetNameKST_(); // ✅
       targets.forEach(p=>{
         p.dataset.status = "canceled";
+        p.dataset.doneDate = bd; // ✅ (추가) 전체취소도 방송일자 기록
         lockProductInputs(p, true);
         setBadge(p);
       });
@@ -1768,6 +1935,7 @@
     const payload = {
       orderId: LAST_DONE_ORDER_ID || newOrderId_(),
       orderTime: kstNowString(),
+      broadcastDate: getBroadcastSheetNameKST_(), // ✅
       eventType: "ship_update",
       customer: {
         nickname: document.getElementById("nickname").value || "",
@@ -1815,6 +1983,7 @@
       shipEditing: SHIP_EDITING,
       lastDoneOrderId: LAST_DONE_ORDER_ID,
       activeDraftOrderId: ACTIVE_DRAFT_ORDER_ID,
+      doneFilterOffset: DONE_FILTER_OFFSET, // ✅ (추가) 필터 상태 저장
       products: []
     };
 
@@ -1827,6 +1996,8 @@
         editing: p.dataset.editing || "",
         orderId: p.dataset.orderId || "",
         orderTime: p.dataset.orderTime || "",
+        doneDate: p.dataset.doneDate || "",   // ✅
+        shipDate: p.dataset.shipDate || "",   // ✅
         name: i[0]?.value || "",
         color: i[1]?.value || "",
         size: i[2]?.value || "",
@@ -1858,6 +2029,10 @@
       LAST_DONE_ORDER_ID = "";
       ORDER_DETAIL_OPEN = false;
 
+      // ✅ 기본값: 오늘
+      DONE_FILTER_OFFSET = 0;
+      setActiveDayButton_(0);
+
       addProduct();
 
       IS_LOADING = false;
@@ -1882,6 +2057,11 @@
     LAST_DONE_ORDER_ID = data.lastDoneOrderId || "";
     ACTIVE_DRAFT_ORDER_ID = data.activeDraftOrderId || "";
 
+    // ✅ (추가) 필터 복원 (없으면 오늘)
+    DONE_FILTER_OFFSET = (data.doneFilterOffset != null) ? Number(data.doneFilterOffset) : 0;
+    if (isNaN(DONE_FILTER_OFFSET)) DONE_FILTER_OFFSET = 0;
+    setActiveDayButton_(DONE_FILTER_OFFSET);
+
     productsDiv.innerHTML = "";
     (data.products || []).forEach(p=>{
       addProduct({
@@ -1891,6 +2071,8 @@
         editing: p.editing,
         orderId: p.orderId,
         orderTime: p.orderTime,
+        doneDate: p.doneDate, // ✅
+        shipDate: p.shipDate, // ✅
         name: p.name,
         color: p.color,
         size: p.size,
@@ -1938,6 +2120,47 @@
     renderShippingSummary();
     saveData();
   });
+
+  // ✅ (추가) 날짜 필터 버튼 이벤트
+  (function initDayFilter_(){
+    const wrap = document.getElementById("dayFilter");
+    if (!wrap) return;
+
+    wrap.addEventListener("click", (e)=>{
+      const btn = e.target && e.target.closest("button");
+      if (!btn) return;
+
+      const offset = Number(btn.getAttribute("data-day"));
+      if (isNaN(offset)) return;
+
+      // ✅ 완료 화면에서만 동작 (요약 표시용)
+      if (MODE !== "complete"){
+        DONE_FILTER_OFFSET = offset;
+        setActiveDayButton_(offset);
+        saveData();
+        return;
+      }
+
+      // 해당 날짜에 완료요약이 있는지 먼저 체크
+      const targetDate = getBroadcastSheetNameKSTByOffset_(offset);
+      const hasAny = Array.from(document.querySelectorAll(".product")).some(p=>{
+        const st = p.dataset.status || "draft";
+        if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return false;
+        return String(p.dataset.doneDate || "").trim() === targetDate;
+      });
+
+      if (!hasAny){
+        const title = formatBroadcastDateText_(targetDate);
+        alert(`${title} 날짜에 주문완료/수정완료/취소완료 내역이 없습니다.`);
+        return;
+      }
+
+      DONE_FILTER_OFFSET = offset;
+      setActiveDayButton_(offset);
+      renderDoneSummary();
+      saveData();
+    });
+  })();
 
   loadData();
 
