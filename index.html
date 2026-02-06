@@ -228,12 +228,13 @@
   .status-modified{ background:#fff7e6; color:#9a6b00; border:1px solid #ffe1a6; }
   .status-modified .sq{ background:#9a6b00; }
 
+  /* ✅ 발송완료 배지 */
+  .status-shipped{ background:#e8fff1; color:#1e7e34; border:1px solid #bfead0; }
+  .status-shipped .sq{ background:#1e7e34; }
+
   /* ✅ 취소 완료 배지: 빨간색 통일 */
   .status-canceled{ background:#ffe9e9; color:#c0392b; border:1px solid #ffc9c9; }
   .status-canceled .sq{ background:#e74c3c; }
-
-  .status-cancel-pick{ background:#ffe9e9; color:#c0392b; border:1px solid #ffc9c9; }
-  .status-cancel-pick .sq{ background:#e74c3c; }
 
   /* ✅ 수정중 배지(그레이) */
   .status-editing{ background:#ededed; color:#333; border:1px solid #cfcfcf; }
@@ -294,7 +295,10 @@
   #formControls .button-line-3{ margin-top:0; }
   #formControls .half-center-line{ margin-top:0; }
 
-  /* ✅ 완료목록 접기 버튼 */
+  /* ✅ 주문상세 보기/닫기 버튼(완료화면 전용) */
+  #detailToggleWrap{ display:none; }
+  body.mode-complete #detailToggleWrap{ display:block; }
+
   .small-link-btn{
     width:100%;
     margin-top:10px;
@@ -303,27 +307,36 @@
     color:#333;
     font-weight:900;
   }
-
-  /* ✅ 취소선택 줄 */
-  .cancel-pick-row{
-    margin-top:10px;
-    display:flex;
-    justify-content:flex-end;
-    flex-direction:column;
-    align-items:flex-end;
-    gap:6px;
-  }
-  .cancel-pick-row label{
-    font-size:13px;
-    font-weight:900;
-    color:#c0392b;
-  }
-  /* ✅ (1) 취소 안내 문구 */
-  .cancel-help{
+  .detail-note{
+    margin-top:6px;
     font-size:12px;
     font-weight:900;
-    color:#c0392b;
+    color:#666;
     line-height:1.3;
+  }
+
+  /* ✅ 개별 취소 버튼 줄 */
+  .cancel-row{
+    margin-top:10px;
+    display:none;
+    justify-content:flex-end;
+    align-items:center;
+    gap:8px;
+  }
+  body.mode-complete .cancel-row{ display:flex; }
+
+  .btn-item-cancel{
+    background:#e74c3c;
+    color:#fff;
+    font-weight:900;
+    border:none;
+    padding:10px 12px;
+    border-radius:10px;
+    cursor:pointer;
+  }
+  .btn-item-cancel:disabled{
+    opacity:.55;
+    cursor:not-allowed;
   }
 </style>
 
@@ -331,7 +344,7 @@
 </head>
 
 <body class="mode-form">
-<h1>싸U 주문서</h1>
+<h1>싸U 라이브 주문 🔴 LIVE</h1>
 
 <div class="mode-banner" id="modeBanner" tabindex="-1">
   <div class="banner-main">주문이 정상적으로 접수되었습니다.</div>
@@ -385,9 +398,13 @@
 
   <div id="doneSummary"></div>
 
-  <div id="products"></div>
+  <!-- ✅ 완료화면에서만: 주문상세 보기/닫기 -->
+  <div id="detailToggleWrap">
+    <button class="small-link-btn" id="detailToggleBtn" type="button" onclick="toggleOrderDetail()">주문상세 보기 ▼</button>
+    <div class="detail-note">※ 주문 상세에서 수정 / 취소가 가능합니다.</div>
+  </div>
 
-  <button class="small-link-btn" id="foldBtn" type="button" onclick="toggleFold()">완료목록 접기 ▲</button>
+  <div id="products"></div>
 
   <div class="form-product-controls">
     <div class="button-line-2">
@@ -412,21 +429,23 @@
   <div class="pay-note" id="payNoteBelow">⚠️ 입금 확인 후 상품이 발송됩니다.</div>
 </div>
 
+<!-- ✅ 주문 입력 화면 하단 버튼 순서 변경 -->
 <div id="formControls">
   <div class="button-line-3">
-    <button class="btn-cancel-do" type="button" onclick="goCompletePreview()">완료화면</button>
-    <button class="btn-check" type="button" onclick="checkOrder()">미리 보기</button>
+    <button class="btn-check" type="button" onclick="checkOrder()">주문내용확인</button>
     <button class="btn-order" type="button" onclick="submitOrder()">주문하기</button>
+    <button class="btn-cancel-do" type="button" onclick="goCompletePreview()">주문접수결과 다시보기</button>
   </div>
   <div class="half-center-line">
     <button class="btn-red" type="button" onclick="newOrder()">새로 주문하기</button>
   </div>
 </div>
 
+<!-- ✅ 완료 화면 하단 버튼 순서 변경 -->
 <div class="button-line-3" id="completeControls" style="display:none;">
+  <button class="btn-gray" type="button" onclick="showOrderHistory()">주문확인서 보기</button>
   <button class="btn-cancel-do" type="button" onclick="submitCancel()">취소하기</button>
-  <button class="btn-gray" type="button" onclick="showOrderHistory()">주문내역확인</button>
-  <button class="btn-add-order" type="button" onclick="goToFormForAdd()">추가주문</button>
+  <button class="btn-add-order" type="button" onclick="goToFormForAdd()">추가 주문하기</button>
 </div>
 
 <div class="half-center-line" id="completeHalfNew" style="display:none;">
@@ -442,11 +461,25 @@
   const PAY_NOTICE = "⚠️ 입금 확인 후 상품이 발송됩니다.";
 
   let IS_LOADING = false;
-  let HIDE_DONE = false;
 
-  let ORDER_ID = "";
+  // ✅ 주문상세(완료화면) 접기/펼치기
+  let ORDER_DETAIL_OPEN = false;
+
+  // ✅ 고객이 직접 수정하지 않는 이상, 기한 없이 저장 (customer는 별도 보관)
+  const LS_CUSTOMER_KEY = "orderCustomer";
+  const LS_ORDER_KEY = "orderData";
+  const ORDER_TTL_MS = 5 * 24 * 60 * 60 * 1000; // 5일
+
+  // ✅ 주문 ID는 (주문 배치 단위)로 사용
+  let ACTIVE_DRAFT_ORDER_ID = "";
+  let LAST_DONE_ORDER_ID = "";
+
   function newOrderId_(){
     return "oid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+  function ensureDraftOrderId_(){
+    if (!ACTIVE_DRAFT_ORDER_ID) ACTIVE_DRAFT_ORDER_ID = newOrderId_();
+    return ACTIVE_DRAFT_ORDER_ID;
   }
 
   let MODE = "form"; // form | complete
@@ -457,7 +490,7 @@
   function hasAnyDoneItems_(){
     return Array.from(document.querySelectorAll(".product")).some(p=>{
       const st = p.dataset.status || "draft";
-      return (st === "sent" || st === "modified" || st === "canceled" || st === "cancel_pending");
+      return (st === "sent" || st === "modified" || st === "canceled" || st === "shipped");
     });
   }
 
@@ -470,7 +503,7 @@
 
     if (main) main.textContent = text || "";
 
-    const oid = (ORDER_ID || "").trim();
+    const oid = (LAST_DONE_ORDER_ID || "").trim();
     if (oidBox){
       oidBox.textContent = oid ? `주문번호는 ${oid} 입니다.` : "";
     }
@@ -485,10 +518,10 @@
 
   function goCompletePreview(){
     if (!hasAnyDoneItems_()){
-      alert("주문 완료된 상품이 없습니다.");
+      alert("주문 접수된 내역이 없습니다.");
       return;
     }
-    setMode("complete", "주문이 정상적으로 접수되었습니다.", { foldOnEnter:true });
+    setMode("complete", "주문이 정상적으로 접수되었습니다.", { detailClosedOnEnter:true });
   }
 
   function copyAccount(){
@@ -553,35 +586,49 @@
     else div.classList.remove("is-locked");
   }
 
+  function updateDetailToggleUI_(){
+    const btn = document.getElementById("detailToggleBtn");
+    if (!btn) return;
+    btn.textContent = ORDER_DETAIL_OPEN ? "주문상세 닫기 ▲" : "주문상세 보기 ▼";
+  }
+
   function applyProductVisibility_(){
-    const foldBtn = document.getElementById("foldBtn");
-
-    if (foldBtn){
-      foldBtn.style.display = (MODE === "form") ? "block" : "none";
-      foldBtn.textContent = HIDE_DONE ? "완료목록 펼치기 ▼" : "완료목록 접기 ▲";
-    }
-
     document.querySelectorAll(".product").forEach(p=>{
       const st = p.dataset.status || "draft";
 
+      // ✅ 완료화면: 주문상세 열었을 때만 완료상품 카드 보이기
       if (MODE === "complete"){
-        p.style.display = (st === "draft") ? "none" : "block";
+        if (st === "draft"){
+          p.style.display = "none";
+          return;
+        }
+        p.style.display = ORDER_DETAIL_OPEN ? "block" : "none";
         return;
       }
 
+      // ✅ 입력화면: 작성중(draft)만 카드로 보이기, 완료/수정/취소는 요약(#doneSummary)로만 보여줌
       if (st === "draft"){
         p.style.display = "block";
       } else {
-        p.style.display = HIDE_DONE ? "none" : "block";
+        p.style.display = "none";
       }
     });
+
+    updateDetailToggleUI_();
+  }
+
+  function toggleOrderDetail(){
+    if (MODE !== "complete") return;
+    ORDER_DETAIL_OPEN = !ORDER_DETAIL_OPEN;
+    applyProductVisibility_();
+    saveData();
   }
 
   function setMode(mode, bannerText, opts){
     opts = opts || {};
 
     if (mode === "complete" && !opts.allowEmpty && !hasAnyDoneItems_()){
-      alert("주문 완료된 상품이 없습니다.");
+      alert("주문 접수된 내역이 없습니다.");
       return;
     }
 
@@ -604,18 +651,20 @@
       completeHalfNew.style.display = "flex";
       shipActions.style.display = "flex";
 
-      /* ✅ (3)(4) 타이틀 변경 */
       if (customerTitle) customerTitle.textContent = "배송지 정보";
       if (productTitle) productTitle.textContent = "주문 상품 정보";
 
       setBanner(bannerText || "주문이 정상적으로 접수되었습니다.");
 
-      if (opts.foldOnEnter === true) HIDE_DONE = true;
+      if (opts.detailClosedOnEnter === true) ORDER_DETAIL_OPEN = false;
 
       exitShipEdit(true);
 
       renderShippingSummary();
       renderDoneSummary();
+
+      // ✅ 발송완료 자동 반영
+      updateShippingStatuses_(true);
 
       document.querySelectorAll(".product").forEach(p=>{
         const isEditing = (p.dataset.editing === "1");
@@ -640,21 +689,18 @@
 
     exitShipEdit(true);
 
+    // ✅ 입력화면에서도 요약은 계속 보여야 함
     renderDoneSummary();
     document.querySelectorAll(".product").forEach(p=>{
       lockProductInputs(p, false);
       setBadge(p);
     });
 
+    // ✅ 발송완료 자동 반영
+    updateShippingStatuses_(true);
+
     applyProductVisibility_();
     calc();
-    saveData();
-  }
-
-  function toggleFold(){
-    if (MODE !== "form") return;
-    HIDE_DONE = !HIDE_DONE;
-    applyProductVisibility_();
     saveData();
   }
 
@@ -677,9 +723,9 @@
       badge.innerHTML = `<span class="sq"></span>취소완료`;
       return;
     }
-    if (st === "cancel_pending"){
-      badge.classList.add("status-cancel-pick");
-      badge.innerHTML = `<span class="sq"></span>취소선택`;
+    if (st === "shipped"){
+      badge.classList.add("status-shipped");
+      badge.innerHTML = `<span class="sq"></span>발송완료`;
       return;
     }
     if (st === "modified"){
@@ -704,7 +750,7 @@
 
     document.querySelectorAll(".product").forEach(p=>{
       const st = p.dataset.status || "draft";
-      if (!(st === "sent" || st === "modified" || st === "canceled" || st === "cancel_pending")) return;
+      if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return;
 
       const i = p.querySelectorAll("input");
       const name = (i[0]?.value || "").trim();
@@ -718,7 +764,7 @@
 
       const tag =
         (st === "canceled") ? "[취소완료]" :
-        (st === "cancel_pending") ? "[취소선택]" :
+        (st === "shipped") ? "[발송완료]" :
         (st === "modified") ? "[수정완료]" :
         "[주문완료]";
 
@@ -746,7 +792,7 @@
       const amt = qty * price;
 
       if (MODE === "complete"){
-        if (st === "sent" || st === "modified") sum += amt;
+        if (st === "sent" || st === "modified" || st === "shipped") sum += amt;
         return;
       }
 
@@ -779,8 +825,11 @@
     }
   }
 
+  function kstNowDate_(){
+    return new Date(Date.now() + 9 * 60 * 60 * 1000);
+  }
   function kstNowString(){
-    const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const d = kstNowDate_();
     const yyyy = d.getUTCFullYear();
     const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
     const dd = String(d.getUTCDate()).padStart(2, "0");
@@ -788,6 +837,70 @@
     const mi = String(d.getUTCMinutes()).padStart(2, "0");
     const ss = String(d.getUTCSeconds()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+  }
+
+  // ✅ "YYYY-MM-DD HH:MM:SS" (KST 기준 문자열) -> Date(UTC기준으로 계산된 KST)
+  function parseKstStringToDate_(s){
+    try{
+      const m = String(s||"").match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+      if (!m) return null;
+      const yyyy = Number(m[1]);
+      const mm = Number(m[2]);
+      const dd = Number(m[3]);
+      const hh = Number(m[4]);
+      const mi = Number(m[5]);
+      const ss = Number(m[6]);
+      // KST를 UTC로 맞추기 위해 Date.UTC로 생성(이미 KST를 UTC필드로 넣는 방식)
+      return new Date(Date.UTC(yyyy, mm-1, dd, hh, mi, ss));
+    }catch(e){
+      return null;
+    }
+  }
+
+  function nextMondayNoonKst_(dKst){
+    const dow = dKst.getUTCDay(); // 0일~6토 (KST를 UTC필드로 사용)
+    const add = ( (8 - dow) % 7 ) || 7; // 다음 월요일까지
+    const nd = new Date(Date.UTC(dKst.getUTCFullYear(), dKst.getUTCMonth(), dKst.getUTCDate()+add, 12, 0, 0));
+    return nd;
+  }
+
+  function shippingDueAt_(orderTimeKstStr){
+    const d = parseKstStringToDate_(orderTimeKstStr);
+    if (!d) return null;
+
+    const dow = d.getUTCDay(); // 0일 1월 2화 3수 4목 5금 6토
+    // 월~목: 다음날 12시, 금~일: 다음 월요일 12시
+    if (dow >= 1 && dow <= 4){
+      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()+1, 12, 0, 0));
+    }
+    return nextMondayNoonKst_(d);
+  }
+
+  function updateShippingStatuses_(silentSave){
+    const now = kstNowDate_(); // KST를 UTC필드로 사용중
+    let changed = false;
+
+    document.querySelectorAll(".product").forEach(p=>{
+      const st = p.dataset.status || "draft";
+      if (!(st === "sent" || st === "modified")) return;
+
+      const ot = p.dataset.orderTime || "";
+      const due = shippingDueAt_(ot);
+      if (!due) return;
+
+      if (now.getTime() >= due.getTime()){
+        p.dataset.status = "shipped";
+        setBadge(p);
+        changed = true;
+      }
+    });
+
+    if (changed){
+      renderDoneSummary();
+      calc();
+      if (!silentSave) saveData();
+      else if (!IS_LOADING) saveData();
+    }
   }
 
   function _productSnapshot_(div){
@@ -836,8 +949,11 @@
     div.dataset.id = (preset && preset.id) ? preset.id : _uid();
     div.dataset.status = (preset && preset.status) ? preset.status : "draft";
     div.dataset.editing = (preset && preset.editing) ? preset.editing : "";
-    div.dataset.prevDoneStatus = (preset && preset.prevDoneStatus) ? preset.prevDoneStatus : "";
     div.dataset.snapshot = (preset && preset.snapshot) ? preset.snapshot : "";
+
+    // ✅ 주문 배치/시간(완료상품의 발송완료 계산에 사용)
+    div.dataset.orderId = (preset && preset.orderId) ? preset.orderId : "";
+    div.dataset.orderTime = (preset && preset.orderTime) ? preset.orderTime : "";
 
     div.innerHTML = `
       <div class="field">
@@ -879,9 +995,9 @@
         <button class="btn-mini btn-gray" type="button">수정취소</button>
       </div>
 
-      <div class="cancel-pick-row">
-        <label><input type="checkbox" class="chk-cancel-pick"> 취소 선택</label>
-        <div class="cancel-help">취소하기 버튼을 꼭 눌러주세요.</div>
+      <!-- ✅ 주문상세에서 개별 취소 -->
+      <div class="cancel-row" data-cancel-row="1">
+        <button class="btn-item-cancel" type="button">취소하기</button>
       </div>
     `;
 
@@ -911,11 +1027,20 @@
     editControlsRow.style.display = "none";
     editOpenRow.style.display = "none";
 
-    if (div.dataset.status === "draft"){
-      div.querySelector(".cancel-pick-row").style.display = "none";
-    } else {
-      div.querySelector(".cancel-pick-row").style.display = (MODE === "complete") ? "flex" : "none";
-      editOpenRow.style.display = (MODE === "complete") ? "flex" : "none";
+    function refreshRows_(){
+      const st = div.dataset.status || "draft";
+      const cancelRow = div.querySelector('[data-cancel-row="1"]');
+      if (!cancelRow) return;
+
+      // ✅ 완료화면 + 주문상세 열림 + (주문완료/수정완료만) 개별취소 가능
+      const canCancel = (MODE === "complete" && ORDER_DETAIL_OPEN && (st === "sent" || st === "modified"));
+      cancelRow.style.display = canCancel ? "flex" : "none";
+
+      // ✅ 발송완료/취소완료는 버튼 비활성화
+      const btn = cancelRow.querySelector("button");
+      if (btn){
+        btn.disabled = !(st === "sent" || st === "modified");
+      }
     }
 
     function enterEdit_(){
@@ -927,18 +1052,13 @@
       div.dataset.snapshot = _productSnapshot_(div);
       div.dataset.editing = "1";
 
-      if (div.dataset.status === "cancel_pending"){
-        alert("취소선택 상태에서는 수정할 수 없습니다.");
-        div.dataset.editing = "";
-        return;
-      }
-
       editOpenRow.style.display = "none";
       editControlsRow.style.display = "flex";
 
       lockProductInputs(div, false);
 
       setBadge(div);
+      refreshRows_();
       saveData();
     }
 
@@ -949,13 +1069,14 @@
       div.dataset.editing = "";
 
       editControlsRow.style.display = "none";
-      editOpenRow.style.display = (MODE === "complete" && (div.dataset.status !== "draft")) ? "flex" : "none";
+      editOpenRow.style.display = (MODE === "complete" && (div.dataset.status !== "draft") && ORDER_DETAIL_OPEN) ? "flex" : "none";
 
       if (MODE === "complete") lockProductInputs(div, true);
 
       setBadge(div);
       calc();
       renderDoneSummary();
+      refreshRows_();
       saveData();
     }
 
@@ -980,8 +1101,10 @@
         price: Number((i[4].value || "").trim() || 0)
       };
 
+      const useOrderId = div.dataset.orderId || LAST_DONE_ORDER_ID || newOrderId_();
+
       const payload = {
-        orderId: ORDER_ID || newOrderId_(),
+        orderId: useOrderId,
         orderTime: kstNowString(),
         eventType: "modify",
         customer: {
@@ -1003,53 +1126,89 @@
         exitEdit_(false);
 
         setBanner("수정이 완료되었습니다.");
-        alert("수정 완료");
+        alert("수정이 완료되었습니다.");
       } catch(e){
         alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
       }
     };
 
-    const chk = div.querySelector(".chk-cancel-pick");
-    if (chk){
-      chk.addEventListener("change", ()=>{
-        if (MODE !== "complete") { chk.checked = false; return; }
+    // ✅ 개별 취소 버튼
+    const cancelBtn = div.querySelector('[data-cancel-row="1"] button');
+    if (cancelBtn){
+      cancelBtn.onclick = async () => {
+        if (MODE !== "complete") return;
 
-        if (div.dataset.editing === "1"){
-          chk.checked = false;
-          alert("수정 중에는 취소 선택을 할 수 없습니다.");
+        const st = div.dataset.status || "";
+        if (!(st === "sent" || st === "modified")){
+          alert("현재 상태에서는 취소할 수 없습니다.");
           return;
         }
-
-        const cur = div.dataset.status || "";
-        if (chk.checked){
-          div.dataset.prevDoneStatus = cur;
-          div.dataset.status = "cancel_pending";
-        } else {
-          div.dataset.status = div.dataset.prevDoneStatus || "sent";
-          div.dataset.prevDoneStatus = "";
+        if (div.dataset.editing === "1"){
+          alert("수정 중에는 취소할 수 없습니다.");
+          return;
         }
+        if (!confirm("이 상품을 취소할까요?\n(취소 후에는 되돌릴 수 없습니다.)")) return;
 
-        setBadge(div);
-        calc();
-        renderDoneSummary();
-        saveData();
-      });
+        const i = div.querySelectorAll("input");
+        const item = {
+          productName: (i[0].value || "").trim(),
+          color: (i[1].value || "").trim(),
+          size: (i[2].value || "").trim(),
+          qty: Number((i[3].value || "").trim() || 0),
+          price: Number((i[4].value || "").trim() || 0)
+        };
+
+        const useOrderId = div.dataset.orderId || LAST_DONE_ORDER_ID || newOrderId_();
+
+        const payload = {
+          orderId: useOrderId,
+          orderTime: kstNowString(),
+          eventType: "cancel",
+          customer: {
+            nickname: document.getElementById("nickname").value || "",
+            name: document.getElementById("name").value || "",
+            phone: document.getElementById("phone").value || "",
+            address: `${document.getElementById("address").value || ""} ${document.getElementById("addressDetail").value || ""}`.trim()
+          },
+          items: [item],
+          sum: 0,
+          shipping: 0,
+          total: 0
+        };
+
+        try{
+          await sendPayload(payload);
+
+          div.dataset.status = "canceled";
+          lockProductInputs(div, true);
+          setBadge(div);
+          refreshRows_();
+
+          setBanner("취소가 완료되었습니다.");
+          calc();
+          renderDoneSummary();
+          saveData();
+          alert("취소가 완료되었습니다.");
+        } catch(e){
+          alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
+        }
+      };
     }
 
     productsDiv.appendChild(div);
 
-    setBadge(div);
+    // 초기 표시 상태
+    const st0 = div.dataset.status || "draft";
     if (MODE === "complete"){
-      const st = div.dataset.status || "draft";
-      if (st === "draft") div.style.display = "none";
       lockProductInputs(div, true);
-      editOpenRow.style.display = (st !== "draft") ? "flex" : "none";
-      div.querySelector(".cancel-pick-row").style.display = (st !== "draft") ? "flex" : "none";
+      editOpenRow.style.display = (st0 !== "draft" && ORDER_DETAIL_OPEN) ? "flex" : "none";
     } else {
       lockProductInputs(div, false);
       editOpenRow.style.display = "none";
-      div.querySelector(".cancel-pick-row").style.display = "none";
     }
+
+    setBadge(div);
+    refreshRows_();
 
     calc();
     renderDoneSummary();
@@ -1070,7 +1229,7 @@
         break;
       }
     }
-    if (!document.querySelector(".product")) addProduct();
+    if (!document.querySelector('.product[data-status="draft"]')) addProduct();
 
     calc();
     saveData();
@@ -1078,7 +1237,7 @@
     applyProductVisibility_();
   }
 
-  /* ✅ (5) 미리보기: 하단 문구(원래대로) 추가 */
+  // ✅ 주문내용확인(alert) 문구 변경 + PAY_NOTICE 삭제
   function checkOrder(){
     let text = "[고객 정보]\n";
     text += `닉네임: ${document.getElementById("nickname").value}\n`;
@@ -1101,13 +1260,12 @@
     text += `배송비: ${document.getElementById("shipping").innerText}\n`;
     text += `총 결제금액: ${document.getElementById("total").innerText}\n`;
 
-    // ✅ 원래대로 문구 추가
-    text += `\n${PAY_NOTICE}\n`;
+    text += `\n내용이 맞으면 아래 화면에서 ‘주문하기’를 눌러주세요.\n주문 후에는 ‘주문접수결과’에서 수정/취소가 가능합니다.\n`;
 
     alert(text);
   }
 
-  /* ✅ (2)(5) 주문내역확인: 상품합계/배송비/총결제금액 모두 표시 + "현재표시" 제거 + 하단 문구 추가 */
+  // ✅ 주문확인서 보기(완료화면)
   function showOrderHistory(){
     let text = "[배송지 정보]\n";
     text += `닉네임: ${document.getElementById("nickname").value}\n`;
@@ -1118,7 +1276,7 @@
     text += "[완료 상품]\n";
     const items = Array.from(document.querySelectorAll(".product")).filter(p=>{
       const st = p.dataset.status || "draft";
-      return (st === "sent" || st === "modified" || st === "canceled" || st === "cancel_pending");
+      return (st === "sent" || st === "modified" || st === "canceled" || st === "shipped");
     });
 
     if (items.length === 0){
@@ -1132,7 +1290,7 @@
 
         const prefix =
           (st === "canceled") ? "[취소완료] " :
-          (st === "cancel_pending") ? "[취소선택] " :
+          (st === "shipped") ? "[발송완료] " :
           (st === "modified") ? "[수정완료] " :
           "[주문완료] ";
 
@@ -1143,9 +1301,6 @@
     text += `\n상품합계: ${document.getElementById("sum").innerText}\n`;
     text += `배송비: ${document.getElementById("shipping").innerText}\n`;
     text += `총 결제금액: ${document.getElementById("total").innerText}\n`;
-
-    // ✅ 원래대로 문구 추가
-    text += `\n${PAY_NOTICE}\n`;
 
     alert(text);
   }
@@ -1175,6 +1330,7 @@
       return;
     }
 
+    // ✅ confirm에는 PAY_NOTICE 유지(요청: alert 문구에서만 삭제)
     if (!confirm(`주문을 완료하시겠습니까?\n\n${PAY_NOTICE}`)) return;
 
     const items = [];
@@ -1196,9 +1352,12 @@
 
     const shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
 
+    const batchOrderId = ensureDraftOrderId_();
+    const orderTimeStr = kstNowString();
+
     const payload = {
-      orderId: ORDER_ID || newOrderId_(),
-      orderTime: kstNowString(),
+      orderId: batchOrderId,
+      orderTime: orderTimeStr,
       eventType: "order",
       customer: {
         nickname: document.getElementById("nickname").value || "",
@@ -1218,36 +1377,43 @@
       targets.forEach(p=>{
         p.dataset.status = "sent";
         p.dataset.editing = "";
-        p.dataset.prevDoneStatus = "";
-        const chk = p.querySelector(".chk-cancel-pick");
-        if (chk) chk.checked = false;
+        p.dataset.snapshot = "";
+        p.dataset.orderId = batchOrderId;
+        p.dataset.orderTime = orderTimeStr;
         setBadge(p);
       });
 
-      ORDER_ID = payload.orderId;
+      LAST_DONE_ORDER_ID = batchOrderId;
+      ACTIVE_DRAFT_ORDER_ID = ""; // 다음 주문을 위해 초기화
 
-      setMode("complete", "주문이 정상적으로 접수되었습니다.", { foldOnEnter:true });
+      // ✅ 주문 후에는 완료화면(주문상세 닫힌 상태)로
+      setMode("complete", "주문이 정상적으로 접수되었습니다.", { detailClosedOnEnter:true });
 
       calc();
       renderDoneSummary();
       saveData();
 
-      alert(`주문이 접수되었습니다.\n\n${PAY_NOTICE}`);
+      alert("주문이 접수되었습니다.\n완료 화면에서 수정/취소가 가능합니다.");
     } catch(e){
       alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
     }
   }
 
+  // ✅ (요청) 완료화면 하단 '취소하기' = 주문완료/수정완료 전체 취소
   async function submitCancel(){
     if (MODE !== "complete") return;
 
-    const targets = Array.from(document.querySelectorAll(".product")).filter(p => p.dataset.status === "cancel_pending");
+    const targets = Array.from(document.querySelectorAll(".product")).filter(p=>{
+      const st = p.dataset.status || "";
+      return (st === "sent" || st === "modified");
+    });
+
     if (targets.length === 0){
-      alert("취소 선택된 상품이 없습니다.");
+      alert("취소할 수 있는 상품이 없습니다.");
       return;
     }
 
-    if (!confirm("선택한 상품을 취소할까요?")) return;
+    if (!confirm("주문완료/수정완료 상품을 모두 취소할까요?\n(취소 후에는 되돌릴 수 없습니다.)")) return;
 
     const items = targets.map(p=>{
       const i = p.querySelectorAll("input");
@@ -1260,8 +1426,10 @@
       };
     });
 
+    const useOrderId = (LAST_DONE_ORDER_ID || targets[0]?.dataset.orderId || newOrderId_());
+
     const payload = {
-      orderId: ORDER_ID || newOrderId_(),
+      orderId: useOrderId,
       orderTime: kstNowString(),
       eventType: "cancel",
       customer: {
@@ -1281,9 +1449,6 @@
 
       targets.forEach(p=>{
         p.dataset.status = "canceled";
-        p.dataset.prevDoneStatus = "";
-        const chk = p.querySelector(".chk-cancel-pick");
-        if (chk) chk.checked = false;
         lockProductInputs(p, true);
         setBadge(p);
 
@@ -1297,7 +1462,7 @@
       calc();
       renderDoneSummary();
       saveData();
-      alert("취소 완료");
+      alert("취소가 완료되었습니다.");
     } catch(e){
       alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
     }
@@ -1329,27 +1494,28 @@
     saveData();
   }
 
+  // ✅ (요청) 새로 주문하기를 눌러도 완료 요약은 계속 떠야 함
+  // - draft만 정리하고, done(주문/수정/취소/발송완료)은 유지
+  // - 5일 경과 시에만 완전 초기화
   function newOrder(){
-    if (!confirm("기존 상품 정보가 모두 초기화됩니다.\n정말 새 주문을 시작할까요?")) return;
+    if (!confirm("작성 중인 상품을 초기화하고 새 주문을 시작할까요?")) return;
 
-    const keepCustomer = snapshotCustomer();
+    // draft만 제거
+    Array.from(document.querySelectorAll('.product')).forEach(p=>{
+      const st = p.dataset.status || "draft";
+      if (st === "draft") p.remove();
+    });
 
-    ORDER_ID = newOrderId_();
-    HIDE_DONE = false;
+    // 새 draft 추가
+    if (!document.querySelector('.product[data-status="draft"]')) addProduct();
 
-    productsDiv.innerHTML = "";
-    addProduct();
+    // draft용 주문ID 새로 준비
+    ACTIVE_DRAFT_ORDER_ID = newOrderId_();
 
-    document.getElementById("nickname").value = keepCustomer.nickname || "";
-    document.getElementById("name").value = keepCustomer.name || "";
-    document.getElementById("phone").value = keepCustomer.phone || "";
-    document.getElementById("address").value = keepCustomer.address || "";
-    document.getElementById("addressDetail").value = keepCustomer.addressDetail || "";
-
-    renderShippingSummary();
-    renderDoneSummary();
+    // 입력 화면으로
     setMode("form");
     calc();
+    renderDoneSummary();
     saveData();
 
     setTimeout(()=>{
@@ -1425,7 +1591,7 @@
     if (!confirm("배송지를 저장할까요?")) return;
 
     const payload = {
-      orderId: ORDER_ID || newOrderId_(),
+      orderId: LAST_DONE_ORDER_ID || newOrderId_(),
       orderTime: kstNowString(),
       eventType: "ship_update",
       customer: {
@@ -1454,13 +1620,28 @@
     }
   }
 
+  // ✅ customer는 별도 저장(기한 없음)
+  function saveCustomerOnly_(){
+    const c = snapshotCustomer();
+    localStorage.setItem(LS_CUSTOMER_KEY, JSON.stringify(c));
+  }
+  function loadCustomerOnly_(){
+    const c = JSON.parse(localStorage.getItem(LS_CUSTOMER_KEY) || "null");
+    if (!c) return null;
+    return c;
+  }
+
   function saveData(){
+    // customer는 별도 저장(무기한)
+    saveCustomerOnly_();
+
     const data = {
-      orderId: ORDER_ID,
+      savedAt: Date.now(),
       mode: MODE,
-      hideDone: HIDE_DONE,
+      detailOpen: ORDER_DETAIL_OPEN,
       shipEditing: SHIP_EDITING,
-      customer: snapshotCustomer(),
+      lastDoneOrderId: LAST_DONE_ORDER_ID,
+      activeDraftOrderId: ACTIVE_DRAFT_ORDER_ID,
       products: []
     };
 
@@ -1470,66 +1651,84 @@
         id: p.dataset.id || _uid(),
         status: p.dataset.status || "draft",
         snapshot: p.dataset.snapshot || "",
-        prevDoneStatus: p.dataset.prevDoneStatus || "",
         editing: p.dataset.editing || "",
+        orderId: p.dataset.orderId || "",
+        orderTime: p.dataset.orderTime || "",
         name: i[0]?.value || "",
         color: i[1]?.value || "",
         size: i[2]?.value || "",
         qty: i[3]?.value || "",
-        price: i[4]?.value || "",
-        cancelChecked: (p.querySelector(".chk-cancel-pick")?.checked ? "1" : "")
+        price: i[4]?.value || ""
       });
     });
 
-    localStorage.setItem("orderData", JSON.stringify(data));
+    localStorage.setItem(LS_ORDER_KEY, JSON.stringify(data));
   }
 
   function loadData(){
-    const data = JSON.parse(localStorage.getItem("orderData") || "null");
-    if (!data){
-      ORDER_ID = newOrderId_();
+    // ✅ customer 무기한 로드
+    const savedCustomer = loadCustomerOnly_();
+    if (savedCustomer){
+      document.getElementById("nickname").value = savedCustomer.nickname || "";
+      document.getElementById("name").value = savedCustomer.name || "";
+      document.getElementById("phone").value = savedCustomer.phone || "";
+      document.getElementById("address").value = savedCustomer.address || "";
+      document.getElementById("addressDetail").value = savedCustomer.addressDetail || "";
+    }
+
+    const data = JSON.parse(localStorage.getItem(LS_ORDER_KEY) || "null");
+
+    // ✅ 주문 데이터(상품/주문결과)는 5일 유지, 초과 시 초기화(고객정보는 유지)
+    const expired = (!data || !data.savedAt || (Date.now() - Number(data.savedAt)) > ORDER_TTL_MS);
+
+    if (expired){
+      IS_LOADING = true;
+      productsDiv.innerHTML = "";
+      ACTIVE_DRAFT_ORDER_ID = newOrderId_();
+      LAST_DONE_ORDER_ID = "";
+      ORDER_DETAIL_OPEN = false;
+
       addProduct();
-      calc();
+
+      IS_LOADING = false;
+
       renderShippingSummary();
       renderDoneSummary();
-      saveData();
+      calc();
+
       setMode("form");
       setBanner("주문이 정상적으로 접수되었습니다.");
+      saveData();
       return;
     }
 
     IS_LOADING = true;
 
-    ORDER_ID = data.orderId || newOrderId_();
-    HIDE_DONE = !!data.hideDone;
+    MODE = data.mode || "form";
+    ORDER_DETAIL_OPEN = !!data.detailOpen;
+    SHIP_EDITING = !!data.shipEditing;
 
-    const c = data.customer || {};
-    document.getElementById("nickname").value = c.nickname || "";
-    document.getElementById("name").value = c.name || "";
-    document.getElementById("phone").value = c.phone || "";
-    document.getElementById("address").value = c.address || "";
-    document.getElementById("addressDetail").value = c.addressDetail || "";
+    LAST_DONE_ORDER_ID = data.lastDoneOrderId || "";
+    ACTIVE_DRAFT_ORDER_ID = data.activeDraftOrderId || "";
 
     productsDiv.innerHTML = "";
     (data.products || []).forEach(p=>{
-      const prod = addProduct({
+      addProduct({
         id: p.id,
         status: p.status,
         snapshot: p.snapshot,
-        prevDoneStatus: p.prevDoneStatus,
         editing: p.editing,
+        orderId: p.orderId,
+        orderTime: p.orderTime,
         name: p.name,
         color: p.color,
         size: p.size,
         qty: p.qty,
         price: p.price
       });
-
-      const chk = prod.querySelector(".chk-cancel-pick");
-      if (chk) chk.checked = (p.cancelChecked === "1");
     });
 
-    if (!document.querySelector(".product")) addProduct();
+    if (!document.querySelector('.product[data-status="draft"]')) addProduct();
 
     IS_LOADING = false;
 
@@ -1537,10 +1736,12 @@
     renderDoneSummary();
     calc();
 
-    const m = data.mode || "form";
-    if (m === "complete"){
+    // ✅ 발송완료 자동 반영
+    updateShippingStatuses_(true);
+
+    if (MODE === "complete"){
       if (hasAnyDoneItems_()){
-        setMode("complete", "주문이 정상적으로 접수되었습니다.", { foldOnEnter:true });
+        setMode("complete", "주문이 정상적으로 접수되었습니다.", { allowEmpty:true });
       } else {
         setMode("form");
       }
@@ -1560,6 +1761,9 @@
   });
 
   loadData();
+
+  // ✅ 페이지 열려있는 동안도 발송완료 자동 업데이트(5분마다)
+  setInterval(()=>updateShippingStatuses_(true), 5 * 60 * 1000);
 </script>
 
 </body>
