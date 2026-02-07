@@ -1183,23 +1183,43 @@
     box.innerHTML = lines.join("<br>");
   }
 
+  /* ==================================================
+     ✅✅✅ [수정] 날짜 필터 기준으로 합계/배송비/총액 계산
+     - 완료화면(mode-complete)일 때:
+       선택한 날짜 버튼(오늘/1일전/...)에 해당하는 상품만 합산
+       (주문완료/수정완료/발송완료만 포함, 취소완료 제외)
+     ================================================== */
   function calc(){
     let sum = 0;
 
-    document.querySelectorAll(".product").forEach(p=>{
-      const st = p.dataset.status || "draft";
-      const i = p.querySelectorAll("input");
-      const qty = Number((i[3]?.value || "").trim() || 0);
-      const price = Number((i[4]?.value || "").trim() || 0);
-      const amt = qty * price;
+    if (MODE === "complete"){
+      const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET);
 
-      if (MODE === "complete"){
-        if (st === "sent" || st === "modified" || st === "shipped") sum += amt;
-        return;
-      }
+      document.querySelectorAll(".product").forEach(p=>{
+        const st = p.dataset.status || "draft";
+        if (!(st === "sent" || st === "modified" || st === "shipped")) return; // ✅ 취소는 제외
 
-      if (st === "draft") sum += amt;
-    });
+        const key = _itemDateKey_(p);
+        if (key !== targetDate) return; // ✅ 선택 날짜만
+
+        const i = p.querySelectorAll("input");
+        const qty = Number((i[3]?.value || "").trim() || 0);
+        const price = Number((i[4]?.value || "").trim() || 0);
+        sum += (qty * price);
+      });
+
+    } else {
+      // ✅ 입력화면은 기존 로직 그대로(작성중 상품만 합산)
+      document.querySelectorAll(".product").forEach(p=>{
+        const st = p.dataset.status || "draft";
+        if (st !== "draft") return;
+
+        const i = p.querySelectorAll("input");
+        const qty = Number((i[3]?.value || "").trim() || 0);
+        const price = Number((i[4]?.value || "").trim() || 0);
+        sum += (qty * price);
+      });
+    }
 
     const shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
 
@@ -1794,7 +1814,7 @@
       renderDraftSummary();
       saveData();
 
-      alert("주문이 접수되었습니다.");
+      alert("주문이 접수되었습니다.\n완료 화면에서 ‘주문상세 보기’로 수정/취소가 가능합니다.");
     } catch(e){
       alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
     }
@@ -2179,6 +2199,9 @@
 
       // ✅ 주문상세 보기에서 카드도 해당 날짜만 나오도록 반영
       applyProductVisibility_();
+
+      // ✅✅✅ [추가] 합계/배송비/총액도 선택 날짜 기준으로 즉시 재계산
+      calc();
 
       saveData();
     });
