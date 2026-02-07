@@ -584,7 +584,7 @@
     <div class="account-text" id="accountText">카카오뱅크 3333-09797-1111 유혜정(유세연)</div>
     <button class="copy-btn" type="button" onclick="copyAccount()">복사</button>
   </div>
-  <div class="pay-note" id="payNoteBelow">⚠️ 입금 확인 후 상품이 발송됩니다.</div>
+  <div class="pay-note" id="payNoteBelow">⚠️ 방송 종료 전까지 꼭 입금 부탁드립니다.</div>
 </div>
 
 <!-- ✅ 주문 입력 화면 하단 -->
@@ -628,7 +628,7 @@
   const productsDiv = document.getElementById("products");
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfk91w3MLN1WCIttTRAiE35yJUcia0OUk30kIimBfadnAgKS4tQuEMhZsTO0Xbcr94/exec";
-  const PAY_NOTICE = "⚠️ 입금 확인 후 상품이 발송됩니다.";
+  const PAY_NOTICE = "⚠️ 방송 종료 전까지 꼭 입금 부탁드립니다.";
 
   // ✅ 7) 카카오톡 문의 링크
   const KAKAO_CHAT_URL = "http://pf.kakao.com/_exnahX/chat";
@@ -791,7 +791,7 @@
     const broadcastDateText = formatBroadcastDateText_(getBroadcastSheetNameKST_());
     const line1 = oid ? `${broadcastDateText} 주문번호는 ${oid} 입니다.` : "";
 
-    const line3 = `입금 후 확인되면 발송됩니다.`;
+    const line3 = `방송 종료 후 새벽 포장을 위해, 종료 전 입금된 주문만 상품을 챙겨드립니다.`;
 
     if (oidBox){
       oidBox.innerHTML = `
@@ -1814,7 +1814,7 @@
       renderDraftSummary();
       saveData();
 
-      alert("주문이 접수되었습니다.\n완료 화면에서 ‘주문상세 보기’로 수정/취소가 가능합니다.");
+      alert("주문이 접수되었습니다.\n방송 종료 전까지 꼭 입금 부탁드립니다 (종료 후 바로 상품 확보·새벽 포장 진행됩니다).");
     } catch(e){
       alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
     }
