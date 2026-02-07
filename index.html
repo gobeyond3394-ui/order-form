@@ -1683,21 +1683,34 @@
     alert(text);
   }
 
+  /* ==================================================
+     ✅✅✅ [수정] 주문확인서 보기: 날짜 필터(오늘/1일전/...) 적용
+     - 완료화면에서 선택한 날짜(DONE_FILTER_OFFSET)의 내역만 표시
+     - 발송완료는 shipDate 우선(없으면 doneDate)
+     ================================================== */
   function showOrderHistory(){
-    let text = "[배송지 정보]\n";
+    const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET);
+    const dateTitle = formatBroadcastDateText_(targetDate);
+
+    let text = `[배송지 정보]\n`;
     text += `닉네임: ${document.getElementById("nickname").value}\n`;
     text += `이름: ${document.getElementById("name").value}\n`;
     text += `연락처: ${document.getElementById("phone").value}\n`;
     text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
 
-    text += "[완료 상품]\n";
+    text += `[완료 상품 - ${dateTitle}]\n`;
+
     const items = Array.from(document.querySelectorAll(".product")).filter(p=>{
       const st = p.dataset.status || "draft";
-      return (st === "sent" || st === "modified" || st === "canceled" || st === "shipped");
+      if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return false;
+
+      // ✅ 선택 날짜만 (발송완료는 shipDate 우선)
+      const key = _itemDateKey_(p);
+      return key === targetDate;
     });
 
     if (items.length === 0){
-      text += "(완료된 상품이 없습니다.)\n";
+      text += "(선택한 날짜의 완료된 상품이 없습니다.)\n";
     } else {
       items.forEach((p, idx)=>{
         const st = p.dataset.status;
@@ -1715,6 +1728,7 @@
       });
     }
 
+    // ✅ 아래 합계/배송비/총액은 calc()가 이미 날짜필터 기준으로 계산해둔 값을 그대로 사용
     text += `\n상품합계: ${document.getElementById("sum").innerText}\n`;
     text += `배송비: ${document.getElementById("shipping").innerText}\n`;
     text += `총 결제금액: ${document.getElementById("total").innerText}\n`;
