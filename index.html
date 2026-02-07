@@ -37,6 +37,27 @@
     outline-offset: 2px;
   }
 
+  /* ✅ (추가) + / − 동그라미 아이콘 처리 */
+  .btn-circle{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+  }
+  .icon-circle{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    border:2px solid #fff;   /* ⭕ 동그라미 */
+    color:#fff;              /* + / − 흰색 */
+    font-size:14px;
+    font-weight:900;
+    line-height:1;
+  }
+
   /* ✅ 완료 배너 */
   .mode-banner{
     display:none;
@@ -566,8 +587,15 @@
 
   <div class="form-product-controls">
     <div class="button-line-2">
-      <button class="btn-add" type="button" onclick="addProduct()">+ 상품 추가</button>
-      <button class="btn-delete" type="button" onclick="removeLastProduct()">- 상품 삭제</button>
+      <!-- ✅ (수정) + / − 를 동그라미 처리 -->
+      <button class="btn-add btn-circle" type="button" onclick="addProduct()">
+        <span class="icon-circle">+</span>
+        상품 추가
+      </button>
+      <button class="btn-delete btn-circle" type="button" onclick="removeLastProduct()">
+        <span class="icon-circle">−</span>
+        상품 삭제
+      </button>
     </div>
   </div>
 </div>
@@ -1393,7 +1421,7 @@
       <div class="field">
         <label>상품명</label>
         <div class="product-title-row">
-          <input class="product-name" placeholder="예) 아미 맨투맨 / 폴로 꽈배기 니트 / 메종 후드티 / 꼼데 긴팔티 / 알로 셋업">
+          <input class="product-name" placeholder="상품 1개만 입력해주세요 예) 아미 맨투맨 / 폴로 니트">
           <div class="status-badge status-sent"><span class="sq"></span>주문완료</div>
         </div>
       </div>
