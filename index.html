@@ -498,7 +498,7 @@
   <div id="shipSummary"></div>
 
   <div class="ship-actions" id="shipActions" style="display:none;">
-    <button class="btn-mini btn-edit-go" type="button" onclick="enterShipEdit()">배송지 수정</button>
+    <button class="btn-mini btn-edit-go" type="button" onclick="enterShipEdit()">배송지 변경</button>
   </div>
 
   <div id="customerFormFields">
@@ -559,7 +559,7 @@
   <div id="detailToggleWrap">
     <button class="small-link-btn" id="detailToggleBtn" type="button" onclick="toggleOrderDetail()">주문상세 보기 ▼</button>
     <!-- ✅ (수정) 문구 변경 -->
-    <div class="detail-note">※ 방송종료 전까지만 ‘주문상세 보기’에서 수정 / 취소가 가능합니다.</div>
+    <div class="detail-note">※ 방송종료 전까지만 ‘주문상세 보기’에서 변경 / 취소가 가능합니다.</div>
   </div>
 
   <div id="products"></div>
@@ -757,7 +757,7 @@
   }
 
   // ✅ (추가) "선택한 날짜"에 속하는 상품인지 판별
-  // - 주문완료/수정완료/취소완료: doneDate 기준
+  // - 주문완료/변경완료/취소완료: doneDate 기준
   // - 발송완료: shipDate 기준(없으면 doneDate)
   function _itemDateKey_(p){
     const st = p.dataset.status || "draft";
@@ -791,7 +791,7 @@
     const broadcastDateText = formatBroadcastDateText_(getBroadcastSheetNameKST_());
     const line1 = oid ? `${broadcastDateText} 주문번호는 ${oid} 입니다.` : "";
 
-    const line3 = `방송 종료 전까지 꼭 입금 부탁드립니다.`;
+    const line3 = `※ 다른 기기/브라우저로 다시 열면 주문번호가 달라질 수 있습니다.`;
 
     if (oidBox){
       oidBox.innerHTML = `
@@ -1040,7 +1040,7 @@
 
     if (MODE === "complete" && div.dataset.editing === "1"){
       badge.classList.add("status-editing");
-      badge.innerHTML = `<span class="sq"></span>수정중`;
+      badge.innerHTML = `<span class="sq"></span>변경중`;
       return;
     }
 
@@ -1056,7 +1056,7 @@
     }
     if (st === "modified"){
       badge.classList.add("status-modified");
-      badge.innerHTML = `<span class="sq"></span>수정완료`;
+      badge.innerHTML = `<span class="sq"></span>변경완료`;
       return;
     }
     if (st === "sent"){
@@ -1117,7 +1117,7 @@
       const tag =
         (st === "canceled") ? "[취소완료]" :
         (st === "shipped") ? "[발송완료]" :
-        (st === "modified") ? "[수정완료]" :
+        (st === "modified") ? "[변경완료]" :
         "[주문완료]";
 
       lines.push(`• <b>${tag}</b> ${name} / ${color} / ${size} / ${qtyText} / ${priceText}`);
@@ -1187,7 +1187,7 @@
      ✅✅✅ [수정] 날짜 필터 기준으로 합계/배송비/총액 계산
      - 완료화면(mode-complete)일 때:
        선택한 날짜 버튼(오늘/1일전/...)에 해당하는 상품만 합산
-       (주문완료/수정완료/발송완료만 포함, 취소완료 제외)
+       (주문완료/변경완료/발송완료만 포함, 취소완료 제외)
      ================================================== */
   function calc(){
     let sum = 0;
@@ -1424,12 +1424,12 @@
       </div>
 
       <div class="edit-row" data-edit-open="1">
-        <button class="btn-mini btn-edit-go" type="button">수정하기</button>
+        <button class="btn-mini btn-edit-go" type="button">변경하기</button>
       </div>
 
       <div class="edit-row" data-edit-controls="1">
-        <button class="btn-mini btn-blue" type="button">수정완료</button>
-        <button class="btn-mini btn-gray" type="button">수정취소</button>
+        <button class="btn-mini btn-blue" type="button">변경완료</button>
+        <button class="btn-mini btn-gray" type="button">변경취소</button>
       </div>
 
       <div class="cancel-row" data-cancel-row="1">
@@ -1503,7 +1503,7 @@
       if (MODE !== "complete") return;
       if (!_validateProductInputs_(div)) return;
 
-      if (!confirm("수정 내용을 저장할까요?")) return;
+      if (!confirm("변경 내용을 저장할까요?")) return;
 
       const i = div.querySelectorAll("input");
 
@@ -1516,7 +1516,7 @@
       };
 
       /* ================================
-         ✅✅✅ [핵심 1] 수정완료: 차액만 전송(amountDelta)
+         ✅✅✅ [핵심 1] 변경완료: 차액만 전송(amountDelta)
          - before snapshot 기반으로 beforeAmt 계산
          - afterAmt과의 차액만 서버로 보냄
          - 시트 표시용 상품명 prefix
@@ -1525,8 +1525,8 @@
       const beforeAmt = Number(before.qty || 0) * Number(before.price || 0);
       const afterAmt  = Number(item.qty || 0) * Number(item.price || 0);
 
-      item.amountDelta = afterAmt - beforeAmt;        // ✅ 차액만
-      item.productName = "[수정] " + item.productName; // ✅ 시트 표시용
+      item.amountDelta = afterAmt - beforeAmt;          // ✅ 차액만
+      item.productName = "[변경] " + item.productName;  // ✅ 시트 표시용
 
       const useOrderId = div.dataset.orderId || LAST_DONE_ORDER_ID || newOrderId_();
 
@@ -1555,9 +1555,9 @@
 
         exitEdit_(false);
 
-        setBanner("수정이 완료되었습니다.");
+        setBanner("변경이 완료되었습니다.");
         focusBanner();
-        alert("수정이 완료되었습니다.");
+        alert("변경이 완료되었습니다.");
       } catch(e){
         alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
       }
@@ -1574,7 +1574,7 @@
           return;
         }
         if (div.dataset.editing === "1"){
-          alert("수정 중에는 취소할 수 없습니다.");
+          alert("변경 중에는 취소할 수 없습니다.");
           return;
         }
         if (!confirm("이 상품을 취소할까요?\n(취소 후에는 되돌릴 수 없습니다.)")) return;
@@ -1594,8 +1594,8 @@
            - 시트 표시용 상품명 prefix
            ================================ */
         const amt = Number(item.qty || 0) * Number(item.price || 0);
-        item.amountDelta = -amt;                       // ✅ 취소는 마이너스
-        item.productName = "[취소] " + item.productName; // ✅ 시트 표시용
+        item.amountDelta = -amt;                          // ✅ 취소는 마이너스
+        item.productName = "[취소] " + item.productName;  // ✅ 시트 표시용
 
         const useOrderId = div.dataset.orderId || LAST_DONE_ORDER_ID || newOrderId_();
 
@@ -1744,7 +1744,7 @@
         const prefix =
           (st === "canceled") ? "[취소완료] " :
           (st === "shipped") ? "[발송완료] " :
-          (st === "modified") ? "[수정완료] " :
+          (st === "modified") ? "[변경완료] " :
           "[주문완료] ";
 
         text += `${idx+1}. ${prefix}${i[0].value} / ${i[1].value} / ${i[2].value} / ${qty}개 / ${price.toLocaleString()}원\n`;
@@ -1851,7 +1851,7 @@
       renderDraftSummary();
       saveData();
 
-      alert("주문이 접수되었습니다.\n방송 종료 전까지 꼭 입금 부탁드립니다 (종료 후 바로 상품 확보·새벽 포장 진행됩니다).");
+      alert("주문이 접수되었습니다.\n※ 방송 종료 전까지 꼭 입금 부탁드립니다. (종료 후 바로 상품 확보·새벽 포장 진행됩니다).");
     } catch(e){
       alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
     }
@@ -1870,7 +1870,7 @@
       return;
     }
 
-    if (!confirm("주문완료/수정완료 상품을 모두 취소할까요?\n(취소 후에는 되돌릴 수 없습니다.)")) return;
+    if (!confirm("주문완료/변경완료 상품을 모두 취소할까요?\n(취소 후에는 되돌릴 수 없습니다.)")) return;
 
     /* ================================
        ✅✅✅ [핵심 3] 전체 취소: items에 amountDelta 포함
@@ -2017,7 +2017,7 @@
     renderShippingSummary();
     exitShipEdit(false);
 
-    setBanner("배송지 수정이 취소되었습니다.");
+    setBanner("배송지 변경이 취소되었습니다.");
     focusBanner();
   }
 
@@ -2050,7 +2050,7 @@
       renderShippingSummary();
       exitShipEdit(false);
 
-      setBanner("배송지 수정이 저장되었습니다.");
+      setBanner("배송지 변경이 저장되었습니다.");
       focusBanner();
       alert("배송지 저장 완료");
     } catch(e){
@@ -2232,7 +2232,7 @@
       // ✅ 완료 화면일 때: 해당 날짜 내역 없으면 alert
       if (MODE === "complete"){
         if (!_hasAnyForDate_(targetDate)){
-          alert(`${title} 날짜에 주문완료/수정완료/취소완료/발송완료 내역이 없습니다.`);
+          alert(`${title} 날짜에 주문완료/변경완료/취소완료/발송완료 내역이 없습니다.`);
           return;
         }
       }
