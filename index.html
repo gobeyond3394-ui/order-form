@@ -1536,6 +1536,7 @@
       const i = div.querySelectorAll("input");
 
       const item = {
+        itemId: div.dataset.id,
         productName: (i[0].value || "").trim(),
         color: (i[1].value || "").trim(),
         size: (i[2].value || "").trim(),
@@ -1609,6 +1610,7 @@
 
         const i = div.querySelectorAll("input");
         const item = {
+          itemId: div.dataset.id,
           productName: (i[0].value || "").trim(),
           color: (i[1].value || "").trim(),
           size: (i[2].value || "").trim(),
@@ -1827,7 +1829,7 @@
       const qty = Number((i[3].value || "").trim() || 0);
       const price = Number((i[4].value || "").trim() || 0);
 
-      items.push({ productName:name, color, size, qty, price });
+      items.push({ itemId: p.dataset.id, productName:name, color, size, qty, price });
       sum += (qty * price);
     }
 
@@ -1911,6 +1913,7 @@
       const price = Number((i[4].value || "").trim() || 0);
 
       return {
+        itemId: p.dataset.id,
         productName: "[취소] " + (i[0].value || "").trim(),
         color: (i[1].value || "").trim(),
         size: (i[2].value || "").trim(),
