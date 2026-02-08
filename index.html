@@ -1872,7 +1872,9 @@
       });
 
       LAST_DONE_ORDER_ID = batchOrderId;
-      ACTIVE_DRAFT_ORDER_ID = "";
+
+      // ✅✅✅ [변경 2] 주문 완료 후에도 주문ID 유지 (같은 브라우저/기기에서 계속 묶기)
+      ACTIVE_DRAFT_ORDER_ID = batchOrderId;
 
       setMode("complete", "주문이 정상적으로 접수되었습니다.", { detailClosedOnEnter:true });
 
@@ -1967,6 +1969,9 @@
 
   function goToFormForAdd(){
     if (SHIP_EDITING){ alert("배송지 수정 중에는 추가주문을 진행할 수 없습니다."); return; }
+
+    // ✅✅✅ [변경 1] 추가주문하기로 폼으로 돌아갈 때, 이전 주문ID로 이어쓰기
+    if (LAST_DONE_ORDER_ID) ACTIVE_DRAFT_ORDER_ID = LAST_DONE_ORDER_ID;
 
     setMode("form");
 
