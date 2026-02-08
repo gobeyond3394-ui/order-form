@@ -498,6 +498,14 @@
   /* ✅ 날짜 필터 버튼: 입력화면에서는 숨김, 완료화면에서는 표시 */
   body.mode-form #dayFilter{ display:none !important; }
   body.mode-complete #dayFilter{ display:flex !important; }
+
+  /* ✅ (수정) 주문확인서 복사하기 버튼(싸U 파랑 톤) */
+.btn-history-copy{
+  background:#fff;
+  color:#005FAE;
+  border:1px solid #7aa7d9;
+  font-weight:900;
+}
 </style>
 
 <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -636,10 +644,10 @@
     <button class="btn-add-order" type="button" onclick="goToFormForAdd()">추가 주문하기</button>
   </div>
 
-  <!-- ✅ 다음 줄: 주문확인서 보기 / 전체 취소하기 -->
+  <!-- ✅ 다음 줄: 주문확인서 보기 / 주문확인서 복사하기 -->
   <div class="button-line-2">
     <button class="btn-gray" type="button" onclick="showOrderHistory()">주문확인서 보기</button>
-    <button class="btn-cancel-do" type="button" onclick="submitCancel()">전체 취소하기</button>
+    <button class="btn-history-copy" type="button" onclick="copyOrderHistory()">주문확인서 복사하기</button>
   </div>
 </div>
 
@@ -655,7 +663,7 @@
   const SHIPPING = 4000;
   const productsDiv = document.getElementById("products");
 
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9WKKUJUNmIUtYXgJv2ITAc0FTpGmauDJTpZFajcUFWw0thoVBTkxbiTjN3TPo1juy/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpt4DlvfXybsOiJ27Xv054WAhX8wFa-MzEL2ehmPL1Cwkt-lBKebshffh_a0svqbP2/exec";
   const PAY_NOTICE = "⚠️ 방송 종료 전까지 꼭 입금 부탁드립니다.";
 
   // ✅ 7) 카카오톡 문의 링크
@@ -819,7 +827,7 @@
     const broadcastDateText = formatBroadcastDateText_(getBroadcastSheetNameKST_());
     const line1 = oid ? `${broadcastDateText} 주문번호는 ${oid} 입니다.` : "";
 
-    const line3 = `※ 다른 기기/브라우저로 열면 주문번호가 달라질 수 있습니다.`;
+    const line3 = `※ 기기·브라우저가 다르면 완료 주문이 보이지 않을 수 있습니다.`;
 
     if (oidBox){
       oidBox.innerHTML = `
@@ -1421,7 +1429,7 @@
       <div class="field">
         <label>상품명</label>
         <div class="product-title-row">
-          <input class="product-name" placeholder="상품 1개만 입력해주세요 예) 아미 맨투맨 / 폴로 니트">
+          <input class="product-name" placeholder="상품 1개만 입력해주세요    예) 아미 맨투맨 / 폴로 니트">
           <div class="status-badge status-sent"><span class="sq"></span>주문완료</div>
         </div>
       </div>
@@ -1433,7 +1441,7 @@
         </div>
         <div class="field">
           <label>사이즈</label>
-          <input placeholder="예) L / 라지 / 100">
+          <input placeholder="예) L / 라지 / 100 / 프리">
         </div>
       </div>
 
@@ -1789,6 +1797,58 @@
     alert(text);
   }
 
+  /* ✅ (추가) 주문확인서 복사하기: showOrderHistory와 동일 내용 복사 */
+  function copyOrderHistory(){
+    const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET);
+    const dateTitle = formatBroadcastDateText_(targetDate);
+
+    let text = `[배송지 정보]\n`;
+    text += `닉네임: ${document.getElementById("nickname").value}\n`;
+    text += `이름: ${document.getElementById("name").value}\n`;
+    text += `연락처: ${document.getElementById("phone").value}\n`;
+    text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
+
+    text += `[완료 상품 - ${dateTitle}]\n`;
+
+    const items = Array.from(document.querySelectorAll(".product")).filter(p=>{
+      const st = p.dataset.status || "draft";
+      if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return false;
+      const key = _itemDateKey_(p);
+      return key === targetDate;
+    });
+
+    if (items.length === 0){
+      text += "(선택한 날짜의 완료된 상품이 없습니다.)\n";
+    } else {
+      items.forEach((p, idx)=>{
+        const st = p.dataset.status;
+        const i = p.querySelectorAll("input");
+        const qty = Number(i[3].value || 0);
+        const price = Number(i[4].value || 0);
+
+        const prefix =
+          (st === "canceled") ? "[취소완료] " :
+          (st === "shipped") ? "[발송완료] " :
+          (st === "modified") ? "[변경완료] " :
+          "[주문완료] ";
+
+        text += `${idx+1}. ${prefix}${i[0].value} / ${i[1].value} / ${i[2].value} / ${qty}개 / ${price.toLocaleString()}원\n`;
+      });
+    }
+
+    text += `\n상품합계: ${document.getElementById("sum").innerText}\n`;
+    text += `배송비: ${document.getElementById("shipping").innerText}\n`;
+    text += `총 결제금액: ${document.getElementById("total").innerText}\n`;
+
+    try{
+      navigator.clipboard.writeText(text);
+      alert("주문확인서가 복사되었습니다.");
+    }catch(e){
+      // 클립보드가 막힌 환경(일부 브라우저/권한) 대비
+      prompt("복사가 지원되지 않아, 아래 내용을 길게 눌러 복사해주세요.", text);
+    }
+  }
+
   function _validateCustomer_(){
     const nickname = document.getElementById("nickname");
     const name = document.getElementById("name");
@@ -1884,84 +1944,6 @@
       saveData();
 
       alert("주문이 접수되었습니다.\n⚠️ 방송 종료 전까지 꼭 입금 부탁드립니다.");
-    } catch(e){
-      alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
-    }
-  }
-
-  async function submitCancel(){
-    if (MODE !== "complete") return;
-
-    const targets = Array.from(document.querySelectorAll(".product")).filter(p=>{
-      const st = p.dataset.status || "";
-      return (st === "sent" || st === "modified");
-    });
-
-    if (targets.length === 0){
-      alert("취소할 수 있는 상품이 없습니다.");
-      return;
-    }
-
-    if (!confirm("주문완료/변경완료 상품을 모두 취소할까요?\n(취소 후에는 되돌릴 수 없습니다.)")) return;
-
-    /* ================================
-       ✅✅✅ [핵심 3] 전체 취소: items에 amountDelta 포함
-       - 각 상품 금액의 음수로 전송
-       - 시트 표시용 [취소] prefix
-       ================================ */
-    const items = targets.map(p=>{
-      const i = p.querySelectorAll("input");
-      const qty = Number((i[3].value || "").trim() || 0);
-      const price = Number((i[4].value || "").trim() || 0);
-
-      return {
-        itemId: p.dataset.id,
-        productName: "[취소] " + (i[0].value || "").trim(),
-        color: (i[1].value || "").trim(),
-        size: (i[2].value || "").trim(),
-        qty,
-        price,
-        amountDelta: -(qty * price) // ✅ 핵심
-      };
-    });
-
-    const useOrderId = (LAST_DONE_ORDER_ID || targets[0]?.dataset.orderId || newOrderId_());
-
-    const payload = {
-      orderId: useOrderId,
-      orderTime: kstNowString(),
-      broadcastDate: getBroadcastSheetNameKST_(),
-      eventType: "cancel",
-      customer: {
-        nickname: document.getElementById("nickname").value || "",
-        name: document.getElementById("name").value || "",
-        phone: document.getElementById("phone").value || "",
-        address: `${document.getElementById("address").value || ""} ${document.getElementById("addressDetail").value || ""}`.trim()
-      },
-      items,
-      sum: 0,
-      shipping: 0,
-      total: 0
-    };
-
-    try{
-      await sendPayload(payload);
-
-      const bd = getBroadcastSheetNameKST_();
-      targets.forEach(p=>{
-        p.dataset.status = "canceled";
-        p.dataset.doneDate = bd;
-        lockProductInputs(p, true);
-        setBadge(p);
-      });
-
-      setBanner("취소가 완료되었습니다.");
-      focusBanner();
-      calc();
-      renderDoneSummary();
-      applyProductVisibility_(); // ✅
-      saveData();
-      alert("취소가 완료되었습니다.");
     } catch(e){
       alert("전송에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
     }
