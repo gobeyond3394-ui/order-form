@@ -1271,20 +1271,51 @@
     document.getElementById("total").innerText = (sum + shipping).toLocaleString() + "원";
   }
 
-async function sendPayload(payload){
-  const params = new URLSearchParams();
-  params.set("payload", JSON.stringify(payload));
-  params.set("_ts", String(Date.now())); // 캐시/중복 방지용(선택)
+  /* ==================================================
+     ✅✅✅ [수정 1] sendPayload: CORS 응답을 읽어서 성공/실패 판별
+     - Apps Script는 JSON으로 { ok:true } 형태 응답 권장
+     - fetch mode:"cors" + res.ok + (json.ok === true) 체크
+     - (응답을 못 읽는 no-cors 제거)
+     ================================================== */
+  async function sendPayload(payload){
+    const params = new URLSearchParams();
+    params.set("payload", JSON.stringify(payload));
+    params.set("_ts", String(Date.now())); // 캐시/중복 방지용(선택)
 
-  // ✅ 카톡 인앱에서 sendBeacon/body 유실 이슈 많아서 아예 안 씀
-  await fetch(SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-    body: params.toString(),
-    keepalive: true
-  });
-}
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(), 15000);
+
+    try{
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "cors",
+        redirect: "follow",
+        credentials: "omit",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: params.toString(),
+        signal: controller.signal
+      });
+
+      const text = await res.text().catch(()=> "");
+
+      if (!res.ok){
+        throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
+      }
+
+      // ✅ 응답 JSON 권장: { ok:true }
+      let json = null;
+      try{ json = text ? JSON.parse(text) : null; }catch(e){ json = null; }
+
+      if (json && json.ok === true){
+        return json;
+      }
+
+      // JSON이 아니거나 ok !== true면 실패로 간주(= "성공처럼 보이는" 상태 방지)
+      throw new Error("서버 응답이 유효하지 않습니다.");
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
 
   function parseKstStringToDate_(s){
     try{
@@ -1302,10 +1333,13 @@ async function sendPayload(payload){
     }
   }
 
+  /* ==================================================
+     ✅✅✅ [수정 2] 발송완료 자동 전환 시점: 오후 5시(17:00)로 변경
+     ================================================== */
   function nextMondayNoonKst_(dKst){
     const dow = dKst.getUTCDay(); // 0일~6토
     const add = ((8 - dow) % 7) || 7;
-    return new Date(Date.UTC(dKst.getUTCFullYear(), dKst.getUTCMonth(), dKst.getUTCDate()+add, 12, 0, 0));
+    return new Date(Date.UTC(dKst.getUTCFullYear(), dKst.getUTCMonth(), dKst.getUTCDate()+add, 17, 0, 0)); // ✅ 17:00
   }
 
   function shippingDueAt_(orderTimeKstStr){
@@ -1314,9 +1348,9 @@ async function sendPayload(payload){
 
     const dow = d.getUTCDay(); // 0일 1월 2화 3수 4목 5금 6토
     if (dow >= 1 && dow <= 4){
-      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()+1, 12, 0, 0));
+      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()+1, 17, 0, 0)); // ✅ 다음날 17:00
     }
-    return nextMondayNoonKst_(d);
+    return nextMondayNoonKst_(d); // ✅ 다음 월요일 17:00
   }
 
   // ✅ (수정) 발송완료 배지도 KST 고정(now = kstNowDate_ 사용)
