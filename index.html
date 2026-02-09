@@ -1272,47 +1272,34 @@
   }
 
   /* ==================================================
-     ✅✅✅ [수정 1] sendPayload: CORS 응답을 읽어서 성공/실패 판별
-     - Apps Script는 JSON으로 { ok:true } 형태 응답 권장
-     - fetch mode:"cors" + res.ok + (json.ok === true) 체크
-     - (응답을 못 읽는 no-cors 제거)
+     ✅✅✅ [교체] sendPayload (사용자 요청 반영)
+     - sendBeacon 우선, 실패 시 fetch(no-cors)로 전송
      ================================================== */
   async function sendPayload(payload){
-    const params = new URLSearchParams();
-    params.set("payload", JSON.stringify(payload));
-    params.set("_ts", String(Date.now())); // 캐시/중복 방지용(선택)
+    const body = JSON.stringify(payload);
 
     const controller = new AbortController();
     const timeout = setTimeout(()=>controller.abort(), 15000);
 
     try{
-      const res = await fetch(SCRIPT_URL, {
+      // sendBeacon 우선 (모바일/카톡웹뷰에서 종종 더 안정적)
+      if (navigator.sendBeacon){
+        const blob = new Blob([body], { type:"text/plain;charset=UTF-8" });
+        const ok = navigator.sendBeacon(SCRIPT_URL, blob);
+        if (ok) return { ok:true, beacon:true };
+      }
+
+      await fetch(SCRIPT_URL, {
         method: "POST",
-        mode: "cors",
-        redirect: "follow",
-        credentials: "omit",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: params.toString(),
-        signal: controller.signal
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=UTF-8" },
+        body,
+        signal: controller.signal,
+        keepalive: true
       });
 
-      const text = await res.text().catch(()=> "");
-
-      if (!res.ok){
-        throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
-      }
-
-      // ✅ 응답 JSON 권장: { ok:true }
-      let json = null;
-      try{ json = text ? JSON.parse(text) : null; }catch(e){ json = null; }
-
-      if (json && json.ok === true){
-        return json;
-      }
-
-      // JSON이 아니거나 ok !== true면 실패로 간주(= "성공처럼 보이는" 상태 방지)
-      throw new Error("서버 응답이 유효하지 않습니다.");
-    } finally {
+      return { ok:true };
+    } finally{
       clearTimeout(timeout);
     }
   }
