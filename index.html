@@ -583,11 +583,13 @@
   .btn-add-order{
     padding:14px 14px; /* ✅ 한 단계 더 크게 */
   }
+
+  /* ✅ (요청 4) 4개 버튼 세로길이 한 단계 크게 */
   .btn-check,
   .btn-replay,
   .btn-history-view,
   .btn-history-copy{
-    padding:10px 14px; /* ✅ 한 단계 더 작게 */
+    padding:12px 14px; /* ✅ 10 -> 12 */
   }
 
   /* ✅ (요청 2) 상품 추가/삭제 아래 안내 문구 */
@@ -675,14 +677,14 @@
 
 <div class="section">
   <div class="section-title-row">
-    <!-- ✅ (요청 5) 한 줄에 안 들어갈 수 있으니 타이틀을 더 짧게 -->
-    <div class="section-title" id="productSectionTitle">주문상품 정보</div>
+    <!-- ✅ (요청 1) 입력화면에서는 '상품정보', 완료화면에서는 '주문상품 정보'로 JS에서 토글 -->
+    <div class="section-title" id="productSectionTitle">상품정보</div>
 
-    <!-- ✅ 완료화면에서만 보일 날짜 필터 (요청 5) 오늘/1일전/2일전/3일전/4일전/1주 -->
+    <!-- ✅ 완료화면에서만 보일 날짜 필터 (요청 2) 오늘/어제/그제/3일전/4일전/1주 -->
     <div class="day-filter" id="dayFilter">
       <button type="button" data-day="0" class="is-active">오늘</button>
-      <button type="button" data-day="1">1일전</button>
-      <button type="button" data-day="2">2일전</button>
+      <button type="button" data-day="1">어제</button>
+      <button type="button" data-day="2">그제</button>
       <button type="button" data-day="3">3일전</button>
       <button type="button" data-day="4">4일전</button>
       <button type="button" data-day="7">1주</button>
@@ -821,6 +823,41 @@
   window.addEventListener("resize", updateBottomSpacing);
   window.addEventListener("orientationchange", updateBottomSpacing);
 
+  /* ==================================================
+     ✅✅✅ (요청 5) 하단 고정바 때문에 입력칸이 가려지지 않게 자동 스크롤
+     - 입력/선택 포커스 시, bottomBar 높이만큼 여유를 두고 보이도록 스크롤 보정
+     ================================================== */
+  function ensureVisibleWithBottomBar_(el){
+    try{
+      if (!el) return;
+      const bar = document.getElementById("bottomBar");
+      const barH = bar ? (bar.offsetHeight || 0) : 0;
+
+      const r = el.getBoundingClientRect();
+      const safeBottom = window.innerHeight - barH - 12;
+
+      // 아래쪽이 가려질 때만 필요한 만큼 내림
+      if (r.bottom > safeBottom){
+        const delta = r.bottom - safeBottom;
+        window.scrollBy({ top: delta + 8, left: 0, behavior: "smooth" });
+      }
+      // 위쪽이 너무 위로 붙어도 살짝 보정(선택)
+      if (r.top < 8){
+        window.scrollBy({ top: r.top - 16, left: 0, behavior: "smooth" });
+      }
+    }catch(e){}
+  }
+
+  // 포커스 들어올 때마다 보정 (form 모드에서만)
+  document.addEventListener("focusin", (e)=>{
+    const t = e.target;
+    if (!t) return;
+    if (MODE !== "form") return;
+    if (!(t.matches("input, select, textarea"))) return;
+    // 아주 짧게 지연(모바일 키보드/레이아웃 변화 반영)
+    setTimeout(()=>ensureVisibleWithBottomBar_(t), 50);
+  });
+
   function newOrderId_(){
     return "oid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
   }
@@ -934,16 +971,42 @@
     return `${m[1]}.${m[2]}.${m[3]}`;
   }
 
+  /* ==================================================
+     ✅✅✅ (요청 3) "1주" 선택 시: 최근 1주(7일) 전체 날짜 목록
+     - offset==7 일 때: 오늘(0)부터 6일 전까지
+     ================================================== */
+  function getTargetDateListByOffset_(offset){
+    const off = Number(offset);
+    if (off === 7){
+      const arr = [];
+      for (let i=0; i<=6; i++){
+        arr.push(getBroadcastSheetNameKSTByOffset_(i));
+      }
+      return arr; // 최신 -> 과거(0,1,2..)
+    }
+    return [ getBroadcastSheetNameKSTByOffset_(off) ];
+  }
+
+  function formatDateRangeTextFromList_(dateList){
+    if (!dateList || dateList.length === 0) return "";
+    if (dateList.length === 1) return formatBroadcastDateText_(dateList[0]);
+    // dateList는 [오늘..6일전] 이므로, 표시용은 (6일전 ~ 오늘)
+    const newest = dateList[0];
+    const oldest = dateList[dateList.length - 1];
+    return `${formatBroadcastDateText_(oldest)} ~ ${formatBroadcastDateText_(newest)}`;
+  }
+
   // ✅ (요청 3) 날짜 기준: 발송완료로 바뀌어도 "원래 주문 날짜(doneDate)" 유지
   function _itemDateKey_(p){
     return (p.dataset.doneDate || "").trim();
   }
 
-  function _hasAnyForDate_(targetDate){
+  function _hasAnyForDates_(dateList){
+    const set = new Set((dateList || []).map(String));
     return Array.from(document.querySelectorAll(".product")).some(p=>{
       const st = p.dataset.status || "draft";
       if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return false;
-      return _itemDateKey_(p) === targetDate;
+      return set.has(_itemDateKey_(p));
     });
   }
 
@@ -1021,6 +1084,8 @@
       oncomplete: function(data) {
         document.getElementById("address").value = data.address;
         document.getElementById("addressDetail").focus();
+        // ✅ (요청 5) 주소 선택 후도 가려지면 보정
+        setTimeout(()=>ensureVisibleWithBottomBar_(document.getElementById("addressDetail")), 50);
         saveData();
       }
     }).open();
@@ -1089,7 +1154,8 @@
   }
 
   function applyProductVisibility_(){
-    const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET);
+    const targetDates = getTargetDateListByOffset_(DONE_FILTER_OFFSET);
+    const set = new Set(targetDates.map(String));
 
     document.querySelectorAll(".product").forEach(p=>{
       const st = p.dataset.status || "draft";
@@ -1100,10 +1166,10 @@
           return;
         }
 
-        // ✅ 주문상세가 열렸을 때: 선택한 날짜(08:00 기준)에 해당하는 카드만 표시
+        // ✅ 주문상세가 열렸을 때: 선택한 날짜(또는 1주 범위)에 해당하는 카드만 표시
         if (ORDER_DETAIL_OPEN){
           const key = _itemDateKey_(p);
-          p.style.display = (key === targetDate) ? "block" : "none";
+          p.style.display = set.has(key) ? "block" : "none";
         } else {
           p.style.display = "none";
         }
@@ -1157,6 +1223,7 @@
       shipActions.style.display = "flex";
 
       if (customerTitle) customerTitle.textContent = "배송지 정보";
+      // ✅ (요청 1) 완료화면: '주문상품 정보' 유지
       if (productTitle) productTitle.textContent = "주문상품 정보";
 
       setBanner(bannerText || "주문이 정상적으로 접수되었습니다.");
@@ -1197,7 +1264,8 @@
     shipActions.style.display = "none";
 
     if (customerTitle) customerTitle.textContent = "고객 정보";
-    if (productTitle) productTitle.textContent = "주문상품 정보";
+    // ✅ (요청 1) 입력화면: '상품정보'
+    if (productTitle) productTitle.textContent = "상품정보";
 
     exitShipEdit(true);
 
@@ -1269,6 +1337,7 @@
   }
 
   // ✅ (수정) 완료 요약: 선택한 날짜(방송일자 기준)만 표시 + 날짜 1회만 출력
+  // ✅ (요청 3) 1주 선택 시: 최근 1주 전체 표시(날짜별로 묶어서)
   function renderDoneSummary(){
     const box = document.getElementById("doneSummary");
     if (!box) return;
@@ -1280,18 +1349,16 @@
       return;
     }
 
-    const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET); // yyyy-MM-dd
-    const dateTitle = formatBroadcastDateText_(targetDate);
+    const targetDates = getTargetDateListByOffset_(DONE_FILTER_OFFSET);
+    const set = new Set(targetDates.map(String));
 
-    const lines = [];
-
+    const allItems = [];
     document.querySelectorAll(".product").forEach(p=>{
       const st = p.dataset.status || "draft";
       if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return;
 
-      // ✅ (요청 3) 발송완료여도 doneDate(원래 주문날짜)로 필터
       const key = _itemDateKey_(p);
-      if (key !== targetDate) return;
+      if (!set.has(key)) return;
 
       const els = p.querySelectorAll("input, select");
       const name = (els[0]?.value || "").trim();
@@ -1309,14 +1376,44 @@
         (st === "modified") ? "[변경완료]" :
         "[주문완료]";
 
-      lines.push(`• <b>${tag}</b> ${name} / ${color} / ${size} / ${qtyText} / ${priceText}`);
+      allItems.push({
+        dateKey: key,
+        line: `• <b>${tag}</b> ${name} / ${color} / ${size} / ${qtyText} / ${priceText}`
+      });
     });
 
-    if (lines.length === 0){
+    if (allItems.length === 0){
       box.style.display = "none";
       box.innerHTML = "";
       return;
     }
+
+    // ✅ 1주면 날짜별로 묶어서 출력(최신이 위)
+    if (Number(DONE_FILTER_OFFSET) === 7){
+      const rangeText = formatDateRangeTextFromList_(targetDates);
+      const groups = {};
+      allItems.forEach(x=>{
+        (groups[x.dateKey] = groups[x.dateKey] || []).push(x.line);
+      });
+
+      const orderedDates = targetDates.filter(d=>groups[d] && groups[d].length); // 오늘->과거
+      const htmlParts = [];
+      htmlParts.push(`<div style="margin-bottom:8px; font-weight:900; color:#005FAE;">최근 1주 (${rangeText})</div>`);
+
+      orderedDates.forEach(d=>{
+        htmlParts.push(`<div style="margin-top:10px; font-weight:900; color:#005FAE;">${formatBroadcastDateText_(d)}</div>`);
+        htmlParts.push(groups[d].join("<br>"));
+      });
+
+      box.style.display = "block";
+      box.innerHTML = htmlParts.join("<br>");
+      return;
+    }
+
+    // ✅ 단일 날짜(기존)
+    const targetDate = targetDates[0];
+    const dateTitle = formatBroadcastDateText_(targetDate);
+    const lines = allItems.map(x=>x.line);
 
     box.style.display = "block";
     box.innerHTML = `
@@ -1375,22 +1472,22 @@
   /* ==================================================
      ✅✅✅ [수정] 날짜 필터 기준으로 합계/배송비/총액 계산
      - 완료화면(mode-complete)일 때:
-       선택한 날짜 버튼(오늘/1일전/...)에 해당하는 상품만 합산
+       선택한 날짜(또는 1주 범위)에 해당하는 상품만 합산
        (주문완료/변경완료/발송완료만 포함, 취소완료 제외)
      ================================================== */
   function calc(){
     let sum = 0;
 
     if (MODE === "complete"){
-      const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET);
+      const targetDates = getTargetDateListByOffset_(DONE_FILTER_OFFSET);
+      const set = new Set(targetDates.map(String));
 
       document.querySelectorAll(".product").forEach(p=>{
         const st = p.dataset.status || "draft";
         if (!(st === "sent" || st === "modified" || st === "shipped")) return; // ✅ 취소는 제외
 
-        // ✅ (요청 3) 발송완료여도 doneDate로 합산
         const key = _itemDateKey_(p);
-        if (key !== targetDate) return;
+        if (!set.has(key)) return;
 
         const els = p.querySelectorAll("input, select");
         const qty = Number((els[3]?.value || "").trim() || 0);
@@ -1940,8 +2037,11 @@
   }
 
   function showOrderHistory(){
-    const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET);
-    const dateTitle = formatBroadcastDateText_(targetDate);
+    const targetDates = getTargetDateListByOffset_(DONE_FILTER_OFFSET);
+    const set = new Set(targetDates.map(String));
+    const titleText = (Number(DONE_FILTER_OFFSET) === 7)
+      ? `최근 1주 (${formatDateRangeTextFromList_(targetDates)})`
+      : formatBroadcastDateText_(targetDates[0]);
 
     let text = `[배송지 정보]\n`;
     text += `닉네임: ${document.getElementById("nickname").value}\n`;
@@ -1949,15 +2049,14 @@
     text += `연락처: ${document.getElementById("phone").value}\n`;
     text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
 
-    text += `[완료 상품 - ${dateTitle}]\n`;
+    text += `[완료 상품 - ${titleText}]\n`;
 
     const items = Array.from(document.querySelectorAll(".product")).filter(p=>{
       const st = p.dataset.status || "draft";
       if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return false;
 
-      // ✅ (요청 3) 발송완료여도 doneDate 기준으로만 분류
       const key = _itemDateKey_(p);
-      return key === targetDate;
+      return set.has(key);
     });
 
     if (items.length === 0){
@@ -1975,7 +2074,10 @@
           (st === "modified") ? "[변경완료] " :
           "[주문완료] ";
 
-        text += `${idx+1}. ${prefix}${els[0].value} / ${els[1].value} / ${els[2].value} / ${qty}개 / ${price.toLocaleString()}원\n`;
+        const dateKey = _itemDateKey_(p);
+        const dateLabel = (Number(DONE_FILTER_OFFSET) === 7 && dateKey) ? `(${formatBroadcastDateText_(dateKey)}) ` : "";
+
+        text += `${idx+1}. ${dateLabel}${prefix}${els[0].value} / ${els[1].value} / ${els[2].value} / ${qty}개 / ${price.toLocaleString()}원\n`;
       });
     }
 
@@ -1987,8 +2089,11 @@
   }
 
   function copyOrderHistory(){
-    const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET);
-    const dateTitle = formatBroadcastDateText_(targetDate);
+    const targetDates = getTargetDateListByOffset_(DONE_FILTER_OFFSET);
+    const set = new Set(targetDates.map(String));
+    const titleText = (Number(DONE_FILTER_OFFSET) === 7)
+      ? `최근 1주 (${formatDateRangeTextFromList_(targetDates)})`
+      : formatBroadcastDateText_(targetDates[0]);
 
     let text = `[배송지 정보]\n`;
     text += `닉네임: ${document.getElementById("nickname").value}\n`;
@@ -1996,13 +2101,13 @@
     text += `연락처: ${document.getElementById("phone").value}\n`;
     text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
 
-    text += `[완료 상품 - ${dateTitle}]\n`;
+    text += `[완료 상품 - ${titleText}]\n`;
 
     const items = Array.from(document.querySelectorAll(".product")).filter(p=>{
       const st = p.dataset.status || "draft";
       if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return false;
       const key = _itemDateKey_(p);
-      return key === targetDate;
+      return set.has(key);
     });
 
     if (items.length === 0){
@@ -2020,7 +2125,10 @@
           (st === "modified") ? "[변경완료] " :
           "[주문완료] ";
 
-        text += `${idx+1}. ${prefix}${els[0].value} / ${els[1].value} / ${els[2].value} / ${qty}개 / ${price.toLocaleString()}원\n`;
+        const dateKey = _itemDateKey_(p);
+        const dateLabel = (Number(DONE_FILTER_OFFSET) === 7 && dateKey) ? `(${formatBroadcastDateText_(dateKey)}) ` : "";
+
+        text += `${idx+1}. ${dateLabel}${prefix}${els[0].value} / ${els[1].value} / ${els[2].value} / ${qty}개 / ${price.toLocaleString()}원\n`;
       });
     }
 
@@ -2160,6 +2268,8 @@
           const len = nameInput.value.length;
           nameInput.setSelectionRange(len, len);
         } catch(e){}
+        // ✅ (요청 5) 포커스 후 입력칸이 bottomBar에 가리면 자동 보정
+        ensureVisibleWithBottomBar_(nameInput);
       }
       firstDraft.scrollIntoView({ behavior:"smooth", block:"center" });
     }, 50);
@@ -2184,6 +2294,8 @@
     setTimeout(()=>{
       const nick = document.getElementById("nickname");
       if (nick){ nick.focus(); }
+      // ✅ (요청 5) 포커스 시 가림 보정
+      setTimeout(()=>ensureVisibleWithBottomBar_(nick), 50);
     }, 30);
 
     saveData();
@@ -2442,13 +2554,17 @@
       const offset = Number(btn.getAttribute("data-day"));
       if (isNaN(offset)) return;
 
-      const targetDate = getBroadcastSheetNameKSTByOffset_(offset);
-      const title = formatBroadcastDateText_(targetDate);
+      const targetDates = getTargetDateListByOffset_(offset);
 
-      // ✅ 완료 화면일 때: 해당 날짜 내역 없으면 alert
+      // ✅ 완료 화면일 때: 해당 날짜(또는 1주 범위) 내역 없으면 alert
       if (MODE === "complete"){
-        if (!_hasAnyForDate_(targetDate)){
-          alert(`${title} 날짜에 주문완료/변경완료/취소완료/발송완료 내역이 없습니다.`);
+        if (!_hasAnyForDates_(targetDates)){
+          if (Number(offset) === 7){
+            alert(`최근 1주 날짜에 주문완료/변경완료/취소완료/발송완료 내역이 없습니다.`);
+          } else {
+            const title = formatBroadcastDateText_(targetDates[0]);
+            alert(`${title} 날짜에 주문완료/변경완료/취소완료/발송완료 내역이 없습니다.`);
+          }
           return;
         }
       }
