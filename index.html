@@ -676,7 +676,8 @@
     <div class="field">
       <!-- ✅ 4) 라벨 변경 -->
       <label>상세주소(동/호수 꼭 입력)</label>
-      <input id="addressDetail" placeholder="예) 101동 1203호">
+      <!-- ✅✅✅ (요청 1) 완료 버튼 사용 가능 -->
+      <input id="addressDetail" placeholder="예) 101동 1203호" enterkeyhint="done">
     </div>
 
     <div class="button-line-2" id="shipEditControls" style="display:none;">
@@ -866,6 +867,17 @@
     if (!btn) return;
     btn.classList.remove("btn-pulse");
     // reflow
+    void btn.offsetWidth;
+    btn.classList.add("btn-pulse");
+    setTimeout(()=>btn.classList.remove("btn-pulse"), 950);
+  }
+
+  /* ==================================================
+     ✅✅✅ [추가] 임의 버튼 강조(배송지 저장 / 변경완료 등 공용)
+     ================================================== */
+  function pulseBtnEl_(btn){
+    if (!btn) return;
+    btn.classList.remove("btn-pulse");
     void btn.offsetWidth;
     btn.classList.add("btn-pulse");
     setTimeout(()=>btn.classList.remove("btn-pulse"), 950);
@@ -1885,14 +1897,6 @@
       });
     }
 
-    // ✅ (요청 2) 가격 입력칸 Enter/완료 처리 → 다음 상품 or 주문하기 유도
-    els[4].addEventListener("keydown", (e)=>{
-      if (e.key === "Enter"){
-        e.preventDefault();
-        handlePriceDone_(div);
-      }
-    });
-
     const editOpenRow = div.querySelector('[data-edit-open="1"]');
     const editBtn = editOpenRow.querySelector("button");
     const editControlsRow = div.querySelector('[data-edit-controls="1"]');
@@ -1901,6 +1905,26 @@
 
     editControlsRow.style.display = "none";
     editOpenRow.style.display = "none";
+
+    // ✅✅✅ (요청 2) "주문상세 보기 > 변경하기" 상태에서 가격 입력 완료(Enter/Done) → 변경완료 버튼으로 이동
+    // ✅ (기존) form 모드에서는 handlePriceDone_ 유지
+    els[4].addEventListener("keydown", (e)=>{
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+
+      if (MODE === "form"){
+        handlePriceDone_(div);
+        return;
+      }
+
+      if (MODE === "complete" && div.dataset.editing === "1"){
+        closeKeyboard_();
+        if (editDoneBtn){
+          editDoneBtn.scrollIntoView({ behavior:"smooth", block:"center" });
+          setTimeout(()=>pulseBtnEl_(editDoneBtn), 120);
+        }
+      }
+    });
 
     function enterEdit_(){
       if (MODE !== "complete") return;
@@ -2662,6 +2686,23 @@
     if (el.value !== formatted) el.value = formatted;
     renderShippingSummary();
     saveData();
+  });
+
+  /* ==================================================
+     ✅✅✅ (요청 1) 배송지 변경 화면에서 "상세주소" 완료(Enter/Done) → 키보드 닫기 + 배송지 저장 버튼으로 이동
+     ================================================== */
+  document.getElementById("addressDetail").addEventListener("keydown", (e)=>{
+    if (e.key !== "Enter") return;
+    if (!SHIP_EDITING) return; // 배송지 변경(편집) 중일 때만
+    e.preventDefault();
+
+    closeKeyboard_();
+
+    const btn = document.querySelector("#shipEditControls .btn-blue"); // 배송지 저장
+    if (btn){
+      btn.scrollIntoView({ behavior:"smooth", block:"center" });
+      setTimeout(()=>pulseBtnEl_(btn), 120);
+    }
   });
 
   (function initDayFilter_(){
