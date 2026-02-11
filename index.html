@@ -738,7 +738,7 @@
 
 <div class="section summary" id="summarySection">
   <div class="summary-line"><span>상품 합계</span><span id="sum">0원</span></div>
-  <div class="summary-line"><span>배송비</span><span id="shipping">4,000원</span></div>
+  <div class="summary-line"><span>배송비(금·토·일 주문 합배송 자동 적용)</span><span id="shipping">4,000원</span></div>
   <div class="summary-line summary-total"><span>총 결제금액</span><span id="total">4,000원</span></div>
 </div>
 
@@ -825,22 +825,11 @@
   let DONE_FILTER_OFFSET = 0;
 
   // ==================================================
-  // ✅✅✅ [추가] 배송비 1회만 부과용 상태(배치 orderId 기준)
-  // - 같은 기기/브라우저에서 "계속 주문하기"로 이어서 주문할 때
-  //   동일 orderId를 쓰므로 배송비를 최초 1번만 적용 가능
+  // ✅✅✅ [변경] 배송비 부과용 상태
+  // - 평일(월~목): orderId|방송일자(08:00 기준) 1회
+  // - 주말(금/토/일): orderId|WEEKEND:그 주의 금요일 날짜 1회 (금~일 통틀어 1회)
   // ==================================================
-  let SHIPPING_CHARGED = {}; // { [orderId]: true }
-
-  function isShippingChargedForOrder_(orderId){
-    const oid = String(orderId || "").trim();
-    if (!oid) return false;
-    return !!SHIPPING_CHARGED[oid];
-  }
-  function markShippingCharged_(orderId){
-    const oid = String(orderId || "").trim();
-    if (!oid) return;
-    SHIPPING_CHARGED[oid] = true;
-  }
+  let SHIPPING_CHARGED = {}; // { ["orderId|..."]: true }
 
   // ✅ (변경: 요청 2) 하단바 높이 보정은 불필요 → 항상 16px 유지
   function updateBottomSpacing(){
@@ -1021,6 +1010,58 @@
     const m = pad2_(baseUtc.getUTCMonth()+1);
     const d = pad2_(baseUtc.getUTCDate());
     return `${y}-${m}-${d}`;
+  }
+
+  // ✅✅✅ [추가] 주말(금/토/일) 묶음용: "그 주의 금요일" 날짜키(yyyy-MM-dd) 구하기
+  function weekendAnchorFridayKey_(broadcastDateKey){
+    const m = String(broadcastDateKey||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return broadcastDateKey;
+
+    const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+    const dt = new Date(Date.UTC(y, mo-1, d, 0, 0, 0));
+    const dow = dt.getUTCDay(); // 0=일,1=월,...,5=금,6=토
+
+    // 금(5)면 그대로, 토(6)면 -1일, 일(0)면 -2일 -> 모두 금요일로 고정
+    if (dow === 6) dt.setUTCDate(dt.getUTCDate() - 1);
+    else if (dow === 0) dt.setUTCDate(dt.getUTCDate() - 2);
+
+    const yy = dt.getUTCFullYear();
+    const mm = pad2_(dt.getUTCMonth()+1);
+    const dd = pad2_(dt.getUTCDate());
+    return `${yy}-${mm}-${dd}`;
+  }
+
+  // ✅✅✅ [추가] 배송비 1회 부과용 key 생성: 주말이면 "주말그룹", 평일이면 "날짜별"
+  function shippingChargeKey_(orderId, broadcastDateKey){
+    const oid = String(orderId || "").trim();
+    const dk  = String(broadcastDateKey || "").trim();
+    if (!oid || !dk) return "";
+
+    const m = dk.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return `${oid}|${dk}`;
+
+    const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+    const dt = new Date(Date.UTC(y, mo-1, d, 0, 0, 0));
+    const dow = dt.getUTCDay(); // 0=일,5=금,6=토
+
+    const isWeekend = (dow === 5 || dow === 6 || dow === 0);
+    if (isWeekend){
+      const friKey = weekendAnchorFridayKey_(dk);
+      return `${oid}|WEEKEND:${friKey}`; // 금/토/일은 같은 키로 묶임
+    }
+
+    return `${oid}|${dk}`; // 월~목은 날짜별
+  }
+
+  function isShippingChargedForOrderDate_(orderId, dateKey){
+    const k = shippingChargeKey_(orderId, dateKey);
+    if (!k) return false;
+    return !!SHIPPING_CHARGED[k];
+  }
+  function markShippingCharged_(orderId, dateKey){
+    const k = shippingChargeKey_(orderId, dateKey);
+    if (!k) return;
+    SHIPPING_CHARGED[k] = true;
   }
 
   // ✅ offset일 전(0=오늘) 방송일자 yyyy-MM-dd
@@ -1532,7 +1573,7 @@
 
   /* ==================================================
      ✅✅✅ [수정] 날짜 필터 기준으로 합계/배송비/총액 계산
-     ✅✅✅ [추가] 같은 orderId(배치)에서 배송비는 1회만 표시/부과
+     ✅✅✅ [변경] 배송비: (입력) 주말묶음/평일날짜별 키 / (완료) 날짜필터 기준
      ================================================== */
   function calc(){
     let sum = 0;
@@ -1568,13 +1609,44 @@
     }
 
     // ✅ 기본 배송비 규칙 (10만 이상 무료)
-    let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+    let shipping = 0;
 
-    // ✅✅✅ [추가] 동일 배치(orderId)에서는 배송비 1회만 표시(이미 부과되었다면 0원)
-    // - 화면 표시도 같이 맞춰줌
-    const currentOrderId = (ACTIVE_DRAFT_ORDER_ID || LAST_DONE_ORDER_ID || "").trim();
-    if (currentOrderId && isShippingChargedForOrder_(currentOrderId)){
-      shipping = 0;
+    if (MODE === "complete"){
+      // ✅ 완료화면: 날짜필터 기준으로 "날짜별 배송비" 합산 표시
+      const targetDates = getTargetDateListByOffset_(DONE_FILTER_OFFSET);
+
+      if (Number(DONE_FILTER_OFFSET) === 7){
+        // 최근 1주: 날짜별(각 날짜 합계 기준) 배송비를 합산
+        let shipSum = 0;
+        targetDates.forEach(dateKey=>{
+          let daySum = 0;
+          document.querySelectorAll(".product").forEach(p=>{
+            const st = p.dataset.status || "draft";
+            if (!(st === "sent" || st === "modified" || st === "shipped")) return;
+            if (_itemDateKey_(p) !== String(dateKey)) return;
+
+            const els = p.querySelectorAll("input, select");
+            const qty = Number((els[3]?.value || "").trim() || 0);
+            const price = Number((els[4]?.value || "").trim() || 0);
+            daySum += (qty * price);
+          });
+          shipSum += (daySum > 0 && daySum < 100000) ? SHIPPING : 0;
+        });
+        shipping = shipSum;
+      } else {
+        // 단일 날짜: 그 날짜 합계 기준으로 배송비 표시
+        shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+      }
+
+    } else {
+      // ✅ 입력화면: (평일) orderId+방송일자 기준 1회 / (주말) 금~일 통틀어 1회
+      shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+
+      const currentOrderId = (ACTIVE_DRAFT_ORDER_ID || "").trim();
+      const todayKey = getBroadcastSheetNameKST_(); // ✅ 방송일자(08:00 기준)
+      if (currentOrderId && isShippingChargedForOrderDate_(currentOrderId, todayKey)){
+        shipping = 0;
+      }
     }
 
     document.getElementById("sum").innerText = sum.toLocaleString() + "원";
@@ -2329,14 +2401,13 @@
 
     const batchOrderId = ensureDraftOrderId_();
 
-    // ✅✅✅ [추가] 동일 orderId에서는 배송비 1회만 부과
-    // - 이미 배송비 처리된 orderId면 shipping=0으로 강제
-    if (isShippingChargedForOrder_(batchOrderId)){
+    const orderTimeStr = kstNowString();
+    const broadcastDate = getBroadcastSheetNameKST_(); // ✅ 방송일자(08:00 기준)
+
+    // ✅✅✅ [변경] (평일) 날짜별 / (주말) 금~일 묶음 기준으로 1회만 배송비 부과
+    if (isShippingChargedForOrderDate_(batchOrderId, broadcastDate)){
       shipping = 0;
     }
-
-    const orderTimeStr = kstNowString();
-    const broadcastDate = getBroadcastSheetNameKST_();
 
     const payload = {
       eventId: newEventId_(),
@@ -2372,9 +2443,10 @@
       LAST_DONE_ORDER_ID = batchOrderId;
       ACTIVE_DRAFT_ORDER_ID = batchOrderId;
 
-      // ✅✅✅ [추가] 첫 주문(또는 첫 전송) 성공 시, 해당 orderId는 배송비 처리 완료로 마킹
-      // - 이후 "계속 주문하기"로 같은 orderId에서 주문하면 배송비는 0원
-      markShippingCharged_(batchOrderId);
+      // ✅✅✅ [변경] 배송비가 실제로 붙은 주문 전송 성공 시, 해당 키(평일/주말묶음)를 마킹
+      if (sum > 0 && sum < 100000){
+        markShippingCharged_(batchOrderId, broadcastDate);
+      }
 
       setMode("complete", "주문이 정상적으로 접수되었습니다.", { detailClosedOnEnter:true });
 
@@ -2540,7 +2612,7 @@
       activeDraftOrderId: ACTIVE_DRAFT_ORDER_ID,
       doneFilterOffset: DONE_FILTER_OFFSET,
 
-      // ✅✅✅ [추가] 배송비 1회 처리 상태 저장
+      // ✅✅✅ [추가] 배송비 처리 상태 저장
       shippingCharged: SHIPPING_CHARGED,
 
       products: []
