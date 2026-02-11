@@ -872,6 +872,17 @@
   }
 
   /* ==================================================
+     ✅✅✅ [추가] 모바일 키보드 강제 닫기(포커스 해제)
+     - 마지막 입력 완료 후 주문하기 버튼으로 유도할 때 사용
+     ================================================== */
+  function closeKeyboard_(){
+    try{
+      const a = document.activeElement;
+      if (a && typeof a.blur === "function") a.blur();
+    }catch(e){}
+  }
+
+  /* ==================================================
      ✅✅✅ (변경: 요청 2) bottomBar 가림 보정 불필요(고정 아님)
      - 그래도 기존 호출을 유지하기 위해 scrollIntoView 중심 보정만 살짝
      ================================================== */
@@ -1726,6 +1737,7 @@
     const drafts = Array.from(document.querySelectorAll('.product[data-status="draft"]'));
     const idx = drafts.indexOf(currentProductDiv);
 
+    // ✅ 다음 상품이 있으면 → 다음 상품명으로 포커스 이동(키보드 유지)
     if (idx >= 0 && idx < drafts.length - 1){
       const next = drafts[idx + 1];
       const nameInput = next.querySelector(".product-name");
@@ -1739,6 +1751,9 @@
       }
       return;
     }
+
+    // ✅✅✅ [추가] 마지막 상품이면 → 키보드 닫고 주문하기 버튼 유도
+    closeKeyboard_();
 
     const btn = document.querySelector('#formControls .btn-order');
     if (btn){
