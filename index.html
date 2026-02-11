@@ -620,6 +620,22 @@
   }
 
   /* ==================================================
+     ✅✅✅ [요청 A] 완료화면에서는 bottomBar 고정 해제 → 본문 흐름(계좌 아래)으로 자연스럽게
+     ================================================== */
+  body.mode-complete #bottomBar{
+    position:static !important;
+    left:auto !important; right:auto !important; bottom:auto !important;
+    border-top:0 !important;
+    padding:0 !important;
+    z-index:auto !important;
+    margin-top:12px; /* 계좌 섹션 아래와 자연스럽게 간격 */
+  }
+  body.mode-complete #bottomBarInner{
+    max-width:560px;
+    margin:0 auto;
+  }
+
+  /* ==================================================
      ✅✅✅ (요청 1) 입력 중 CTA 숨김/축소 패턴
      - form 모드에서 input/select 포커스(키보드 올라옴) 시 bottomBar를 0높이로 축소
      - 키보드 내려가면 자동 복귀
@@ -761,7 +777,7 @@
   <div class="pay-note" id="payNoteBelow">⚠️ 방송 종료 전까지 꼭 입금 부탁드립니다.</div>
 </div>
 
-<!-- ✅ (요청 2) 하단 고정 영역: 주문하기~문의하기 -->
+<!-- ✅ (요청 A) 완료화면에서는 bottomBar 고정 해제되어 "계좌 아래 본문 마지막"에 자연스럽게 위치 -->
 <div id="bottomBar">
   <div id="bottomBarInner">
 
@@ -837,6 +853,13 @@
   function updateBottomSpacing(){
     const bar = document.getElementById("bottomBar");
     if(!bar) return;
+
+    // ✅ (요청 A) 완료화면에서는 bottomBar가 고정이 아니므로 padding-bottom을 늘리지 않음
+    if (MODE === "complete"){
+      document.body.style.paddingBottom = "16px";
+      return;
+    }
+
     const height = bar.offsetHeight || 0;
     // body 기본 padding(16px)은 유지하고, bottom만 하단바 높이+16으로 덮어쓰기
     document.body.style.paddingBottom = (height + 16) + "px";
@@ -877,6 +900,10 @@
   function ensureVisibleWithBottomBar_(el){
     try{
       if (!el) return;
+
+      // ✅ 완료화면에서는 bottomBar가 고정이 아니므로 보정 불필요
+      if (MODE === "complete") return;
+
       const bar = document.getElementById("bottomBar");
       const barH = bar ? (bar.offsetHeight || 0) : 0;
 
@@ -1320,7 +1347,7 @@
       saveData();
       setTimeout(focusBanner, 50);
 
-      // ✅ (요청 1) 하단바 높이 변화(컨트롤 전환) 반영
+      // ✅ (요청 A) 완료화면: bottomBar 고정 해제 → padding-bottom 최소화
       setTimeout(updateBottomSpacing, 0);
       return;
     }
@@ -1349,7 +1376,7 @@
     calc();
     saveData();
 
-    // ✅ (요청 1) 하단바 높이 변화(컨트롤 전환) 반영
+    // ✅ (요청 A) 입력화면: bottomBar 고정 유지 → padding-bottom 자동 반영
     setTimeout(updateBottomSpacing, 0);
   }
 
@@ -2576,7 +2603,7 @@
       setBanner("주문이 정상적으로 접수되었습니다.");
       saveData();
 
-      // ✅ (요청 1)
+      // ✅ (요청 A)
       setTimeout(updateBottomSpacing, 0);
       return;
     }
@@ -2637,7 +2664,7 @@
     setBanner("주문이 정상적으로 접수되었습니다.");
     saveData();
 
-    // ✅ (요청 1)
+    // ✅ (요청 A)
     setTimeout(updateBottomSpacing, 0);
   }
 
