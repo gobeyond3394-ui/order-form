@@ -773,7 +773,8 @@
     <div id="completeControls" style="display:none;">
       <!-- ✅ 추가 주문하기: 가운데 정렬 1개(폭 2/3) -->
       <div class="button-center-one">
-        <button class="btn-add-order" type="button" onclick="goToFormForAdd()">추가 주문하기</button>
+        <!-- ✅✅✅ (변경) 문구: "추가 주문하기" → "계속 주문하기" (원하면 유지해도 됨) -->
+        <button class="btn-add-order" type="button" onclick="goToFormForAdd()">계속 주문하기</button>
       </div>
 
       <!-- ✅ 다음 줄: 주문 내역 보기 / 주문 내역 복사 -->
@@ -821,6 +822,24 @@
 
   // ✅ (추가) 완료 요약 날짜 필터(기본: 오늘=0)
   let DONE_FILTER_OFFSET = 0;
+
+  // ==================================================
+  // ✅✅✅ [추가] 배송비 1회만 부과용 상태(배치 orderId 기준)
+  // - 같은 기기/브라우저에서 "계속 주문하기"로 이어서 주문할 때
+  //   동일 orderId를 쓰므로 배송비를 최초 1번만 적용 가능
+  // ==================================================
+  let SHIPPING_CHARGED = {}; // { [orderId]: true }
+
+  function isShippingChargedForOrder_(orderId){
+    const oid = String(orderId || "").trim();
+    if (!oid) return false;
+    return !!SHIPPING_CHARGED[oid];
+  }
+  function markShippingCharged_(orderId){
+    const oid = String(orderId || "").trim();
+    if (!oid) return;
+    SHIPPING_CHARGED[oid] = true;
+  }
 
   // ✅ (변경: 요청 2) 하단바 높이 보정은 불필요 → 항상 16px 유지
   function updateBottomSpacing(){
@@ -1490,6 +1509,7 @@
 
   /* ==================================================
      ✅✅✅ [수정] 날짜 필터 기준으로 합계/배송비/총액 계산
+     ✅✅✅ [추가] 같은 orderId(배치)에서 배송비는 1회만 표시/부과
      ================================================== */
   function calc(){
     let sum = 0;
@@ -1524,7 +1544,15 @@
       });
     }
 
-    const shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+    // ✅ 기본 배송비 규칙 (10만 이상 무료)
+    let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+
+    // ✅✅✅ [추가] 동일 배치(orderId)에서는 배송비 1회만 표시(이미 부과되었다면 0원)
+    // - 화면 표시도 같이 맞춰줌
+    const currentOrderId = (ACTIVE_DRAFT_ORDER_ID || LAST_DONE_ORDER_ID || "").trim();
+    if (currentOrderId && isShippingChargedForOrder_(currentOrderId)){
+      shipping = 0;
+    }
 
     document.getElementById("sum").innerText = sum.toLocaleString() + "원";
     document.getElementById("shipping").innerText = shipping.toLocaleString() + "원";
@@ -2253,9 +2281,17 @@
       sum += (qty * price);
     }
 
-    const shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+    // ✅ 기본 배송비 규칙 (10만 이상 무료)
+    let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
 
     const batchOrderId = ensureDraftOrderId_();
+
+    // ✅✅✅ [추가] 동일 orderId에서는 배송비 1회만 부과
+    // - 이미 배송비 처리된 orderId면 shipping=0으로 강제
+    if (isShippingChargedForOrder_(batchOrderId)){
+      shipping = 0;
+    }
+
     const orderTimeStr = kstNowString();
     const broadcastDate = getBroadcastSheetNameKST_();
 
@@ -2292,6 +2328,10 @@
 
       LAST_DONE_ORDER_ID = batchOrderId;
       ACTIVE_DRAFT_ORDER_ID = batchOrderId;
+
+      // ✅✅✅ [추가] 첫 주문(또는 첫 전송) 성공 시, 해당 orderId는 배송비 처리 완료로 마킹
+      // - 이후 "계속 주문하기"로 같은 orderId에서 주문하면 배송비는 0원
+      markShippingCharged_(batchOrderId);
 
       setMode("complete", "주문이 정상적으로 접수되었습니다.", { detailClosedOnEnter:true });
 
@@ -2456,6 +2496,10 @@
       lastDoneOrderId: LAST_DONE_ORDER_ID,
       activeDraftOrderId: ACTIVE_DRAFT_ORDER_ID,
       doneFilterOffset: DONE_FILTER_OFFSET,
+
+      // ✅✅✅ [추가] 배송비 1회 처리 상태 저장
+      shippingCharged: SHIPPING_CHARGED,
+
       products: []
     };
 
@@ -2504,6 +2548,9 @@
       DONE_FILTER_OFFSET = 0;
       setActiveDayButton_(0);
 
+      // ✅✅✅ [추가] 만료 시 배송비 처리 상태도 초기화
+      SHIPPING_CHARGED = {};
+
       addProduct();
 
       IS_LOADING = false;
@@ -2533,6 +2580,9 @@
     DONE_FILTER_OFFSET = (data.doneFilterOffset != null) ? Number(data.doneFilterOffset) : 0;
     if (isNaN(DONE_FILTER_OFFSET)) DONE_FILTER_OFFSET = 0;
     setActiveDayButton_(DONE_FILTER_OFFSET);
+
+    // ✅✅✅ [추가] 배송비 처리 상태 복원
+    SHIPPING_CHARGED = (data.shippingCharged && typeof data.shippingCharged === "object") ? data.shippingCharged : {};
 
     productsDiv.innerHTML = "";
     (data.products || []).forEach(p=>{
