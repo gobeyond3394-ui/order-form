@@ -10,8 +10,8 @@
     margin:0; padding:16px;
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
     background:#fff; color:#111;
-    /* ✅ (요청 2) 하단 고정바에 내용이 가리지 않도록 여백 확보 */
-    padding-bottom: 220px;
+    /* ✅ (요청 1) 하단 여백은 JS로 bottomBar 실제 높이만큼 자동 반영 */
+    padding-bottom: 16px;
   }
   h1{ text-align:center; font-size:20px; margin:0 0 12px; color:#005FAE; }
 
@@ -102,6 +102,35 @@
     border-radius:6px;
     box-sizing:border-box;
   }
+
+  /* ✅ (요청 3) select(사이즈/수량) 기본 스타일: input과 동일한 박스 + 오른쪽 화살표 */
+  select{
+    width:100%;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:6px;
+    box-sizing:border-box;
+    font-size:15px;
+    font-weight:400;
+    background:#fff;
+    appearance:none;
+    -webkit-appearance:none;
+    -moz-appearance:none;
+    background-image:
+      linear-gradient(45deg, transparent 50%, #777 50%),
+      linear-gradient(135deg, #777 50%, transparent 50%);
+    background-position:
+      calc(100% - 18px) 50%,
+      calc(100% - 12px) 50%;
+    background-size:6px 6px, 6px 6px;
+    background-repeat:no-repeat;
+    padding-right:40px;
+  }
+  select:focus-visible{
+    outline: 3px solid rgba(0,95,174,.25);
+    outline-offset: 2px;
+  }
+  select:invalid{ color:#999; font-weight:500; }
 
   .address-row{ display:flex; gap:8px; }
   .address-row input{ flex:1; }
@@ -303,13 +332,15 @@
   .edit-row{ display:none; margin-top:10px; gap:8px; justify-content:flex-end; }
   .edit-row button{ padding:10px 12px; font-size:13px; border-radius:10px; }
 
-  .product.is-locked input{
+  .product.is-locked input,
+  .product.is-locked select{
     background:#f2f2f2 !important;
     color:#777 !important;
     border-color:#ddd !important;
   }
   .product.is-locked input::placeholder{ color:#aaa !important; }
-  .product.is-locked input:disabled{
+  .product.is-locked input:disabled,
+  .product.is-locked select:disabled{
     background:#f2f2f2 !important;
     color:#777 !important;
     -webkit-text-fill-color:#777 !important;
@@ -505,7 +536,7 @@
      ✅✅✅ [요청 반영]
      1) 입력 내용 확인 버튼: 싸U 파란색 테두리/글씨 (배경 흰색)
      2) 주문 내역 보기 버튼: 싸U 파란색 테두리/글씨 (배경 흰색)
-     4) 주문 내역 복사 버튼: (요청 6) 회색 채움 + 진회색 테두리 + 진한 검정 글씨
+     4) 주문 내역 복사 버튼: 회색 채움 + 진회색(더 연한) 테두리 + 진한 검정 글씨
      5) 지정된 8개 버튼 글씨 1사이즈 크게(14 -> 15)
      ================================================== */
   .btn-outline-blue{
@@ -533,12 +564,40 @@
     font-size:15px;
   }
 
-  /* ✅ (요청 6) 주문 내역 복사 버튼 스타일 교체 */
+  /* ✅ (요청 5) 주문 내역 복사 버튼 테두리를 더 연한 회색으로 */
   .btn-history-copy{
-    background:#e0e0e0;     /* 회색 채움 */
-    color:#111;            /* 진한 검정 */
-    border:1px solid #7a7a7a; /* 진한 회색 테두리 */
+    background:#e0e0e0;        /* 회색 채움 */
+    color:#111;               /* 진한 검정 */
+    border:1px solid #bdbdbd; /* ✅ 더 연한 회색 테두리 */
     font-weight:900;
+  }
+
+  /* ✅ (요청 6) 주문하기/추가주문하기 글씨 +1 */
+  .btn-order,
+  .btn-add-order{
+    font-size:16px; /* ✅ 15 -> 16 */
+  }
+
+  /* ✅ (요청 7) 세로 길이 조정 */
+  .btn-order,
+  .btn-add-order{
+    padding:14px 14px; /* ✅ 한 단계 더 크게 */
+  }
+  .btn-check,
+  .btn-replay,
+  .btn-history-view,
+  .btn-history-copy{
+    padding:10px 14px; /* ✅ 한 단계 더 작게 */
+  }
+
+  /* ✅ (요청 2) 상품 추가/삭제 아래 안내 문구 */
+  .form-under-note{
+    margin-top:8px;
+    font-size:12px;
+    font-weight:900;
+    color:#666;
+    line-height:1.35;
+    text-align:center;
   }
 
   /* ==================================================
@@ -657,6 +716,9 @@
         상품 삭제
       </button>
     </div>
+
+    <!-- ✅ (요청 2) 안내 문구 추가 -->
+    <div class="form-under-note">※ 입력 후 반드시 '주문하기' 버튼을 눌러야 주문이 접수됩니다.</div>
   </div>
 </div>
 
@@ -688,7 +750,8 @@
 
       <!-- ✅ 다음 줄: 입력 내용 확인 / 완료된 주문 다시보기 -->
       <div class="button-line-2">
-        <button class="btn-check btn-outline-blue" type="button" onclick="checkOrder()">입력 내용 확인</button>
+        <!-- ✅ (요청 4) 문구 변경 -->
+        <button class="btn-check btn-outline-blue" type="button" onclick="checkOrder()">입력 내용 확인하기</button>
         <button class="btn-replay" type="button" onclick="goCompletePreview()">완료된 주문 다시보기</button>
       </div>
     </div>
@@ -745,6 +808,18 @@
 
   // ✅ (추가) 완료 요약 날짜 필터(기본: 오늘=0)
   let DONE_FILTER_OFFSET = 0;
+
+  // ✅ (요청 1) 하단바 실제 높이만큼 body padding-bottom 자동 반영
+  function updateBottomSpacing(){
+    const bar = document.getElementById("bottomBar");
+    if(!bar) return;
+    const height = bar.offsetHeight || 0;
+    // body 기본 padding(16px)은 유지하고, bottom만 하단바 높이+16으로 덮어쓰기
+    document.body.style.paddingBottom = (height + 16) + "px";
+  }
+  window.addEventListener("load", updateBottomSpacing);
+  window.addEventListener("resize", updateBottomSpacing);
+  window.addEventListener("orientationchange", updateBottomSpacing);
 
   function newOrderId_(){
     return "oid_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
@@ -872,14 +947,14 @@
     });
   }
 
-  // ✅ (요청 1) "완전 빈" 상품카드 판별
+  // ✅ (요청 1) "완전 빈" 상품카드 판별 (input + select)
   function isBlankProductCard_(p){
-    const i = p.querySelectorAll("input");
-    const name  = (i[0]?.value || "").trim();
-    const color = (i[1]?.value || "").trim();
-    const size  = (i[2]?.value || "").trim();
-    const qty   = (i[3]?.value || "").trim();
-    const price = (i[4]?.value || "").trim();
+    const els = p.querySelectorAll("input, select");
+    const name  = (els[0]?.value || "").trim();
+    const color = (els[1]?.value || "").trim();
+    const size  = (els[2]?.value || "").trim();
+    const qty   = (els[3]?.value || "").trim();
+    const price = (els[4]?.value || "").trim();
     return (!name && !color && !size && !qty && !price);
   }
 
@@ -997,11 +1072,11 @@
   }
 
   function lockProductInputs(div, lock){
-    const inputs = div.querySelectorAll("input");
+    const els = div.querySelectorAll("input, select");
     for (let k=0;k<5;k++){
-      if (!inputs[k]) continue;
-      inputs[k].readOnly = lock;
-      inputs[k].disabled = lock;
+      if (!els[k]) continue;
+      els[k].readOnly = lock;
+      els[k].disabled = lock;
     }
     if (lock) div.classList.add("is-locked");
     else div.classList.remove("is-locked");
@@ -1111,6 +1186,9 @@
       calc();
       saveData();
       setTimeout(focusBanner, 50);
+
+      // ✅ (요청 1) 하단바 높이 변화(컨트롤 전환) 반영
+      setTimeout(updateBottomSpacing, 0);
       return;
     }
 
@@ -1136,6 +1214,9 @@
     applyProductVisibility_();
     calc();
     saveData();
+
+    // ✅ (요청 1) 하단바 높이 변화(컨트롤 전환) 반영
+    setTimeout(updateBottomSpacing, 0);
   }
 
   function setBadge(div){
@@ -1212,12 +1293,12 @@
       const key = _itemDateKey_(p);
       if (key !== targetDate) return;
 
-      const i = p.querySelectorAll("input");
-      const name = (i[0]?.value || "").trim();
-      const color = (i[1]?.value || "").trim();
-      const size = (i[2]?.value || "").trim();
-      const qty = Number((i[3]?.value || "").trim() || 0);
-      const price = Number((i[4]?.value || "").trim() || 0);
+      const els = p.querySelectorAll("input, select");
+      const name = (els[0]?.value || "").trim();
+      const color = (els[1]?.value || "").trim();
+      const size = (els[2]?.value || "").trim();
+      const qty = Number((els[3]?.value || "").trim() || 0);
+      const price = Number((els[4]?.value || "").trim() || 0);
 
       const qtyText = qty ? `${qty}개` : "0개";
       const priceText = price ? _fmtMoney_(price) : "0원";
@@ -1262,12 +1343,12 @@
       // ✅ (요청 1) 완전 빈 카드면 요약에서 제외
       if (isBlankProductCard_(p)) return;
 
-      const i = p.querySelectorAll("input");
-      const name = (i[0]?.value || "").trim();
-      const color = (i[1]?.value || "").trim();
-      const size = (i[2]?.value || "").trim();
-      const qtyRaw = (i[3]?.value || "").trim();
-      const priceRaw = (i[4]?.value || "").trim();
+      const els = p.querySelectorAll("input, select");
+      const name = (els[0]?.value || "").trim();
+      const color = (els[1]?.value || "").trim();
+      const size = (els[2]?.value || "").trim();
+      const qtyRaw = (els[3]?.value || "").trim();
+      const priceRaw = (els[4]?.value || "").trim();
 
       const qty = Number(qtyRaw || 0);
       const price = Number(priceRaw || 0);
@@ -1311,9 +1392,9 @@
         const key = _itemDateKey_(p);
         if (key !== targetDate) return;
 
-        const i = p.querySelectorAll("input");
-        const qty = Number((i[3]?.value || "").trim() || 0);
-        const price = Number((i[4]?.value || "").trim() || 0);
+        const els = p.querySelectorAll("input, select");
+        const qty = Number((els[3]?.value || "").trim() || 0);
+        const price = Number((els[4]?.value || "").trim() || 0);
         sum += (qty * price);
       });
 
@@ -1326,9 +1407,9 @@
         // ✅ (요청 1) 완전 빈 카드는 합산에서 제외
         if (isBlankProductCard_(p)) return;
 
-        const i = p.querySelectorAll("input");
-        const qty = Number((i[3]?.value || "").trim() || 0);
-        const price = Number((i[4]?.value || "").trim() || 0);
+        const els = p.querySelectorAll("input, select");
+        const qty = Number((els[3]?.value || "").trim() || 0);
+        const price = Number((els[4]?.value || "").trim() || 0);
         sum += (qty * price);
       });
     }
@@ -1442,41 +1523,41 @@
   }
 
   function _productSnapshot_(div){
-    const i = div.querySelectorAll("input");
+    const els = div.querySelectorAll("input, select");
     return JSON.stringify({
-      name: i[0]?.value || "",
-      color: i[1]?.value || "",
-      size: i[2]?.value || "",
-      qty: i[3]?.value || "",
-      price: i[4]?.value || ""
+      name: els[0]?.value || "",
+      color: els[1]?.value || "",
+      size: els[2]?.value || "",
+      qty: els[3]?.value || "",
+      price: els[4]?.value || ""
     });
   }
 
   function _applySnapshot_(div, snapStr){
     try{
       const s = JSON.parse(snapStr || "{}");
-      const i = div.querySelectorAll("input");
-      i[0].value = s.name || "";
-      i[1].value = s.color || "";
-      i[2].value = s.size || "";
-      i[3].value = s.qty || "";
-      i[4].value = s.price || "";
+      const els = div.querySelectorAll("input, select");
+      els[0].value = s.name || "";
+      els[1].value = s.color || "";
+      els[2].value = s.size || "";
+      els[3].value = s.qty || "";
+      els[4].value = s.price || "";
     }catch(e){}
   }
 
   function _validateProductInputs_(div){
-    const i = div.querySelectorAll("input");
-    const name = (i[0].value || "").trim();
-    const color = (i[1].value || "").trim();
-    const size = (i[2].value || "").trim();
-    const qty = Number((i[3].value || "").trim() || 0);
-    const price = Number((i[4].value || "").trim() || 0);
+    const els = div.querySelectorAll("input, select");
+    const name = (els[0].value || "").trim();
+    const color = (els[1].value || "").trim();
+    const size = (els[2].value || "").trim();
+    const qty = Number((els[3].value || "").trim() || 0);
+    const price = Number((els[4].value || "").trim() || 0);
 
-    if (!name) { alert("상품명을 입력해주세요."); i[0].focus(); return false; }
-    if (!color) { alert("색상을 입력해주세요."); i[1].focus(); return false; }
-    if (!size) { alert("사이즈를 입력해주세요."); i[2].focus(); return false; }
-    if (!qty || qty <= 0) { alert("수량을 입력해주세요."); i[3].focus(); return false; }
-    if (!price || price <= 0) { alert("가격을 입력해주세요."); i[4].focus(); return false; }
+    if (!name) { alert("상품명을 입력해주세요."); els[0].focus(); return false; }
+    if (!color) { alert("색상을 입력해주세요."); els[1].focus(); return false; }
+    if (!size) { alert("사이즈를 선택해주세요."); els[2].focus(); return false; }
+    if (!qty || qty <= 0) { alert("수량을 선택해주세요."); els[3].focus(); return false; }
+    if (!price || price <= 0) { alert("가격을 입력해주세요."); els[4].focus(); return false; }
     return true;
   }
 
@@ -1534,14 +1615,32 @@
         </div>
         <div class="field">
           <label>사이즈</label>
-          <input placeholder="예) L / 라지 / 100 / 프리">
+          <!-- ✅ (요청 3) 옵션 선택 드롭다운 -->
+          <select required>
+            <option value="" selected disabled>사이즈 선택</option>
+            <option value="XS">XS(일부 상품만)</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="2XL">2XL(일부 상품만)</option>
+          </select>
         </div>
       </div>
 
       <div class="row">
         <div class="field">
           <label>수량</label>
-          <input type="number" value="" placeholder="예) 1">
+          <!-- ✅ (요청 3) 수량 선택 드롭다운 -->
+          <select required>
+            <option value="" selected disabled>수량 선택</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
         </div>
         <div class="field">
           <label>가격</label>
@@ -1566,17 +1665,23 @@
       </div>
     `;
 
-    const inputs = div.querySelectorAll("input");
+    const els = div.querySelectorAll("input, select");
     if (preset){
-      inputs[0].value = preset.name || "";
-      inputs[1].value = preset.color || "";
-      inputs[2].value = preset.size || "";
-      inputs[3].value = preset.qty != null ? preset.qty : "";
-      inputs[4].value = preset.price != null ? preset.price : "";
+      els[0].value = preset.name || "";
+      els[1].value = preset.color || "";
+      els[2].value = preset.size || "";
+      els[3].value = (preset.qty != null ? String(preset.qty) : "");
+      els[4].value = preset.price != null ? preset.price : "";
     }
 
     for (let k=0;k<5;k++){
-      inputs[k].addEventListener("input", ()=>{
+      els[k].addEventListener("input", ()=>{
+        if (MODE !== "form" && div.dataset.editing !== "1") return;
+        calc();
+        renderDraftSummary();
+        saveData();
+      });
+      els[k].addEventListener("change", ()=>{
         if (MODE !== "form" && div.dataset.editing !== "1") return;
         calc();
         renderDraftSummary();
@@ -1634,15 +1739,15 @@
 
       if (!confirm("변경 내용을 저장할까요?")) return;
 
-      const i = div.querySelectorAll("input");
+      const els2 = div.querySelectorAll("input, select");
 
       const item = {
         itemId: div.dataset.id,
-        productName: (i[0].value || "").trim(),
-        color: (i[1].value || "").trim(),
-        size: (i[2].value || "").trim(),
-        qty: Number((i[3].value || "").trim() || 0),
-        price: Number((i[4].value || "").trim() || 0)
+        productName: (els2[0].value || "").trim(),
+        color: (els2[1].value || "").trim(),
+        size: (els2[2].value || "").trim(),
+        qty: Number((els2[3].value || "").trim() || 0),
+        price: Number((els2[4].value || "").trim() || 0)
       };
 
       const before = JSON.parse(div.dataset.snapshot || "{}");
@@ -1704,14 +1809,14 @@
         }
         if (!confirm("이 상품을 취소할까요?\n(취소 후에는 되돌릴 수 없습니다.)")) return;
 
-        const i = div.querySelectorAll("input");
+        const els2 = div.querySelectorAll("input, select");
         const item = {
           itemId: div.dataset.id,
-          productName: (i[0].value || "").trim(),
-          color: (i[1].value || "").trim(),
-          size: (i[2].value || "").trim(),
-          qty: Number((i[3].value || "").trim() || 0),
-          price: Number((i[4].value || "").trim() || 0)
+          productName: (els2[0].value || "").trim(),
+          color: (els2[1].value || "").trim(),
+          size: (els2[2].value || "").trim(),
+          qty: Number((els2[3].value || "").trim() || 0),
+          price: Number((els2[4].value || "").trim() || 0)
         };
 
         const amt = Number(item.qty || 0) * Number(item.price || 0);
@@ -1820,9 +1925,9 @@
       text += "(작성 중인 상품이 없습니다.)\n";
     } else {
       targets.forEach((p, idx)=>{
-        const i = p.querySelectorAll("input");
-        const priceVal = (i[4].value || "").trim();
-        text += `${idx+1}. ${i[0].value} / ${i[1].value} / ${i[2].value} / ${i[3].value}개 / ${priceVal ? _fmtMoney_(priceVal) : "-"}\n`;
+        const els = p.querySelectorAll("input, select");
+        const priceVal = (els[4].value || "").trim();
+        text += `${idx+1}. ${els[0].value} / ${els[1].value} / ${els[2].value} / ${els[3].value}개 / ${priceVal ? _fmtMoney_(priceVal) : "-"}\n`;
       });
     }
 
@@ -1860,9 +1965,9 @@
     } else {
       items.forEach((p, idx)=>{
         const st = p.dataset.status;
-        const i = p.querySelectorAll("input");
-        const qty = Number(i[3].value || 0);
-        const price = Number(i[4].value || 0);
+        const els = p.querySelectorAll("input, select");
+        const qty = Number(els[3].value || 0);
+        const price = Number(els[4].value || 0);
 
         const prefix =
           (st === "canceled") ? "[취소완료] " :
@@ -1870,7 +1975,7 @@
           (st === "modified") ? "[변경완료] " :
           "[주문완료] ";
 
-        text += `${idx+1}. ${prefix}${i[0].value} / ${i[1].value} / ${i[2].value} / ${qty}개 / ${price.toLocaleString()}원\n`;
+        text += `${idx+1}. ${prefix}${els[0].value} / ${els[1].value} / ${els[2].value} / ${qty}개 / ${price.toLocaleString()}원\n`;
       });
     }
 
@@ -1905,9 +2010,9 @@
     } else {
       items.forEach((p, idx)=>{
         const st = p.dataset.status;
-        const i = p.querySelectorAll("input");
-        const qty = Number(i[3].value || 0);
-        const price = Number(i[4].value || 0);
+        const els = p.querySelectorAll("input, select");
+        const qty = Number(els[3].value || 0);
+        const price = Number(els[4].value || 0);
 
         const prefix =
           (st === "canceled") ? "[취소완료] " :
@@ -1915,7 +2020,7 @@
           (st === "modified") ? "[변경완료] " :
           "[주문완료] ";
 
-        text += `${idx+1}. ${prefix}${i[0].value} / ${i[1].value} / ${i[2].value} / ${qty}개 / ${price.toLocaleString()}원\n`;
+        text += `${idx+1}. ${prefix}${els[0].value} / ${els[1].value} / ${els[2].value} / ${qty}개 / ${price.toLocaleString()}원\n`;
       });
     }
 
@@ -1967,12 +2072,12 @@
     for (const p of targets){
       if (!_validateProductInputs_(p)) return;
 
-      const i = p.querySelectorAll("input");
-      const name = (i[0].value || "").trim();
-      const color = (i[1].value || "").trim();
-      const size = (i[2].value || "").trim();
-      const qty = Number((i[3].value || "").trim() || 0);
-      const price = Number((i[4].value || "").trim() || 0);
+      const els = p.querySelectorAll("input, select");
+      const name = (els[0].value || "").trim();
+      const color = (els[1].value || "").trim();
+      const size = (els[2].value || "").trim();
+      const qty = Number((els[3].value || "").trim() || 0);
+      const price = Number((els[4].value || "").trim() || 0);
 
       items.push({ itemId: p.dataset.id, productName:name, color, size, qty, price });
       sum += (qty * price);
@@ -2188,7 +2293,7 @@
     };
 
     document.querySelectorAll(".product").forEach(p=>{
-      const i = p.querySelectorAll("input");
+      const els = p.querySelectorAll("input, select");
       data.products.push({
         id: p.dataset.id || _uid(),
         status: p.dataset.status || "draft",
@@ -2198,11 +2303,11 @@
         orderTime: p.dataset.orderTime || "",
         doneDate: p.dataset.doneDate || "",
         shipDate: p.dataset.shipDate || "",
-        name: i[0]?.value || "",
-        color: i[1]?.value || "",
-        size: i[2]?.value || "",
-        qty: i[3]?.value || "",
-        price: i[4]?.value || ""
+        name: els[0]?.value || "",
+        color: els[1]?.value || "",
+        size: els[2]?.value || "",
+        qty: els[3]?.value || "",
+        price: els[4]?.value || ""
       });
     });
 
@@ -2244,6 +2349,9 @@
       setMode("form");
       setBanner("주문이 정상적으로 접수되었습니다.");
       saveData();
+
+      // ✅ (요청 1)
+      setTimeout(updateBottomSpacing, 0);
       return;
     }
 
@@ -2302,6 +2410,9 @@
 
     setBanner("주문이 정상적으로 접수되었습니다.");
     saveData();
+
+    // ✅ (요청 1)
+    setTimeout(updateBottomSpacing, 0);
   }
 
   ["nickname","name","addressDetail"].forEach(id=>{
