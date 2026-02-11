@@ -10,6 +10,8 @@
     margin:0; padding:16px;
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
     background:#fff; color:#111;
+    /* ✅ (요청 2) 하단 고정바에 내용이 가리지 않도록 여백 확보 */
+    padding-bottom: 220px;
   }
   h1{ text-align:center; font-size:20px; margin:0 0 12px; color:#005FAE; }
 
@@ -461,7 +463,7 @@
     user-select:none;
   }
 
-  /* ✅ (추가) 상품 정보 타이틀 + 날짜 필터 버튼(5일전~오늘) */
+  /* ✅ (추가) 상품 정보 타이틀 + 날짜 필터 버튼(오늘~1주) */
   .section-title-row{
     display:flex;
     align-items:center;
@@ -503,7 +505,7 @@
      ✅✅✅ [요청 반영]
      1) 입력 내용 확인 버튼: 싸U 파란색 테두리/글씨 (배경 흰색)
      2) 주문 내역 보기 버튼: 싸U 파란색 테두리/글씨 (배경 흰색)
-     4) 주문 내역 복사 버튼: 회색 테두리/글씨 (배경 흰색)
+     4) 주문 내역 복사 버튼: (요청 6) 회색 채움 + 진회색 테두리 + 진한 검정 글씨
      5) 지정된 8개 버튼 글씨 1사이즈 크게(14 -> 15)
      ================================================== */
   .btn-outline-blue{
@@ -525,18 +527,35 @@
   .btn-order,
   .btn-replay,
   .btn-add-order,
-  .btn-check,             /* 클래스는 유지하지만 실제 스타일은 btn-outline-blue로 덮어씀 */
-  .btn-history-view,      /* 주문 내역 보기 */
-  .btn-history-copy{      /* 주문 내역 복사 */
+  .btn-check,
+  .btn-history-view,
+  .btn-history-copy{
     font-size:15px;
   }
 
-  /* ✅ (요청 4) 기존 btn-history-copy(파랑 톤) → 회색 톤으로 교체 */
+  /* ✅ (요청 6) 주문 내역 복사 버튼 스타일 교체 */
   .btn-history-copy{
-    background:#fff;
-    color:#777;
-    border:1px solid #cfcfcf;
+    background:#e0e0e0;     /* 회색 채움 */
+    color:#111;            /* 진한 검정 */
+    border:1px solid #7a7a7a; /* 진한 회색 테두리 */
     font-weight:900;
+  }
+
+  /* ==================================================
+     ✅✅✅ (요청 2) 하단 고정 바
+     - 주문하기 버튼부터 카카오톡 문의하기까지 고정
+     ================================================== */
+  #bottomBar{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    background:#fff;
+    border-top:1px solid #e9e9e9;
+    padding:12px 12px calc(12px + env(safe-area-inset-bottom));
+    z-index:9999;
+  }
+  #bottomBarInner{
+    max-width:560px;
+    margin:0 auto;
   }
 </style>
 
@@ -596,17 +615,18 @@
 </div>
 
 <div class="section">
-  <!-- ✅ (수정) 날짜 필터 버튼 영역 제거 (요청사항) -->
   <div class="section-title-row">
-    <div class="section-title" id="productSectionTitle">상품 정보</div>
+    <!-- ✅ (요청 5) 한 줄에 안 들어갈 수 있으니 타이틀을 더 짧게 -->
+    <div class="section-title" id="productSectionTitle">주문상품 정보</div>
 
-    <!-- ✅ 완료화면에서만 보일 날짜 필터 -->
+    <!-- ✅ 완료화면에서만 보일 날짜 필터 (요청 5) 오늘/1일전/2일전/3일전/4일전/1주 -->
     <div class="day-filter" id="dayFilter">
-      <button type="button" data-day="4">4일전</button>
-      <button type="button" data-day="3">3일전</button>
-      <button type="button" data-day="2">2일전</button>
-      <button type="button" data-day="1">1일전</button>
       <button type="button" data-day="0" class="is-active">오늘</button>
+      <button type="button" data-day="1">1일전</button>
+      <button type="button" data-day="2">2일전</button>
+      <button type="button" data-day="3">3일전</button>
+      <button type="button" data-day="4">4일전</button>
+      <button type="button" data-day="7">1주</button>
     </div>
   </div>
 
@@ -655,42 +675,47 @@
   <div class="pay-note" id="payNoteBelow">⚠️ 방송 종료 전까지 꼭 입금 부탁드립니다.</div>
 </div>
 
-<!-- ✅ 주문 입력 화면 하단 -->
-<div id="formControls">
-  <!-- ✅ 주문하기: 가운데 정렬 1개(폭 2/3) -->
-  <div class="button-center-one">
-    <button class="btn-order" type="button" onclick="submitOrder()">주문하기</button>
-  </div>
+<!-- ✅ (요청 2) 하단 고정 영역: 주문하기~문의하기 -->
+<div id="bottomBar">
+  <div id="bottomBarInner">
 
-  <!-- ✅ 다음 줄: 입력 내용 확인 / 완료된 주문 다시보기 -->
-  <div class="button-line-2">
-    <!-- ✅ (요청 1) 문구 변경 + 파란 테두리/글씨 -->
-    <button class="btn-check btn-outline-blue" type="button" onclick="checkOrder()">입력 내용 확인</button>
-    <button class="btn-replay" type="button" onclick="goCompletePreview()">완료된 주문 다시보기</button>
-  </div>
-</div>
+    <!-- ✅ 주문 입력 화면 하단 -->
+    <div id="formControls">
+      <!-- ✅ 주문하기: 가운데 정렬 1개(폭 2/3) -->
+      <div class="button-center-one">
+        <button class="btn-order" type="button" onclick="submitOrder()">주문하기</button>
+      </div>
 
-<!-- ✅ 완료 화면 하단 -->
-<div id="completeControls" style="display:none;">
-  <!-- ✅ 추가 주문하기: 가운데 정렬 1개(폭 2/3) -->
-  <div class="button-center-one">
-    <button class="btn-add-order" type="button" onclick="goToFormForAdd()">추가 주문하기</button>
-  </div>
+      <!-- ✅ 다음 줄: 입력 내용 확인 / 완료된 주문 다시보기 -->
+      <div class="button-line-2">
+        <button class="btn-check btn-outline-blue" type="button" onclick="checkOrder()">입력 내용 확인</button>
+        <button class="btn-replay" type="button" onclick="goCompletePreview()">완료된 주문 다시보기</button>
+      </div>
+    </div>
 
-  <!-- ✅ 다음 줄: 주문 내역 보기 / 주문 내역 복사 -->
-  <div class="button-line-2">
-    <!-- ✅ (요청 2/3) 문구 변경 + 파란 테두리/글씨 -->
-    <button class="btn-history-view btn-outline-blue" type="button" onclick="showOrderHistory()">주문 내역 보기</button>
-    <!-- ✅ (요청 4) 문구 변경 + 회색 테두리/글씨 -->
-    <button class="btn-history-copy" type="button" onclick="copyOrderHistory()">주문 내역 복사</button>
-  </div>
-</div>
+    <!-- ✅ 완료 화면 하단 -->
+    <div id="completeControls" style="display:none;">
+      <!-- ✅ 추가 주문하기: 가운데 정렬 1개(폭 2/3) -->
+      <div class="button-center-one">
+        <button class="btn-add-order" type="button" onclick="goToFormForAdd()">추가 주문하기</button>
+      </div>
 
-<!-- ✅ (요청) 맨 하단: 말풍선(왼쪽) + 카카오톡 문의(오른쪽) -->
-<div class="help-wrap">
-  <div class="help-row">
-    <div class="help-title"><span class="bubble">💬</span>주문 후 문의가 필요하신가요?</div>
-    <a class="help-link" href="http://pf.kakao.com/_exnahX/chat"><span class="bubble">💬</span>카카오톡 문의하기 &gt;</a>
+      <!-- ✅ 다음 줄: 주문 내역 보기 / 주문 내역 복사 -->
+      <div class="button-line-2">
+        <button class="btn-history-view btn-outline-blue" type="button" onclick="showOrderHistory()">주문 내역 보기</button>
+        <!-- ✅ (요청 6) 문구 + 스타일 변경 -->
+        <button class="btn-history-copy" type="button" onclick="copyOrderHistory()">주문 내역 복사하기</button>
+      </div>
+    </div>
+
+    <!-- ✅ (요청) 맨 하단: 말풍선(왼쪽) + 카카오톡 문의(오른쪽) -->
+    <div class="help-wrap">
+      <div class="help-row">
+        <div class="help-title"><span class="bubble">💬</span>주문 후 문의가 필요하신가요?</div>
+        <a class="help-link" href="http://pf.kakao.com/_exnahX/chat"><span class="bubble">💬</span>카카오톡 문의하기 &gt;</a>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -712,7 +737,7 @@
   // ✅ 고객이 직접 수정하지 않는 이상, 기한 없이 저장 (customer는 별도 보관)
   const LS_CUSTOMER_KEY = "orderCustomer";
   const LS_ORDER_KEY = "orderData";
-  const ORDER_TTL_MS = 5 * 24 * 60 * 60 * 1000; // 5일
+  const ORDER_TTL_MS = 7 * 24 * 60 * 60 * 1000; // ✅ (요청 4) 7일
 
   // ✅ 주문 ID는 (주문 배치 단위)로 사용
   let ACTIVE_DRAFT_ORDER_ID = "";
@@ -834,14 +859,8 @@
     return `${m[1]}.${m[2]}.${m[3]}`;
   }
 
-  // ✅ (추가) "선택한 날짜"에 속하는 상품인지 판별
-  // - 주문완료/변경완료/취소완료: doneDate 기준
-  // - 발송완료: shipDate 기준(없으면 doneDate)
+  // ✅ (요청 3) 날짜 기준: 발송완료로 바뀌어도 "원래 주문 날짜(doneDate)" 유지
   function _itemDateKey_(p){
-    const st = p.dataset.status || "draft";
-    if (st === "shipped"){
-      return (p.dataset.shipDate || p.dataset.doneDate || "").trim();
-    }
     return (p.dataset.doneDate || "").trim();
   }
 
@@ -851,6 +870,17 @@
       if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return false;
       return _itemDateKey_(p) === targetDate;
     });
+  }
+
+  // ✅ (요청 1) "완전 빈" 상품카드 판별
+  function isBlankProductCard_(p){
+    const i = p.querySelectorAll("input");
+    const name  = (i[0]?.value || "").trim();
+    const color = (i[1]?.value || "").trim();
+    const size  = (i[2]?.value || "").trim();
+    const qty   = (i[3]?.value || "").trim();
+    const price = (i[4]?.value || "").trim();
+    return (!name && !color && !size && !qty && !price);
   }
 
   // ✅ 1) 완료 배너 문구(순서/문구 변경 + 파란색 강조)
@@ -995,7 +1025,7 @@
           return;
         }
 
-        // ✅ (추가) 주문상세가 열렸을 때: 선택한 날짜(08:00 기준)에 해당하는 카드만 표시
+        // ✅ 주문상세가 열렸을 때: 선택한 날짜(08:00 기준)에 해당하는 카드만 표시
         if (ORDER_DETAIL_OPEN){
           const key = _itemDateKey_(p);
           p.style.display = (key === targetDate) ? "block" : "none";
@@ -1052,7 +1082,7 @@
       shipActions.style.display = "flex";
 
       if (customerTitle) customerTitle.textContent = "배송지 정보";
-      if (productTitle) productTitle.textContent = "주문 상품 정보";
+      if (productTitle) productTitle.textContent = "주문상품 정보";
 
       setBanner(bannerText || "주문이 정상적으로 접수되었습니다.");
 
@@ -1089,7 +1119,7 @@
     shipActions.style.display = "none";
 
     if (customerTitle) customerTitle.textContent = "고객 정보";
-    if (productTitle) productTitle.textContent = "상품 정보";
+    if (productTitle) productTitle.textContent = "주문상품 정보";
 
     exitShipEdit(true);
 
@@ -1178,7 +1208,7 @@
       const st = p.dataset.status || "draft";
       if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return;
 
-      // ✅ 완료요약은 선택 날짜로 필터 (발송완료는 shipDate 우선)
+      // ✅ (요청 3) 발송완료여도 doneDate(원래 주문날짜)로 필터
       const key = _itemDateKey_(p);
       if (key !== targetDate) return;
 
@@ -1229,6 +1259,9 @@
 
     const drafts = Array.from(document.querySelectorAll(".product")).filter(p => (p.dataset.status === "draft"));
     drafts.forEach(p=>{
+      // ✅ (요청 1) 완전 빈 카드면 요약에서 제외
+      if (isBlankProductCard_(p)) return;
+
       const i = p.querySelectorAll("input");
       const name = (i[0]?.value || "").trim();
       const color = (i[1]?.value || "").trim();
@@ -1238,9 +1271,6 @@
 
       const qty = Number(qtyRaw || 0);
       const price = Number(priceRaw || 0);
-
-      // 전부 비어있으면(완전 새 상품) 요약에서 제외
-      if (!name && !color && !size && !qtyRaw && !priceRaw) return;
 
       const qtyText = qtyRaw ? `${qty}개` : "-";
       const priceText = priceRaw ? _fmtMoney_(price) : "-";
@@ -1277,8 +1307,9 @@
         const st = p.dataset.status || "draft";
         if (!(st === "sent" || st === "modified" || st === "shipped")) return; // ✅ 취소는 제외
 
+        // ✅ (요청 3) 발송완료여도 doneDate로 합산
         const key = _itemDateKey_(p);
-        if (key !== targetDate) return; // ✅ 선택 날짜만
+        if (key !== targetDate) return;
 
         const i = p.querySelectorAll("input");
         const qty = Number((i[3]?.value || "").trim() || 0);
@@ -1291,6 +1322,9 @@
       document.querySelectorAll(".product").forEach(p=>{
         const st = p.dataset.status || "draft";
         if (st !== "draft") return;
+
+        // ✅ (요청 1) 완전 빈 카드는 합산에서 제외
+        if (isBlankProductCard_(p)) return;
 
         const i = p.querySelectorAll("input");
         const qty = Number((i[3]?.value || "").trim() || 0);
@@ -1390,7 +1424,7 @@
 
       if (now.getTime() >= due.getTime()){
         p.dataset.status = "shipped";
-        // ✅ 발송완료로 바뀐 시점의 방송일자(요청 1번 기준) 저장
+        // ✅ (요청 3) shipDate는 기록용으로만 남기고, 필터는 doneDate를 사용함
         if (!p.dataset.shipDate) p.dataset.shipDate = getBroadcastSheetNameKST_();
         setBadge(p);
         changed = true;
@@ -1401,7 +1435,7 @@
       renderDoneSummary();
       renderDraftSummary();
       calc();
-      applyProductVisibility_(); // ✅ (추가) 현재 상세보기/필터 상태에 맞게 카드 반영
+      applyProductVisibility_();
       if (!silentSave) saveData();
       else if (!IS_LOADING) saveData();
     }
@@ -1480,7 +1514,7 @@
     div.dataset.orderId = (preset && preset.orderId) ? preset.orderId : "";
     div.dataset.orderTime = (preset && preset.orderTime) ? preset.orderTime : "";
 
-    // ✅ (추가) 완료요약/상세 필터용 방송일자 저장(없으면 빈값)
+    // ✅ 완료요약/상세 필터용 방송일자 저장(없으면 빈값)
     div.dataset.doneDate = (preset && preset.doneDate) ? preset.doneDate : "";
     div.dataset.shipDate = (preset && preset.shipDate) ? preset.shipDate : "";
 
@@ -1611,12 +1645,6 @@
         price: Number((i[4].value || "").trim() || 0)
       };
 
-      /* ================================
-         ✅✅✅ [핵심 1] 변경완료: 차액만 전송(amountDelta)
-         - before snapshot 기반으로 beforeAmt 계산
-         - afterAmt과의 차액만 서버로 보냄
-         - 시트 표시용 상품명 prefix
-         ================================ */
       const before = JSON.parse(div.dataset.snapshot || "{}");
       const beforeAmt = Number(before.qty || 0) * Number(before.price || 0);
       const afterAmt  = Number(item.qty || 0) * Number(item.price || 0);
@@ -1627,7 +1655,7 @@
       const useOrderId = div.dataset.orderId || LAST_DONE_ORDER_ID || newOrderId_();
 
       const payload = {
-        eventId: newEventId_(),          // ✅ 추가
+        eventId: newEventId_(),
         orderId: useOrderId,
         orderTime: kstNowString(),
         broadcastDate: getBroadcastSheetNameKST_(),
@@ -1686,11 +1714,6 @@
           price: Number((i[4].value || "").trim() || 0)
         };
 
-        /* ================================
-           ✅✅✅ [핵심 2] 개별 취소: -금액(amountDelta)
-           - 취소는 마이너스 금액을 서버로 보냄
-           - 시트 표시용 상품명 prefix
-           ================================ */
         const amt = Number(item.qty || 0) * Number(item.price || 0);
         item.amountDelta = -amt;                          // ✅ 취소는 마이너스
         item.productName = "[취소] " + item.productName;  // ✅ 시트 표시용
@@ -1698,7 +1721,7 @@
         const useOrderId = div.dataset.orderId || LAST_DONE_ORDER_ID || newOrderId_();
 
         const payload = {
-          eventId: newEventId_(),          // ✅ 추가
+          eventId: newEventId_(),
           orderId: useOrderId,
           orderTime: kstNowString(),
           broadcastDate: getBroadcastSheetNameKST_(),
@@ -1730,7 +1753,7 @@
           calc();
           renderDoneSummary();
           renderDraftSummary();
-          applyProductVisibility_(); // ✅ (추가) 필터 반영
+          applyProductVisibility_();
           saveData();
           alert("취소가 완료되었습니다.");
         } catch(e){
@@ -1787,13 +1810,19 @@
     text += `주소: ${document.getElementById("address").value} ${document.getElementById("addressDetail").value}\n\n`;
 
     text += "[작성 중 상품]\n";
-    const targets = Array.from(document.querySelectorAll(".product")).filter(p => (p.dataset.status === "draft"));
+
+    // ✅ (요청 1) 완전 빈 상품카드는 제외
+    const targets = Array.from(document.querySelectorAll(".product"))
+      .filter(p => (p.dataset.status === "draft"))
+      .filter(p => !isBlankProductCard_(p));
+
     if (targets.length === 0){
       text += "(작성 중인 상품이 없습니다.)\n";
     } else {
       targets.forEach((p, idx)=>{
         const i = p.querySelectorAll("input");
-        text += `${idx+1}. ${i[0].value} / ${i[1].value} / ${i[2].value} / ${i[3].value}개 / ${_fmtMoney_(i[4].value)}\n`;
+        const priceVal = (i[4].value || "").trim();
+        text += `${idx+1}. ${i[0].value} / ${i[1].value} / ${i[2].value} / ${i[3].value}개 / ${priceVal ? _fmtMoney_(priceVal) : "-"}\n`;
       });
     }
 
@@ -1805,11 +1834,6 @@
     alert(text);
   }
 
-  /* ==================================================
-     ✅✅✅ [수정] 주문확인서 보기: 날짜 필터(오늘/1일전/...) 적용
-     - 완료화면에서 선택한 날짜(DONE_FILTER_OFFSET)의 내역만 표시
-     - 발송완료는 shipDate 우선(없으면 doneDate)
-     ================================================== */
   function showOrderHistory(){
     const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET);
     const dateTitle = formatBroadcastDateText_(targetDate);
@@ -1826,7 +1850,7 @@
       const st = p.dataset.status || "draft";
       if (!(st === "sent" || st === "modified" || st === "canceled" || st === "shipped")) return false;
 
-      // ✅ 선택 날짜만 (발송완료는 shipDate 우선)
+      // ✅ (요청 3) 발송완료여도 doneDate 기준으로만 분류
       const key = _itemDateKey_(p);
       return key === targetDate;
     });
@@ -1850,7 +1874,6 @@
       });
     }
 
-    // ✅ 아래 합계/배송비/총액은 calc()가 이미 날짜필터 기준으로 계산해둔 값을 그대로 사용
     text += `\n상품합계: ${document.getElementById("sum").innerText}\n`;
     text += `배송비: ${document.getElementById("shipping").innerText}\n`;
     text += `총 결제금액: ${document.getElementById("total").innerText}\n`;
@@ -1858,7 +1881,6 @@
     alert(text);
   }
 
-  /* ✅ (추가) 주문확인서 복사하기: showOrderHistory와 동일 내용 복사 */
   function copyOrderHistory(){
     const targetDate = getBroadcastSheetNameKSTByOffset_(DONE_FILTER_OFFSET);
     const dateTitle = formatBroadcastDateText_(targetDate);
@@ -1905,7 +1927,6 @@
       navigator.clipboard.writeText(text);
       alert("주문확인서가 복사되었습니다.");
     }catch(e){
-      // 클립보드가 막힌 환경(일부 브라우저/권한) 대비
       prompt("복사가 지원되지 않아, 아래 내용을 길게 눌러 복사해주세요.", text);
     }
   }
@@ -1929,7 +1950,10 @@
     if (MODE !== "form") return;
     if (!_validateCustomer_()) return;
 
-    const targets = Array.from(document.querySelectorAll(".product")).filter(p => (p.dataset.status === "draft"));
+    // ✅ (요청 1) draft 중 "완전 빈 카드"는 자동 제외하고, 나머지만 주문 접수
+    const draftsAll = Array.from(document.querySelectorAll(".product")).filter(p => (p.dataset.status === "draft"));
+    const targets = draftsAll.filter(p => !isBlankProductCard_(p));
+
     if (targets.length === 0){
       alert("작성 중인 상품이 없습니다.");
       return;
@@ -1961,7 +1985,7 @@
     const broadcastDate = getBroadcastSheetNameKST_();
 
     const payload = {
-      eventId: newEventId_(),          // ✅ 추가
+      eventId: newEventId_(),
       orderId: batchOrderId,
       orderTime: orderTimeStr,
       broadcastDate,
@@ -1995,7 +2019,7 @@
 
       LAST_DONE_ORDER_ID = batchOrderId;
 
-      // ✅✅✅ [변경 2] 주문 완료 후에도 주문ID 유지 (같은 브라우저/기기에서 계속 묶기)
+      // ✅✅✅ 주문 완료 후에도 주문ID 유지 (같은 브라우저/기기에서 계속 묶기)
       ACTIVE_DRAFT_ORDER_ID = batchOrderId;
 
       setMode("complete", "주문이 정상적으로 접수되었습니다.", { detailClosedOnEnter:true });
@@ -2014,7 +2038,7 @@
   function goToFormForAdd(){
     if (SHIP_EDITING){ alert("배송지 수정 중에는 추가주문을 진행할 수 없습니다."); return; }
 
-    // ✅✅✅ [변경 1] 추가주문하기로 폼으로 돌아갈 때, 이전 주문ID로 이어쓰기
+    // ✅✅✅ 추가주문하기로 폼으로 돌아갈 때, 이전 주문ID로 이어쓰기
     if (LAST_DONE_ORDER_ID) ACTIVE_DRAFT_ORDER_ID = LAST_DONE_ORDER_ID;
 
     setMode("form");
@@ -2108,7 +2132,7 @@
     if (!confirm("배송지를 저장할까요?")) return;
 
     const payload = {
-      eventId: newEventId_(),          // ✅ 추가
+      eventId: newEventId_(),
       orderId: LAST_DONE_ORDER_ID || newOrderId_(),
       orderTime: kstNowString(),
       broadcastDate: getBroadcastSheetNameKST_(),
@@ -2321,13 +2345,8 @@
       DONE_FILTER_OFFSET = offset;
       setActiveDayButton_(offset);
 
-      // ✅ 요약도 해당 날짜만
       renderDoneSummary();
-
-      // ✅ 주문상세 보기에서 카드도 해당 날짜만 나오도록 반영
       applyProductVisibility_();
-
-      // ✅✅✅ [추가] 합계/배송비/총액도 선택 날짜 기준으로 즉시 재계산
       calc();
 
       saveData();
