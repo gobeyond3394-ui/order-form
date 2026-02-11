@@ -2262,7 +2262,11 @@
       return;
     }
 
-    if (!confirm(`주문을 완료하시겠습니까?\n\n${PAY_NOTICE}`)) return;
+    if (!confirm(
+`주문을 완료하시겠습니까?
+
+※ 10만원 이상이면 배송비 4,000원은 빼고 입금해주세요.`
+)) return;
 
     const items = [];
     let sum = 0;
