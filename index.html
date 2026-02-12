@@ -2921,21 +2921,39 @@
   });
 
   /* ==================================================
-     ✅✅✅ (요청 1) 배송지 변경 화면에서 "상세주소" 완료(Enter/Done) → 키보드 닫기 + 배송지 저장 버튼으로 이동
-     ================================================== */
-  document.getElementById("addressDetail").addEventListener("keydown", (e)=>{
-    if (e.key !== "Enter") return;
-    if (!SHIP_EDITING) return; // 배송지 변경(편집) 중일 때만
-    e.preventDefault();
+   ✅✅✅ (요청 반영) 상세주소 Enter 동작 확장
+   1) 배송지 변경 모드(SHIP_EDITING)일 때: 기존 동작 유지 (배송지 저장 버튼으로 유도)
+   2) 주문입력 화면(MODE === "form")일 때: 첫 상품(초안)의 상품명으로 이동
+   ================================================== */
+document.getElementById("addressDetail").addEventListener("keydown", (e)=>{
+  if (e.key !== "Enter") return;
+  e.preventDefault();
 
+  // 1) 배송지 변경 모드일 때: 기존 동작 유지 (배송지 저장 버튼으로)
+  if (SHIP_EDITING){
     closeKeyboard_();
-
-    const btn = document.querySelector("#shipEditControls .btn-blue"); // 배송지 저장
+    const btn = document.querySelector("#shipEditControls .btn-blue");
     if (btn){
       btn.scrollIntoView({ behavior:"smooth", block:"center" });
       setTimeout(()=>pulseBtnEl_(btn), 120);
     }
-  });
+    return;
+  }
+
+  // 2) 주문입력 화면일 때: 첫 상품의 상품명으로 이동
+  if (MODE === "form"){
+    const firstDraft = document.querySelector('.product[data-status="draft"]');
+    const nameInput = firstDraft && firstDraft.querySelector(".product-name");
+    if (nameInput){
+      nameInput.focus();
+      try{
+        const len = nameInput.value.length;
+        nameInput.setSelectionRange(len, len);
+      }catch(e){}
+      setTimeout(()=>ensureVisibleWithBottomBar_(nameInput), 50);
+    }
+  }
+});
 
   (function initDayFilter_(){
     const wrap = document.getElementById("dayFilter");
