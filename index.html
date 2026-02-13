@@ -798,7 +798,9 @@
 </div>
 
 <script>
-  const SHIPPING = 4000;
+  const SHIPPING_NORMAL = 4000;      // 일반
+  const SHIPPING_JEJU = 7000;        // 제주/도서산간 기본
+  const SHIPPING_JEJU_HIGH = 3000;   // 제주/도서산간 10만 이상
   const productsDiv = document.getElementById("products");
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzNUf9sgbNtTR__Vr4sa2sM9wrOrxNMsJlIF6LYHH2iQlFZKHJFQJbHcRyBAhotW5iY/exec";
@@ -1199,6 +1201,7 @@
         document.getElementById("addressDetail").focus();
         setTimeout(()=>ensureVisibleWithBottomBar_(document.getElementById("addressDetail")), 50);
         saveData();
+        calc(); // ✅ 주소 선택 즉시 배송비 반영
       }
     }).open();
   }
@@ -1213,6 +1216,37 @@
     if (digits.length <= 7) return `${digits.slice(0,3)}-${digits.slice(3)}`;
     return `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7)}`;
   }
+
+  // ✅ 제주 + 도서산간(울릉/연평 등) 판별
+  function isJejuOrIsland_(){
+    const a = (document.getElementById("address")?.value || "").trim();
+    const d = (document.getElementById("addressDetail")?.value || "").trim();
+    const full = (a + " " + d).replace(/\s+/g, " ").trim();
+
+    // ✅ 필요하면 지역 더 추가 가능
+    return /제주|제주특별자치도|울릉|연평|백령|흑산|거문|홍도/i.test(full);
+  }
+
+  // ✅ 배송비 규칙(최종)
+  // 1) 일반지역: 10만원 미만 4,000 / 10만원 이상 0
+  // 2) 제주/도서산간: 10만원 미만 7,000 / 10만원 이상 3,000
+  function calcShippingByRule_(sum){
+    const isSpecial = isJejuOrIsland_();
+    const s = Number(sum || 0);
+
+    // 10만원 이상
+    if (s >= 100000){
+      return isSpecial ? SHIPPING_JEJU_HIGH : 0;
+    }
+
+    // 10만원 미만(0보다 클 때만 배송비)
+    if (s > 0){
+      return isSpecial ? SHIPPING_JEJU : SHIPPING_NORMAL;
+    }
+
+    return 0;
+  }
+
 
   function _uid(){
     return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
@@ -1608,18 +1642,20 @@
       });
     }
 
-    // ✅ 기본 배송비 규칙 (10만 이상 무료)
+    // ✅ 기본 배송비 규칙 (최종)
     let shipping = 0;
 
     if (MODE === "complete"){
-      // ✅ 완료화면: 날짜필터 기준으로 "날짜별 배송비" 합산 표시
+
       const targetDates = getTargetDateListByOffset_(DONE_FILTER_OFFSET);
 
       if (Number(DONE_FILTER_OFFSET) === 7){
-        // 최근 1주: 날짜별(각 날짜 합계 기준) 배송비를 합산
+
         let shipSum = 0;
+
         targetDates.forEach(dateKey=>{
           let daySum = 0;
+
           document.querySelectorAll(".product").forEach(p=>{
             const st = p.dataset.status || "draft";
             if (!(st === "sent" || st === "modified" || st === "shipped")) return;
@@ -1630,24 +1666,30 @@
             const price = Number((els[4]?.value || "").trim() || 0);
             daySum += (qty * price);
           });
-          shipSum += (daySum > 0 && daySum < 100000) ? SHIPPING : 0;
+
+          shipSum += calcShippingByRule_(daySum);
         });
+
         shipping = shipSum;
+
       } else {
-        // 단일 날짜: 그 날짜 합계 기준으로 배송비 표시
-        shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+
+        shipping = calcShippingByRule_(sum);
       }
 
     } else {
-      // ✅ 입력화면: (평일) orderId+방송일자 기준 1회 / (주말) 금~일 통틀어 1회
-      shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+
+      shipping = calcShippingByRule_(sum);
 
       const currentOrderId = (ACTIVE_DRAFT_ORDER_ID || "").trim();
-      const todayKey = getBroadcastSheetNameKST_(); // ✅ 방송일자(08:00 기준)
+      const todayKey = getBroadcastSheetNameKST_();
+
       if (currentOrderId && isShippingChargedForOrderDate_(currentOrderId, todayKey)){
         shipping = 0;
       }
     }
+
+
 
     document.getElementById("sum").innerText = sum.toLocaleString() + "원";
     document.getElementById("shipping").innerText = shipping.toLocaleString() + "원";
@@ -2365,6 +2407,7 @@
   }
 
   function checkOrder(){
+    calc(); // ✅ 최신 배송비/총액 반영
     let text = "[고객 정보]\n";
     text += `닉네임: ${document.getElementById("nickname").value}\n`;
     text += `이름: ${document.getElementById("name").value}\n`;
@@ -2396,6 +2439,7 @@
   }
 
   function showOrderHistory(){
+    calc(); // ✅ 최신 배송비/총액 반영
     const targetDates = getTargetDateListByOffset_(DONE_FILTER_OFFSET);
     const set = new Set(targetDates.map(String));
     const titleText = (Number(DONE_FILTER_OFFSET) === 7)
@@ -2448,6 +2492,7 @@
   }
 
   function copyOrderHistory(){
+    calc(); // ✅ 최신 배송비/총액 반영
     const targetDates = getTargetDateListByOffset_(DONE_FILTER_OFFSET);
     const set = new Set(targetDates.map(String));
     const titleText = (Number(DONE_FILTER_OFFSET) === 7)
@@ -2554,7 +2599,7 @@
     }
 
     // ✅ 기본 배송비 규칙 (10만 이상 무료)
-    let shipping = (sum > 0 && sum < 100000) ? SHIPPING : 0;
+    let shipping = calcShippingByRule_(sum);
 
     const batchOrderId = ensureDraftOrderId_();
 
@@ -2603,7 +2648,7 @@
 
       // ✅✅✅ [변경] 배송비가 실제로 붙은 주문 전송 성공 시, 해당 키(평일/주말묶음)를 마킹
       // (큐 방식에서는 "전송 확정"은 아니지만, eventId 중복방지+재전송이므로 UI 기준 유지)
-      if (sum > 0 && sum < 100000){
+      if (shipping > 0){
         markShippingCharged_(batchOrderId, broadcastDate);
       }
 
@@ -2908,6 +2953,7 @@
   ["nickname","name","addressDetail"].forEach(id=>{
     document.getElementById(id).addEventListener("input", ()=>{
       renderShippingSummary();
+      calc(); // ✅ 주소/상세주소에 따라 배송비 즉시 반영
       saveData();
     });
   });
@@ -2917,6 +2963,7 @@
     const formatted = formatPhoneKR_(el.value);
     if (el.value !== formatted) el.value = formatted;
     renderShippingSummary();
+    calc(); // ✅ 주소/상세주소에 따라 배송비 즉시 반영
     saveData();
   });
 
