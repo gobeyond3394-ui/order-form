@@ -737,9 +737,25 @@
 </div>
 
 <div class="section summary" id="summarySection">
-  <div class="summary-line"><span>상품 합계</span><span id="sum">0원</span></div>
-  <div class="summary-line"><span>배송비(금·토·일 주문 합배송 자동 적용)</span><span id="shipping">4,000원</span></div>
-  <div class="summary-line summary-total"><span>총 결제금액</span><span id="total">4,000원</span></div>
+  <div class="summary-line">
+    <span>상품 합계</span>
+    <span id="sum">0원</span>
+  </div>
+
+  <div class="summary-line">
+    <span>배송비</span>
+    <span id="shipping">4,000원</span>
+  </div>
+
+  <!-- ✅ 배송비 설명 (작게 표시) -->
+  <div style="font-size:12px;color:#666;margin-top:4px;">
+    금·토·일 합배 / 제주·도서 7천 / 10만↑ 무배(제주·도서 3천)
+  </div>
+
+  <div class="summary-line summary-total">
+    <span>총 결제금액</span>
+    <span id="total">4,000원</span>
+  </div>
 </div>
 
 <div class="section">
@@ -2082,6 +2098,7 @@
             <option value="L">L</option>
             <option value="XL">XL</option>
             <option value="2XL">2XL(일부 상품만)</option>
+            <option value="FREE">FREE(프리)</option>
           </select>
         </div>
       </div>
