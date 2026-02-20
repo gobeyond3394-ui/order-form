@@ -1383,8 +1383,8 @@
       completeControls.style.display = "flex";
       shipActions.style.display = "flex";
 
-      if (customerTitle) customerTitle.textContent = "배송지 정보";
-      if (productTitle) productTitle.textContent = "주문상품 정보";
+      if (customerTitle) customerTitle.textContent = "배송지";
+      if (productTitle) productTitle.textContent = "주문 상품";
 
       setBanner(bannerText || "주문이 정상적으로 접수되었습니다.");
 
@@ -1422,7 +1422,7 @@
     shipActions.style.display = "none";
 
     if (customerTitle) customerTitle.textContent = "고객 정보";
-    if (productTitle) productTitle.textContent = "상품정보";
+    if (productTitle) productTitle.textContent = "상품 정보";
 
     exitShipEdit(true);
 
